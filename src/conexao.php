@@ -1,23 +1,20 @@
 <?php
-
-$db_url = "postgresql://kaiwff:4k0eIcxlkuIztCiyqAGrh9bUJnHyaysU@dpg-db3r3s7avr4c73askskg-a.oregon-postgres.render.com/meu_banco_dados_jrqo?sslmode=require";
+$host     = "dpg-db3r3s7avr4c73askskg-a.oregon-postgres.render.com";
+$port     = "5432";
+$dbname   = "meu_banco_dados_jrqo";
+$user     = "kaiwff";
+$password = "4k0eIcxlkuIztCiyqAGrh9bUJnHyaysU";
 
 try {
-
-    $conexao = new PDO($db_url);
-
-    $conexao->setAttribute(
-        PDO::ATTR_ERRMODE,
-        PDO::ERRMODE_EXCEPTION
-    );
-
-    $conexao->setAttribute(
-        PDO::ATTR_DEFAULT_FETCH_MODE,
-        PDO::FETCH_ASSOC
-    );
-
+    // DSN do PostgreSQL especificando sslmode=require
+    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require";
+    
+    $conexao = new PDO($dsn, $user, $password, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ]);
 } catch (PDOException $e) {
-
-    die("Erro ao conectar ao PostgreSQL: " . $e->getMessage());
-
+    http_response_code(500);
+    die("Erro ao conectar com o banco de dados do Render: " . $e->getMessage());
 }
+?>
