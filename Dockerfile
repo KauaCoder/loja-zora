@@ -1,35 +1,19 @@
 FROM php:8.2-apache
 
-# Instala as extensões necessárias do PostgreSQL para o PHP
+# Instala extensões para suporte ao PostgreSQL no PHP
 RUN apt-get update && apt-get install -y libpq-dev \
     && docker-php-ext-install pdo pdo_pgsql pgsql
 
-# Copia os ficheiros do projeto para a pasta do Apache
+# Copia todos os arquivos do projeto para o Apache
 COPY . /var/www/html/
 
-# Configura a subpasta 'src' como a raiz do servidor web
+# Define a pasta 'src' como a raiz do servidor web
 ENV APACHE_DOCUMENT_ROOT /var/www/html/src
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/conf-available/*.conf
 
-# Ativa o módulo mod_rewrite do Apache
-RUN a2enmod rewrite
-
-EXPOSE 80ROM php:8.2-apache
-
-# Instala o driver do PostgreSQL para o PHP
-RUN apt-get update && apt-get install -y libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql pgsql
-
-# Copia os arquivos do projeto para o diretório web do Apache
-COPY . /var/www/html/
-
-# Configura a pasta src como raiz da aplicação
-ENV APACHE_DOCUMENT_ROOT /var/www/html/src
-RUN sed -ri -e 'sub!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 'sub!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/conf-available/*.conf
-
-# Ativa o módulo mod_rewrite do Apache
+# Concede permissão de acesso e ativa o mod_rewrite
+RUN echo "<Directory /var/www/html/src/>\n\tOptions Indexes FollowSymLinks\n\tAllowOverride All\n\tRequire all granted\n</Directory>" >> /etc/apache2/apache2.conf
 RUN a2enmod rewrite
 
 EXPOSE 80

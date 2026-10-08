@@ -1,8 +1,10 @@
 <?php
+// 1. Inclui a conexão subindo um nível para a pasta src
+include_once("../conexao.php");
 
 header("Content-Type: application/json; charset=UTF-8");
 
-require_once "conexao.php";
+// REMOVIDO: require_once "conexao.php"; (Ele causava conflito e erro de arquivo não encontrado)
 
 try {
 
@@ -34,6 +36,7 @@ try {
         ORDER BY p.id_produto
     ";
 
+    // Certifique-se de usar a mesma variável definida no seu conexao.php ($conexao ou $pdo)
     $stmt = $conexao->prepare($sql);
     $stmt->execute();
 
