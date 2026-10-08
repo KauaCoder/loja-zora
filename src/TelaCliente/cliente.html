@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - ZORA</title>
+
+    <link rel="stylesheet" href="cliente.css">
+    <link rel="stylesheet" href="../EstiloBase.css">
+</head>
+
+<body>
+
+    <!-- MENU -->
+    <nav>
+        <ul class="sidebar">
+            <li>
+                <a href="#" onclick="hideSidebar()">✕</a>
+            </li>
+            <li>
+                <a href="../TelaInicial/index.html">Produtos</a>
+            </li>
+            <li>
+                <a href="../TelaInicial/index.html" onclick="abrirPedidos()">Pedidos</a>
+            </li>
+            <li>
+                <a href="#">Sobre</a>
+            </li>
+            <li class="hideOnMobile">
+                <a href="#" id="menuUsuarioMobile" onclick="logout()">Sair</a>
+            </li>
+        </ul>
+
+        <ul>
+            <li>
+                <a href="../TelaInicial/index.html">ZORA</a>
+            </li>
+            <li class="hideOnMobile">
+                <a href="../TelaInicial/index.html">Produtos</a>
+            </li>
+            <li class="hideOnMobile">
+                <a href="#">Perfil</a>
+            </li>
+            <li class="hideOnMobile">
+                <a href="#">Sobre</a>
+            </li>
+            <li class="hideOnMobile">
+                <a href="#" onclick="logout()">Sair</a>
+            </li>
+            <li class="menu-button">
+                <a href="#" onclick="showSidebar()">☰</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- CONTAINER PRINCIPAL -->
+    <div class="container">
+
+        <!-- SEÇÃO PERFIL -->
+        <section class="perfil-section">
+            <h2>Meu Perfil</h2>
+
+            <div class="perfil-card">
+                <div class="perfil-header">
+                    <div class="avatar">👤</div>
+                    <div class="info-usuario">
+                        <h3 id="nomeUsuario">Usuário</h3>
+                        <p id="emailUsuario">email@example.com</p>
+                    </div>
+                </div>
+
+                <div class="perfil-dados">
+                    <h4>Informações Pessoais</h4>
+                    <p><strong>Nome:</strong> <span id="nomePerfil">-</span></p>
+                    <p><strong>Email:</strong> <span id="emailPerfil">-</span></p>
+                    <p><strong>Telefone:</strong> <span id="telefonePerfil">-</span></p>
+                </div>
+
+                <div class="endereco-section">
+                    <h4>Endereço de Entrega</h4>
+                    
+                    <div id="endereco-existente" class="endereco-display">
+                        <p><strong>CEP:</strong> <span id="cepPerfil">-</span></p>
+                        <p><strong>Rua:</strong> <span id="ruaPerfil">-</span></p>
+                        <p><strong>Número:</strong> <span id="numeroPerfil">-</span></p>
+                        <p><strong>Complemento:</strong> <span id="complementoPerfil">-</span></p>
+                        <p><strong>Bairro:</strong> <span id="bairroPerfil">-</span></p>
+                        <p><strong>Cidade:</strong> <span id="cidadePerfil">-</span></p>
+                        <p><strong>Estado:</strong> <span id="estadoPerfil">-</span></p>
+                        <button onclick="mostrarEdicaoEndereco()">Editar Endereço</button>
+                    </div>
+
+                    <div id="endereco-edicao" class="endereco-form" style="display: none;">
+                        <label>CEP</label>
+                        <input type="text" id="cepEdicao" maxlength="9" placeholder="00000-000">
+
+                        <label>Rua</label>
+                        <input type="text" id="ruaEdicao" readonly>
+
+                        <label>Número</label>
+                        <input type="text" id="numeroEdicao">
+
+                        <label>Complemento</label>
+                        <input type="text" id="complementoEdicao">
+
+                        <label>Bairro</label>
+                        <input type="text" id="bairroEdicao" readonly>
+
+                        <label>Cidade</label>
+                        <input type="text" id="cidadeEdicao" readonly>
+
+                        <label>Estado</label>
+                        <input type="text" id="estadoEdicao" readonly>
+
+                        <button type="button" onclick="salvarEndereco()">Salvar</button>
+                        <button type="button" onclick="cancelarEdicao()" class="btn-cancelar">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO COMPRAS -->
+        <section class="compras-section">
+            <h2>Minhas Compras</h2>
+
+            <div id="compras-vazio" class="compras-vazio">
+                <p>Você ainda não realizou nenhuma compra.</p>
+                <a href="../TelaInicial/index.html" class="btn-comprar">Começar a Comprar</a>
+            </div>
+
+            <div id="compras-lista" class="compras-lista" style="display: none;">
+                <!-- As compras serão adicionadas aqui via JavaScript -->
+            </div>
+        </section>
+
+        <!-- BOTÃO LOGOUT -->
+        <div class="logout-section">
+            <button onclick="logout()" class="btn-logout">Sair da Conta</button>
+        </div>
+
+    </div>
+
+    <script src="cliente.js"></script>
+
+</body>
+
+</html>

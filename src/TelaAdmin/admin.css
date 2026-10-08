@@ -1,0 +1,1751 @@
+/* =====================================================
+   ZORA - PAINEL ADMINISTRATIVO
+===================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    background: #f5f5f5;
+    color: #232020;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+}
+
+body.modal-aberto {
+    overflow: hidden;
+}
+
+
+/* =====================================================
+   TOPO
+===================================================== */
+
+.topo-admin {
+    min-height: 85px;
+
+    padding: 15px 5%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 25px;
+
+    background: #232020;
+
+    border-bottom:
+        1px solid #6f6d6e;
+}
+
+.logo-admin img {
+    display: block;
+
+    width: 120px;
+
+    max-height: 55px;
+
+    object-fit: contain;
+}
+
+.titulo-topo {
+    flex: 1;
+
+    text-align: center;
+}
+
+.titulo-topo span {
+    color: #fbfbfb;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    letter-spacing: 4px;
+}
+
+.botao-site {
+    padding: 11px 20px;
+
+    border:
+        1px solid #fbfbfb;
+
+    color: #fbfbfb;
+
+    text-decoration: none;
+
+    font-size: 13px;
+
+    transition: 0.25s;
+}
+
+.botao-site:hover {
+    background: #fbfbfb;
+
+    color: #232020;
+}
+
+
+/* =====================================================
+   CONTAINER
+===================================================== */
+
+.admin-container {
+    width:
+        min(1400px, 92%);
+
+    margin: 0 auto;
+
+    padding: 55px 0 70px;
+}
+
+
+/* =====================================================
+   CABEÇALHO
+===================================================== */
+
+.cabecalho-pagina {
+    margin-bottom: 35px;
+}
+
+.mini-titulo {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #6f6d6e;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    letter-spacing: 3px;
+}
+
+.cabecalho-pagina h1 {
+    margin: 0 0 10px;
+
+    color: #232020;
+
+    font-size:
+        clamp(32px, 5vw, 52px);
+
+    font-weight: 500;
+
+    letter-spacing: -2px;
+}
+
+.cabecalho-pagina p {
+    margin: 0;
+
+    max-width: 600px;
+
+    color: #6f6d6e;
+
+    line-height: 1.6;
+}
+
+
+/* =====================================================
+   RESUMO
+===================================================== */
+
+.resumo {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 18px;
+
+    margin-bottom: 30px;
+}
+
+.card-resumo {
+    min-height: 155px;
+
+    padding: 25px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: space-between;
+
+    background: #fbfbfb;
+
+    border:
+        1px solid #dedede;
+
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+.card-resumo:hover {
+    transform:
+        translateY(-3px);
+
+    box-shadow:
+        0 10px 30px
+        rgba(0, 0, 0, 0.06);
+}
+
+.card-label {
+    color: #6f6d6e;
+
+    font-size: 12px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1.5px;
+}
+
+.card-resumo strong {
+    color: #232020;
+
+    font-size: 38px;
+
+    font-weight: 500;
+}
+
+.card-resumo small {
+    color: #6f6d6e;
+}
+
+
+/* =====================================================
+   FILTROS
+===================================================== */
+
+.barra-filtros {
+    margin-bottom: 25px;
+
+    padding: 22px;
+
+    display: grid;
+
+    grid-template-columns:
+        2fr 1fr;
+
+    gap: 20px;
+
+    background: #2c292a;
+}
+
+.barra-filtros label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #fbfbfb;
+
+    font-size: 11px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1.5px;
+}
+
+.barra-filtros input,
+.barra-filtros select {
+    width: 100%;
+
+    height: 45px;
+
+    padding: 0 14px;
+
+    border:
+        1px solid #6f6d6e;
+
+    outline: none;
+
+    background: #fbfbfb;
+
+    color: #232020;
+
+    font-size: 14px;
+}
+
+.barra-filtros input:focus,
+.barra-filtros select:focus {
+    border-color: #b6a26d;
+}
+
+
+/* =====================================================
+   PAINEL / TABELA
+===================================================== */
+
+.painel-tabela {
+    background: #fbfbfb;
+
+    border:
+        1px solid #dedede;
+}
+
+.titulo-tabela {
+    padding: 25px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content:
+        space-between;
+
+    gap: 20px;
+
+    border-bottom:
+        1px solid #dedede;
+}
+
+.titulo-tabela h2 {
+    margin: 0;
+
+    font-size: 25px;
+
+    font-weight: 500;
+}
+
+.quantidade-resultados {
+    padding: 8px 13px;
+
+    background: #232020;
+
+    color: #fbfbfb;
+
+    font-size: 12px;
+}
+
+.tabela-container {
+    width: 100%;
+
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+
+    min-width: 1180px;
+
+    border-collapse: collapse;
+}
+
+thead {
+    background: #2c292a;
+
+    color: #fbfbfb;
+}
+
+th {
+    padding: 16px;
+
+    text-align: left;
+
+    font-size: 11px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1.2px;
+
+    font-weight: 600;
+}
+
+td {
+    padding: 16px;
+
+    border-bottom:
+        1px solid #e5e5e5;
+
+    color: #2c292a;
+
+    font-size: 13px;
+
+    vertical-align: middle;
+}
+
+tbody tr {
+    transition: background 0.2s;
+}
+
+tbody tr:hover {
+    background: #f4f4f4;
+}
+
+
+/* =====================================================
+   PRODUTO
+===================================================== */
+
+.produto-info {
+    min-width: 270px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+}
+
+.produto-info img {
+    width: 58px;
+
+    height: 72px;
+
+    flex-shrink: 0;
+
+    object-fit: cover;
+
+    background: #eeeeee;
+}
+
+.produto-info div {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+}
+
+.produto-info strong {
+    max-width: 220px;
+
+    color: #232020;
+
+    font-size: 13px;
+
+    line-height: 1.4;
+}
+
+.produto-info small {
+    color: #6f6d6e;
+
+    font-size: 11px;
+}
+
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+.status {
+    display: inline-block;
+
+    min-width: 90px;
+
+    padding: 7px 10px;
+
+    text-align: center;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+}
+
+.status-disponivel {
+    background: #e5eee7;
+
+    color: #315a3b;
+}
+
+.status-baixo {
+    background: #f4ead2;
+
+    color: #7a5d1c;
+}
+
+.status-esgotado {
+    background: #f1dddd;
+
+    color: #842d2d;
+}
+
+
+/* =====================================================
+   BOTÃO REPOR
+===================================================== */
+
+.botao-repor {
+    min-width: 92px;
+
+    padding: 10px 14px;
+
+    border: 1px solid #232020;
+
+    background: #232020;
+
+    color: #fbfbfb;
+
+    cursor: pointer;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.8px;
+
+    transition: 0.2s;
+}
+
+.botao-repor:hover:not(:disabled) {
+    background: #b6a26d;
+
+    border-color: #b6a26d;
+
+    color: #232020;
+}
+
+.botao-repor:disabled {
+    background: #eeeeee;
+
+    border-color: #dddddd;
+
+    color: #999999;
+
+    cursor: not-allowed;
+}
+
+
+/* =====================================================
+   MODAL
+===================================================== */
+
+.modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 9999;
+
+    padding: 20px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background:
+        rgba(0, 0, 0, 0.65);
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transition:
+        opacity 0.2s,
+        visibility 0.2s;
+}
+
+.modal-overlay.ativo {
+    opacity: 1;
+
+    visibility: visible;
+}
+
+.modal-reposicao {
+    position: relative;
+
+    width:
+        min(560px, 100%);
+
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    padding: 38px;
+
+    background: #fbfbfb;
+
+    border-top:
+        4px solid #b6a26d;
+
+    box-shadow:
+        0 30px 80px
+        rgba(0, 0, 0, 0.3);
+
+    transform:
+        translateY(15px);
+
+    transition:
+        transform 0.2s;
+}
+
+.modal-overlay.ativo
+.modal-reposicao {
+    transform:
+        translateY(0);
+}
+
+.modal-fechar {
+    position: absolute;
+
+    top: 18px;
+
+    right: 18px;
+
+    width: 35px;
+
+    height: 35px;
+
+    border: 0;
+
+    background: transparent;
+
+    color: #232020;
+
+    cursor: pointer;
+
+    font-size: 18px;
+}
+
+.modal-reposicao h2 {
+    margin:
+        8px 40px 8px 0;
+
+    color: #232020;
+
+    font-size: 26px;
+
+    font-weight: 500;
+}
+
+.modal-descricao {
+    margin:
+        0 0 25px;
+
+    color: #6f6d6e;
+
+    line-height: 1.6;
+}
+
+
+/* =====================================================
+   INFORMAÇÕES DO ESTOQUE
+===================================================== */
+
+.modal-estoque-info {
+    margin-bottom: 25px;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    border:
+        1px solid #dedede;
+}
+
+.modal-estoque-info div {
+    min-height: 90px;
+
+    padding: 15px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 7px;
+
+    text-align: center;
+
+    border-right:
+        1px solid #dedede;
+}
+
+.modal-estoque-info div:last-child {
+    border-right: 0;
+}
+
+.modal-estoque-info span {
+    color: #6f6d6e;
+
+    font-size: 10px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+.modal-estoque-info strong {
+    color: #232020;
+
+    font-size: 24px;
+
+    font-weight: 500;
+}
+
+
+/* =====================================================
+   FORMULÁRIO MODAL
+===================================================== */
+
+#formReposicao label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #232020;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+#quantidadeReposicao {
+    width: 100%;
+
+    height: 50px;
+
+    padding: 0 15px;
+
+    border:
+        1px solid #bdbdbd;
+
+    outline: none;
+
+    background: #ffffff;
+
+    color: #232020;
+
+    font-size: 16px;
+}
+
+#quantidadeReposicao:focus {
+    border-color: #b6a26d;
+}
+
+
+/* =====================================================
+   MENSAGENS
+===================================================== */
+
+.mensagem-modal {
+    min-height: 22px;
+
+    margin-top: 12px;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+.mensagem-sucesso {
+    color: #315a3b;
+}
+
+.mensagem-erro {
+    color: #842d2d;
+}
+
+
+/* =====================================================
+   AÇÕES MODAL
+===================================================== */
+
+.modal-acoes {
+    margin-top: 20px;
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 10px;
+}
+
+.botao-cancelar,
+.botao-confirmar {
+    min-height: 45px;
+
+    padding: 0 18px;
+
+    cursor: pointer;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.8px;
+}
+
+.botao-cancelar {
+    border:
+        1px solid #6f6d6e;
+
+    background: transparent;
+
+    color: #232020;
+}
+
+.botao-confirmar {
+    border:
+        1px solid #232020;
+
+    background: #232020;
+
+    color: #fbfbfb;
+}
+
+.botao-confirmar:hover:not(:disabled) {
+    background: #b6a26d;
+
+    border-color: #b6a26d;
+
+    color: #232020;
+}
+
+.botao-confirmar:disabled {
+    opacity: 0.6;
+
+    cursor: wait;
+}
+
+
+/* =====================================================
+   MENSAGENS DA TABELA
+===================================================== */
+
+.carregando,
+.sem-resultados,
+.erro-tabela {
+    padding: 50px;
+
+    text-align: center;
+
+    color: #6f6d6e;
+}
+
+.erro-tabela {
+    color: #842d2d;
+}
+
+
+/* =====================================================
+   RODAPÉ
+===================================================== */
+
+.rodape-admin {
+    padding: 35px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 10px;
+
+    background: #232020;
+
+    color: #fbfbfb;
+
+    text-align: center;
+}
+
+.rodape-admin img {
+    width: 100px;
+
+    max-height: 50px;
+
+    object-fit: contain;
+}
+
+.rodape-admin p {
+    margin: 0;
+
+    color: #6f6d6e;
+
+    font-size: 12px;
+}
+
+
+/* =====================================================
+   RESPONSIVO
+===================================================== */
+
+@media (max-width: 1000px) {
+
+    .resumo {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+}
+
+
+@media (max-width: 700px) {
+
+    .topo-admin {
+        min-height: 70px;
+
+        padding: 12px 20px;
+    }
+
+
+    .logo-admin img {
+        width: 90px;
+    }
+
+
+    .titulo-topo {
+        display: none;
+    }
+
+
+    .botao-site {
+        padding: 9px 13px;
+
+        font-size: 11px;
+    }
+
+
+    .admin-container {
+        width: 92%;
+
+        padding: 35px 0 50px;
+    }
+
+
+    .resumo {
+        grid-template-columns:
+            1fr 1fr;
+
+        gap: 10px;
+    }
+
+
+    .card-resumo {
+        min-height: 125px;
+
+        padding: 18px;
+    }
+
+
+    .card-resumo strong {
+        font-size: 30px;
+    }
+
+
+    .barra-filtros {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .titulo-tabela {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+
+    .modal-reposicao {
+        padding:
+            35px 22px 25px;
+    }
+
+
+    .modal-estoque-info {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .modal-estoque-info div {
+        min-height: 70px;
+
+        border-right: 0;
+
+        border-bottom:
+            1px solid #dedede;
+    }
+
+
+    .modal-estoque-info div:last-child {
+        border-bottom: 0;
+    }
+
+
+    .modal-acoes {
+        flex-direction: column-reverse;
+    }
+
+
+    .botao-cancelar,
+    .botao-confirmar {
+        width: 100%;
+    }
+}
+
+
+@media (max-width: 450px) {
+
+    .resumo {
+        grid-template-columns:
+            1fr;
+    }
+}
+
+/* =====================================================
+   AÇÕES DO PRODUTO
+===================================================== */
+
+.grupo-acoes {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+}
+
+
+.botao-editar {
+    min-width: 82px;
+
+    padding: 10px 14px;
+
+    border:
+        1px solid #b6a26d;
+
+    background:
+        transparent;
+
+    color:
+        #6f5c2d;
+
+    cursor: pointer;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.8px;
+
+    transition: 0.2s;
+}
+
+
+.botao-editar:hover {
+    background:
+        #b6a26d;
+
+    color:
+        #232020;
+}
+
+
+/* =====================================================
+   EDIÇÃO DE PRODUTO
+===================================================== */
+
+.modal-edicao {
+    width:
+        min(620px, 100%);
+}
+
+
+.campo-edicao {
+    margin-bottom: 20px;
+}
+
+
+.campo-edicao label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color:
+        #232020;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+
+.campo-edicao > input,
+.campo-edicao textarea {
+    width: 100%;
+
+    padding: 13px 15px;
+
+    border:
+        1px solid #bdbdbd;
+
+    outline: none;
+
+    background:
+        #ffffff;
+
+    color:
+        #232020;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    transition:
+        border-color 0.2s;
+}
+
+
+.campo-edicao > input {
+    height: 48px;
+}
+
+
+.campo-edicao textarea {
+    min-height: 120px;
+
+    resize: vertical;
+
+    line-height: 1.5;
+}
+
+
+.campo-edicao > input:focus,
+.campo-edicao textarea:focus {
+    border-color:
+        #b6a26d;
+}
+
+
+/* =====================================================
+   CAMPO DE PREÇO
+===================================================== */
+
+.campo-preco {
+    display: flex;
+
+    align-items: center;
+
+    height: 48px;
+
+    border:
+        1px solid #bdbdbd;
+
+    background:
+        #ffffff;
+
+    transition:
+        border-color 0.2s;
+}
+
+
+.campo-preco:focus-within {
+    border-color:
+        #b6a26d;
+}
+
+
+.campo-preco span {
+    height: 100%;
+
+    padding:
+        0 15px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background:
+        #f1f1f1;
+
+    color:
+        #6f6d6e;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    border-right:
+        1px solid #dddddd;
+}
+
+
+.campo-preco input {
+    flex: 1;
+
+    height: 100%;
+
+    padding:
+        0 15px;
+
+    border: 0;
+
+    outline: none;
+
+    background:
+        transparent;
+
+    color:
+        #232020;
+
+    font-size: 15px;
+}
+
+
+/* =====================================================
+   MOBILE - AÇÕES
+===================================================== */
+
+@media (max-width: 700px) {
+
+    .grupo-acoes {
+        flex-direction: column;
+
+        align-items: stretch;
+    }
+
+
+    .botao-editar,
+    .botao-repor {
+        width: 100%;
+    }
+}
+
+/* =====================================================
+   FORNECEDOR
+===================================================== */
+
+.botao-fornecedor {
+    min-width: 105px;
+
+    padding: 10px 14px;
+
+    border:
+        1px solid #6f6d6e;
+
+    background:
+        #fbfbfb;
+
+    color:
+        #232020;
+
+    cursor: pointer;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.7px;
+
+    transition:
+        0.2s;
+}
+
+
+.botao-fornecedor:hover:not(:disabled) {
+    background:
+        #2c292a;
+
+    border-color:
+        #2c292a;
+
+    color:
+        #fbfbfb;
+}
+
+
+.botao-fornecedor:disabled {
+    background:
+        #eeeeee;
+
+    border-color:
+        #dddddd;
+
+    color:
+        #999999;
+
+    cursor:
+        not-allowed;
+}
+
+
+/* =====================================================
+   MODAL FORNECEDOR
+===================================================== */
+
+.modal-fornecedor {
+    width:
+        min(600px, 100%);
+}
+
+
+.fornecedor-relacao {
+    margin-bottom:
+        25px;
+
+    display:
+        grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    border:
+        1px solid #dedede;
+}
+
+
+.fornecedor-relacao div {
+    min-height:
+        85px;
+
+    padding:
+        15px;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    gap:
+        7px;
+
+    text-align:
+        center;
+}
+
+
+.fornecedor-relacao div:first-child {
+    border-right:
+        1px solid #dedede;
+}
+
+
+.fornecedor-relacao span {
+    color:
+        #6f6d6e;
+
+    font-size:
+        10px;
+
+    text-transform:
+        uppercase;
+
+    letter-spacing:
+        1px;
+}
+
+
+.fornecedor-relacao strong {
+    color:
+        #232020;
+
+    font-size:
+        17px;
+
+    font-weight:
+        500;
+}
+
+
+/* =====================================================
+   AVISO
+===================================================== */
+
+.aviso-fornecedor {
+    margin-top:
+        5px;
+
+    padding:
+        15px;
+
+    border-left:
+        3px solid #b6a26d;
+
+    background:
+        #f5f1e6;
+}
+
+
+.aviso-fornecedor strong {
+    display:
+        block;
+
+    margin-bottom:
+        5px;
+
+    color:
+        #6f5c2d;
+
+    font-size:
+        11px;
+
+    text-transform:
+        uppercase;
+
+    letter-spacing:
+        1px;
+}
+
+
+.aviso-fornecedor p {
+    margin:
+        0;
+
+    color:
+        #6f6d6e;
+
+    font-size:
+        12px;
+
+    line-height:
+        1.5;
+}
+
+
+@media (max-width: 700px) {
+
+    .fornecedor-relacao {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .fornecedor-relacao div:first-child {
+        border-right:
+            0;
+
+        border-bottom:
+            1px solid #dedede;
+    }
+
+
+    .botao-fornecedor {
+        width:
+            100%;
+    }
+}
+
+/* =====================================================
+   DASHBOARD DE VENDAS
+===================================================== */
+
+.dashboard-vendas {
+    margin-bottom: 45px;
+}
+
+
+.dashboard-cabecalho {
+    display: flex;
+
+    align-items: flex-end;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 22px;
+}
+
+
+.dashboard-cabecalho h2 {
+    margin: 5px 0 0;
+
+    color: #232020;
+
+    font-size: 27px;
+}
+
+
+.botao-atualizar-dashboard {
+    padding: 11px 18px;
+
+    border: 1px solid #232020;
+
+    background: transparent;
+
+    color: #232020;
+
+    cursor: pointer;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+
+    transition: 0.2s;
+}
+
+
+.botao-atualizar-dashboard:hover {
+    background: #232020;
+
+    color: #fbfbfb;
+}
+
+
+/* CARDS */
+
+.cards-dashboard {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 15px;
+
+    margin-bottom: 15px;
+}
+
+
+.card-dashboard {
+    min-height: 125px;
+
+    padding: 22px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: space-between;
+
+    background: #232020;
+
+    border-bottom:
+        3px solid #b6a26d;
+}
+
+
+.card-dashboard span {
+    color: #b6a26d;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    letter-spacing: 1.2px;
+
+    text-transform: uppercase;
+}
+
+
+.card-dashboard strong {
+    color: #fbfbfb;
+
+    font-size: 26px;
+
+    font-weight: 500;
+}
+
+
+/* MAIS VENDIDO */
+
+.mais-vendido {
+    padding: 20px 22px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    background: #f3f0e7;
+
+    border-left:
+        4px solid #b6a26d;
+
+    margin-bottom: 30px;
+}
+
+
+.mais-vendido span {
+    color: #6f5c2d;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+}
+
+
+.mais-vendido strong {
+    color: #232020;
+
+    font-size: 14px;
+
+    text-align: right;
+}
+
+
+/* PEDIDOS RECENTES */
+
+.pedidos-recentes {
+    background: #ffffff;
+
+    border: 1px solid #e1e1e1;
+}
+
+
+.titulo-pedidos {
+    padding: 20px 22px;
+
+    border-bottom:
+        1px solid #e1e1e1;
+}
+
+
+.titulo-pedidos h3 {
+    margin: 4px 0 0;
+
+    color: #232020;
+
+    font-size: 20px;
+}
+
+
+.tabela-dashboard-container {
+    width: 100%;
+
+    overflow-x: auto;
+}
+
+
+.tabela-dashboard {
+    width: 100%;
+
+    border-collapse: collapse;
+}
+
+
+.tabela-dashboard th {
+    padding: 14px 16px;
+
+    background: #f5f5f5;
+
+    color: #6f6d6e;
+
+    text-align: left;
+
+    font-size: 10px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+
+.tabela-dashboard td {
+    padding: 16px;
+
+    border-top:
+        1px solid #eeeeee;
+
+    color: #2c292a;
+
+    font-size: 13px;
+}
+
+
+.tabela-dashboard tbody tr:hover {
+    background: #fafafa;
+}
+
+
+.status-pedido {
+    display: inline-block;
+
+    padding: 6px 10px;
+
+    background: #f3f0e7;
+
+    color: #6f5c2d;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.7px;
+}
+
+
+/* RESPONSIVO */
+
+@media (max-width: 950px) {
+
+    .cards-dashboard {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .cards-dashboard {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .dashboard-cabecalho {
+        align-items: stretch;
+
+        flex-direction: column;
+    }
+
+
+    .mais-vendido {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+
+    .mais-vendido strong {
+        text-align: left;
+    }
+}

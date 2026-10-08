@@ -1,0 +1,590 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#fffaf5;
+}
+
+/* =========================
+   MENU PRINCIPAL (mesmo padrão da tela inicial)
+========================= */
+
+nav{
+
+    background:#F5EFE6;
+
+    box-shadow:0 3px 8px rgba(0,0,0,.2);
+
+    position:relative;
+
+    z-index:1500;
+
+}
+
+nav ul{
+
+    width:100%;
+
+    list-style:none;
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    align-items:center;
+
+}
+
+nav li{
+
+    height:60px;
+
+}
+
+nav li:first-child{
+
+    margin-right:auto;
+
+}
+
+nav a{
+
+    height:100%;
+
+    padding:0 30px;
+
+    display:flex;
+
+    align-items:center;
+
+    text-decoration:none;
+
+    color:#000;
+
+    font-size:18px;
+
+    transition:.3s;
+
+}
+
+nav a:hover{
+
+    background:#fffaf0;
+
+}
+
+/* Menu mobile */
+
+.menu-button{
+
+    display:none;
+
+}
+
+.menu-button a{
+
+    font-size:28px;
+
+}
+
+.sidebar{
+
+    position:fixed;
+
+    top:0;
+
+    right:-300px;
+
+    width:270px;
+
+    height:100vh;
+
+    background:#F5EFE6;
+
+    box-shadow:-5px 0 15px rgba(0,0,0,.25);
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    padding-top:20px;
+
+    transition:.4s;
+
+    z-index:3000;
+
+}
+
+.sidebar.active{
+
+    right:0;
+
+}
+
+.sidebar li{
+
+    width:100%;
+
+    list-style:none;
+
+}
+
+.sidebar a{
+
+    width:100%;
+
+    padding:20px 25px;
+
+    display:block;
+
+    color:#000;
+
+    text-decoration:none;
+
+    font-size:18px;
+
+}
+
+.sidebar a:hover{
+
+    background:#fffaf0;
+
+}
+
+/* =========================
+   FINALIZAR PEDIDO
+========================= */
+
+.entrega-wrap{
+
+    width:100%;
+
+    padding:40px 20px 80px;
+
+    display:flex;
+
+    justify-content:center;
+
+}
+
+.container{
+
+    width:100%;
+
+    max-width:480px;
+
+    background:white;
+
+    padding:35px;
+
+    border-radius:15px;
+
+    box-shadow:0 5px 20px rgba(0,0,0,.12);
+
+}
+
+.voltar{
+
+    display:inline-block;
+
+    margin-bottom:20px;
+
+    color:#666;
+
+    text-decoration:none;
+
+    font-size:14px;
+
+    transition:.3s;
+
+}
+
+.voltar:hover{
+
+    color:#000;
+
+}
+
+h2{
+
+    text-align:center;
+
+    margin-bottom:8px;
+
+    color:#222;
+
+    font-size:26px;
+
+}
+
+.subtitulo{
+
+    text-align:center;
+
+    color:#777;
+
+    font-size:14px;
+
+    margin-bottom:25px;
+
+}
+
+/* Indicador de passos */
+
+.passos{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:10px;
+
+    margin-bottom:30px;
+
+}
+
+.passo{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:#aaa;
+
+}
+
+.passo.ativo{
+
+    color:#111;
+
+}
+
+.passo-numero{
+
+    width:26px;
+
+    height:26px;
+
+    border-radius:50%;
+
+    background:#eee;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:13px;
+
+    font-weight:bold;
+
+}
+
+.passo.ativo .passo-numero{
+
+    background:#111;
+
+    color:white;
+
+}
+
+.passo-label{
+
+    font-size:13px;
+
+    font-weight:bold;
+
+}
+
+.passo-linha{
+
+    width:40px;
+
+    height:2px;
+
+    background:#eee;
+
+}
+
+/* Resumo do pedido */
+
+.resumo{
+
+    background:#f8f6f2;
+
+    border-radius:10px;
+
+    padding:18px 20px;
+
+    margin-bottom:25px;
+
+}
+
+.resumo h3{
+
+    font-size:15px;
+
+    color:#333;
+
+    margin-bottom:12px;
+
+}
+
+#listaResumo{
+
+    list-style:none;
+
+    margin-bottom:10px;
+
+}
+
+#listaResumo li{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    gap:10px;
+
+    font-size:13.5px;
+
+    color:#555;
+
+    padding:6px 0;
+
+    border-bottom:1px dashed #e2ddd4;
+
+}
+
+#listaResumo li span:first-child{
+
+    flex:1;
+
+}
+
+#listaResumo:empty::after{
+
+    content:"Nenhum item no pedido.";
+
+    display:block;
+
+    color:#999;
+
+    font-size:13px;
+
+    padding:6px 0;
+
+}
+
+.linha{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.linha-total{
+
+    margin-top:10px;
+
+    padding-top:10px;
+
+    border-top:1px solid #e2ddd4;
+
+    font-weight:bold;
+
+    font-size:17px;
+
+    color:#111;
+
+}
+
+/* Formulário */
+
+label{
+
+    display:block;
+
+    margin-top:15px;
+
+    margin-bottom:5px;
+
+    font-weight:bold;
+
+    font-size:13.5px;
+
+    color:#333;
+
+}
+
+input{
+
+    width:100%;
+
+    padding:12px;
+
+    border:1px solid #ddd;
+
+    border-radius:8px;
+
+    font-size:15px;
+
+    transition:.2s;
+
+}
+
+input:focus{
+
+    outline:none;
+
+    border-color:#111;
+
+}
+
+input[readonly]{
+
+    background:#f8f6f2;
+
+    color:#777;
+
+}
+
+.campo-duplo{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:15px;
+
+}
+
+.status-cep{
+
+    display:block;
+
+    min-height:16px;
+
+    font-size:12px;
+
+    margin-top:4px;
+
+}
+
+.status-cep.buscando{
+
+    color:#777;
+
+}
+
+.status-cep.encontrado{
+
+    color:#2e7d32;
+
+}
+
+.status-cep.erro{
+
+    color:#c62828;
+
+}
+
+button{
+
+    width:100%;
+
+    margin-top:28px;
+
+    padding:15px;
+
+    border:none;
+
+    border-radius:8px;
+
+    background:#111;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:16px;
+
+    font-weight:bold;
+
+    transition:.3s;
+
+}
+
+button:hover{
+
+    background:#444;
+
+}
+
+button:disabled{
+
+    background:#ccc;
+
+    cursor:not-allowed;
+
+}
+
+/* =========================
+   RESPONSIVO
+========================= */
+
+@media(max-width:768px){
+
+    .hideOnMobile{
+
+        display:none;
+
+    }
+
+    .menu-button{
+
+        display:block;
+
+    }
+
+    nav a{
+
+        padding:0 20px;
+
+    }
+
+    .sidebar{
+
+        width:230px;
+
+    }
+
+    .container{
+
+        padding:25px;
+
+    }
+
+    .campo-duplo{
+
+        grid-template-columns:1fr;
+
+        gap:0;
+
+    }
+
+}

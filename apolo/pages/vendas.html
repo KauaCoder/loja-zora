@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Vendas - Sistema Administrativo</title>
+
+    <link rel="stylesheet" href="../css/style.css">
+
+</head>
+
+<body>
+
+    <div class="vendas">
+
+        <h1>Painel de Vendas</h1>
+
+        <p>
+            Registre e acompanhe as vendas realizadas pela loja.
+        </p>
+
+
+        <!-- ==========================================
+             NOVA VENDA
+        =========================================== -->
+
+        <div class="venda-form">
+
+            <h2>Nova venda</h2>
+
+            <form id="vendaForm">
+
+                <label for="produtoVenda">
+                    Produto
+                </label>
+
+                <select id="produtoVenda" required>
+
+                    <option value="">
+                        Selecione um produto
+                    </option>
+
+                </select>
+
+
+                <label for="quantidadeVenda">
+                    Quantidade
+                </label>
+
+                <input
+                    type="number"
+                    id="quantidadeVenda"
+                    min="1"
+                    value="1"
+                    required
+                >
+
+
+                <button type="submit">
+                    Adicionar ao carrinho
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <!-- ==========================================
+             CARRINHO
+        =========================================== -->
+
+        <h2>Carrinho</h2>
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Produto</th>
+
+                    <th>Quantidade</th>
+
+                    <th>Preço unitário</th>
+
+                    <th>Subtotal</th>
+
+                    <th>Ação</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="tabelaCarrinho">
+
+                <!-- Os produtos aparecerão aqui -->
+
+            </tbody>
+
+        </table>
+
+
+        <!-- ==========================================
+             TOTAL
+        =========================================== -->
+
+        <div class="resumo-venda">
+
+            <p>
+                Total da venda
+            </p>
+
+            <strong id="totalVenda">
+                R$ 0,00
+            </strong>
+
+        </div>
+
+
+        <!-- ==========================================
+             PAGAMENTO
+        =========================================== -->
+
+        <div class="pagamento">
+
+            <label for="formaPagamento">
+                Forma de pagamento
+            </label>
+
+            <select id="formaPagamento">
+
+                <option value="">
+                    Selecione
+                </option>
+
+                <option value="Dinheiro">
+                    Dinheiro
+                </option>
+
+                <option value="Pix">
+                    Pix
+                </option>
+
+                <option value="Cartão de débito">
+                    Cartão de débito
+                </option>
+
+                <option value="Cartão de crédito">
+                    Cartão de crédito
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- ==========================================
+             FINALIZAR VENDA
+        =========================================== -->
+
+        <button
+            type="button"
+            id="btnFinalizarVenda"
+            class="btn-finalizar-venda"
+        >
+            Finalizar venda
+        </button>
+
+
+        <br><br>
+
+
+        <!-- ==========================================
+             VOLTAR
+        =========================================== -->
+
+        <a href="dashboard.html">
+            Voltar
+        </a>
+
+    </div>
+
+
+    <script src="../js/script.js"></script>
+
+</body>
+
+</html>

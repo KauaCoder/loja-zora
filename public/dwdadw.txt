@@ -1,0 +1,401 @@
+        <div class="produtos">
+
+
+            <!-- =====================
+                 PRODUTO 1
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=1">
+
+                    <img
+                        src="../img/img.jpeg"
+                        alt="Vestidos Justos de Alças">
+
+                </a>
+
+
+                <h3>
+                   Vestidos Justos de Alças
+                </h3>
+
+
+                <p>
+                    R$ 69,90
+                </p>
+
+
+<button
+    onclick="adicionarPedidos(
+        1,
+        'Vestidos Justos de Alças',
+        69.90
+    )">
+    Comprar
+</button>
+
+            </div>
+
+
+
+            <!-- =====================
+                 PRODUTO 2
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=2">
+
+                    <img
+                        src="../img/img2.jpeg"
+                        alt="Saia Jeans Cargo Minissaia">
+
+                </a>
+
+
+                <h3>
+                  Saia Jeans Cargo Minissaia
+                </h3>
+
+
+                <p>
+                    R$ 119,90
+                </p>
+
+
+                <button
+                    onclick="adicionarPedidos(
+                        2,
+                        'Saia Jeans Cargo Minissaia',
+                        119.90
+                    )">
+
+                    Comprar
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================
+                 PRODUTO 3
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=3">
+
+                    <img
+                        src="../img/img3.jpeg"
+                        alt="Top Cropped Frente Única / Halter Neck">
+
+                </a>
+
+
+                <h3>
+                   Top Cropped Frente Única / Halter Neck
+                </h3>
+
+
+                <p>
+                    R$ 99,90
+                </p>
+
+
+                <button
+                    onclick="adicionarPedidos(
+                        3,
+                        'Top Cropped Frente Única / Halter Neck',
+                        99.90
+                    )">
+
+                    Comprar
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================
+                 PRODUTO 4
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=4">
+
+                    <img
+                        src="../img/img4.jpeg"
+                        alt="Vestido Longo Texturizado Verde">
+
+                </a>
+
+
+                <h3>
+                    Vestido Longo Texturizado Verde
+                </h3>
+
+
+                <p>
+                    R$ 199,90
+                </p>
+
+
+                <button
+                    onclick="adicionarPedidos(
+                        4,
+                        'Vestido Longo Texturizado Verde',
+                        199.90
+                    )">
+
+                    Comprar
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================
+                 PRODUTO 5
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=5">
+
+                    <img
+                        src="../img/img5.jpeg"
+                        alt="Conjunto de Top de Bolinhas (Pequeno Poá) e Calções Pretos">
+
+                </a>
+
+
+                <h3>
+                    Conjunto de Top de Bolinhas (Pequeno Poá) e Calções Pretos
+                </h3>
+
+
+                <p>
+                    R$ 75,90
+                </p>
+
+
+                <button
+                    onclick="adicionarPedidos(
+                        5,
+                        'Conjunto de Top de Bolinhas (Pequeno Poá) e Calções Pretos',
+                        75.90
+                    )">
+
+                    Comprar
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================
+                 PRODUTO 6
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=6">
+
+                    <img
+                        src="../img/img6.jpeg"
+                        alt="Vestido de Gala/Festa Longo Caicai (Ombro a Ombro) Verde">
+
+                </a>
+
+
+                <h3>
+                 Vestido de Gala/Festa Longo Caicai (Ombro a Ombro) Verde
+                </h3>
+
+
+                <p>
+                    R$ 69,90
+                </p>
+
+
+                <button
+                    onclick="adicionarPedidos(
+                        6,
+                        'Vestido de Gala/Festa Longo Caicai (Ombro a Ombro) Verde',
+                        69.90
+                    )">
+
+                    Comprar
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================
+                 PRODUTO 7
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=7">
+
+                    <img
+                        src="../img/img11.jpeg"
+                        alt="Calça Jeans Flare de Cintura Alta">
+
+                </a>
+
+
+                <h3>
+                  Calça Jeans Flare de Cintura Alta
+                </h3>
+
+
+                <p>
+                    R$ 159,90
+                </p>
+
+
+                <button
+                    onclick="adicionarPedidos(
+                        7,
+                        'Calça Jeans Flare de Cintura Alta',
+                        159.90
+                    )">
+
+                    Comprar
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================
+                 PRODUTO 8
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=8">
+
+                    <img
+                        src="../img/img7.jpeg"
+                        alt="Calça Jeans Larga (Wide Leg) com Top Cropped de Manga Comprida">
+
+                </a>
+
+
+                <h3>
+                    Calça Jeans Larga (Wide Leg) com Top Cropped de Manga Comprida
+                </h3>
+
+
+                <p>
+                    R$ 175,90
+                </p>
+
+
+                <button
+                    onclick="adicionarPedidos(
+                        8,
+                        'Calça Jeans Larga (Wide Leg) com Top Cropped de Manga Comprida',
+                        175.90
+                    )">
+
+                    Comprar
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================
+                 PRODUTO 9
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=9">
+
+                    <img
+                        src="../img/img8.jpeg"
+                        alt="Tops Cavados de Alças Largas (Regatas)">
+
+                </a>
+
+
+                <h3>
+                    Tops Cavados de Alças Largas (Regatas)
+                </h3>
+
+
+                <p>
+                    R$ 79,90
+                </p>
+
+
+                <button
+                    onclick="adicionarPedidos(
+                        9,
+                        'Tops Cavados de Alças Largas (Regatas)',
+                        79.90
+                    )">
+
+                    Comprar
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================
+                 PRODUTO 10
+            ====================== -->
+
+            <div class="produto">
+
+                <a href="../TelaProdutos/produtos.html?id=10">
+
+                    <img
+                        src="../img/img9.jpeg"
+                        alt="Casaco Fleece / Camisola de Gola Alta com Fecho">
+
+                </a>
+
+
+                <h3>
+                  Casaco Fleece / Camisola de Gola Alta com Fecho
+                </h3>
+
+
+                <p>
+                    R$ 89,90
+                </p>
+
+
+                <button
+                    onclick="adicionarPedidos(
+                        10,
+                        'Casaco Fleece / Camisola de Gola Alta com Fecho',
+                        89.90
+                    )">
+
+                    Comprar
+
+                </button>
+
+            </div>
+
+
+        </div>

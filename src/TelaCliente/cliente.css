@@ -1,0 +1,887 @@
+/* =========================================================
+   ZORA — PERFIL / MENU DO CLIENTE
+   ========================================================= */
+
+/* =========================
+   MENU PRINCIPAL
+========================= */
+
+
+nav{
+
+    background:#F5EFE6;
+
+    box-shadow:0 3px 8px rgba(0,0,0,.2);
+
+    position:relative;
+
+    z-index:1500;
+
+}
+
+
+
+nav ul{
+
+    width:100%;
+
+    list-style:none;
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    align-items:center;
+
+}
+
+
+
+nav li{
+
+    height:60px;
+
+}
+
+
+
+nav li:first-child{
+
+    margin-right:auto;
+
+}
+
+
+
+nav a{
+
+    height:100%;
+
+    padding:0 30px;
+
+    display:flex;
+
+    align-items:center;
+
+    text-decoration:none;
+
+    color:#000;
+
+    font-size:18px;
+
+    transition:.3s;
+
+}
+
+
+
+nav a:hover{
+
+    background:#fffaf0;
+
+}
+
+
+
+/* =========================
+   MENU MOBILE
+========================= */
+
+
+.menu-button{
+
+    display:none;
+
+}
+
+
+.menu-button a{
+
+    font-size:28px;
+
+}
+
+
+
+/* Menu lateral */
+
+
+.sidebar{
+
+    position:fixed;
+
+    top:0;
+
+    right:-300px;
+
+    width:270px;
+
+    height:100vh;
+
+    background:#F5EFE6;
+
+    box-shadow:-5px 0 15px rgba(0,0,0,.25);
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    padding-top:20px;
+
+    transition:.4s;
+
+    z-index:3000;
+
+}
+
+
+
+.sidebar.active{
+
+    right:0;
+
+}
+
+
+
+.sidebar li{
+
+    width:100%;
+
+    list-style:none;
+
+}
+
+
+
+.sidebar a{
+
+    width:100%;
+
+    padding:20px 25px;
+
+    display:block;
+
+    color:#000;
+
+    text-decoration:none;
+
+    font-size:18px;
+
+}
+
+
+
+.sidebar a:hover{
+
+    background:#fffaf0;
+
+}
+
+
+
+
+
+   :root {
+    --rosa: #e91e63;
+    --rosa-escuro: #c2185b;
+    --rosa-claro: #fff0f5;
+    --texto: #252525;
+    --texto-secundario: #737373;
+    --borda: #eeeeee;
+    --fundo: #f7f7f9;
+    --branco: #ffffff;
+    --vermelho: #e53935;
+    --verde: #2e7d32;
+    --sombra: 0 8px 30px rgba(0, 0, 0, 0.07);
+    --raio: 16px;
+}
+
+/* =====================
+   CONTAINER PRINCIPAL
+   ===================== */
+
+.container {
+    width: min(100% - 32px, 1000px);
+    margin: 32px auto 60px;
+    padding: 0;
+}
+
+/* =====================
+   TÍTULOS DAS SEÇÕES
+   ===================== */
+
+.perfil-section,
+.compras-section {
+    margin-bottom: 38px;
+}
+
+.perfil-section h2,
+.compras-section h2 {
+    position: relative;
+    margin: 0 0 18px;
+    padding: 0 0 12px;
+    color: var(--texto);
+    font-size: 25px;
+    font-weight: 750;
+    letter-spacing: -0.4px;
+}
+
+.perfil-section h2::after,
+.compras-section h2::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 52px;
+    height: 4px;
+    border-radius: 10px;
+    background: var(--rosa);
+}
+
+/* =====================
+   CARD DO PERFIL
+   ===================== */
+
+.perfil-card {
+    overflow: hidden;
+    background: var(--branco);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+}
+
+/* =====================
+   CABEÇALHO DO PERFIL
+   ===================== */
+
+.perfil-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 32px;
+    color: white;
+    background:
+        radial-gradient(
+            circle at 90% 20%,
+            rgba(255,255,255,.18),
+            transparent 30%
+        ),
+        linear-gradient(
+            135deg,
+            #e91e63,
+            #ec407a 55%,
+            #ff6090
+        );
+}
+
+.perfil-header::after {
+    content: "";
+    position: absolute;
+    right: -50px;
+    bottom: -80px;
+    width: 180px;
+    height: 180px;
+    border: 35px solid rgba(255,255,255,.08);
+    border-radius: 50%;
+}
+
+.avatar {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+
+    width: 82px;
+    height: 82px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 48px;
+
+    background: rgba(255,255,255,.16);
+    border: 2px solid rgba(255,255,255,.35);
+    border-radius: 50%;
+
+    box-shadow: 0 6px 20px rgba(0,0,0,.12);
+}
+
+.info-usuario {
+    position: relative;
+    z-index: 1;
+}
+
+.info-usuario h3 {
+    margin: 0;
+    font-size: 25px;
+    font-weight: 750;
+}
+
+.info-usuario p {
+    margin: 6px 0 0;
+    color: rgba(255,255,255,.88);
+    font-size: 14px;
+}
+
+/* =====================
+   DADOS PESSOAIS
+   ===================== */
+
+.perfil-dados {
+    padding: 28px 32px;
+    border-bottom: 1px solid var(--borda);
+}
+
+.perfil-dados h4,
+.endereco-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin: 0 0 18px;
+    color: var(--texto);
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.perfil-dados p {
+    display: flex;
+    align-items: center;
+
+    min-height: 42px;
+    margin: 8px 0;
+    padding: 0 14px;
+
+    color: var(--texto-secundario);
+    background: #fafafa;
+
+    border: 1px solid #f0f0f0;
+    border-radius: 10px;
+
+    font-size: 14px;
+}
+
+/* =====================
+   ENDEREÇO
+   ===================== */
+
+.endereco-section {
+    padding: 28px 32px;
+}
+
+.endereco-display {
+    padding: 18px;
+    background: #fafafa;
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+}
+
+.endereco-display p {
+    margin: 7px 0;
+    color: var(--texto-secundario);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.endereco-display button {
+    margin-top: 14px;
+    padding: 11px 18px;
+
+    color: white;
+    background: var(--rosa);
+
+    border: none;
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+    font-weight: 650;
+
+    transition:
+        background .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.endereco-display button:hover {
+    background: var(--rosa-escuro);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(233,30,99,.22);
+}
+
+/* =====================
+   FORMULÁRIO DE ENDEREÇO
+   ===================== */
+
+.endereco-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 17px;
+}
+
+.endereco-form label {
+    display: block;
+    margin-bottom: 7px;
+
+    color: #444;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.endereco-form input {
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 12px 13px;
+
+    color: var(--texto);
+    background: white;
+
+    border: 1px solid #dddddd;
+    border-radius: 9px;
+
+    outline: none;
+
+    font-family: inherit;
+    font-size: 14px;
+
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease;
+}
+
+.endereco-form input:hover {
+    border-color: #cfcfcf;
+}
+
+.endereco-form input:focus {
+    border-color: var(--rosa);
+    box-shadow: 0 0 0 3px rgba(233,30,99,.10);
+}
+
+.endereco-form input:read-only {
+    color: #777;
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
+/* Campos que ocupam linha inteira */
+
+.endereco-form label[for="ruaCadastro"],
+.endereco-form input#ruaCadastro {
+    grid-column: span 2;
+}
+
+/* =====================
+   BOTÕES DO FORMULÁRIO
+   ===================== */
+
+.endereco-form button {
+    padding: 12px 18px;
+
+    border: none;
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+    font-weight: 650;
+
+    transition:
+        transform .2s ease,
+        background .2s ease,
+        box-shadow .2s ease;
+}
+
+.endereco-form button[type="button"]:first-of-type {
+    color: white;
+    background: var(--rosa);
+}
+
+.endereco-form button[type="button"]:first-of-type:hover {
+    background: var(--rosa-escuro);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(233,30,99,.20);
+}
+
+.btn-cancelar {
+    color: #555 !important;
+    background: #eeeeee !important;
+}
+
+.btn-cancelar:hover {
+    background: #dddddd !important;
+}
+
+/* =====================
+   COMPRAS
+   ===================== */
+
+.compras-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.compra-card {
+    overflow: hidden;
+
+    background: var(--branco);
+
+    border: 1px solid var(--borda);
+    border-left: 4px solid var(--rosa);
+
+    border-radius: 14px;
+
+    box-shadow: 0 5px 20px rgba(0,0,0,.05);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.compra-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(0,0,0,.08);
+}
+
+/* =====================
+   CABEÇALHO DA COMPRA
+   ===================== */
+
+.compra-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 20px 22px;
+
+    background: #fff;
+
+    border-bottom: 1px solid var(--borda);
+}
+
+.compra-info h4 {
+    margin: 0;
+
+    color: var(--texto);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.compra-info .data {
+    margin: 5px 0 0;
+
+    color: #999;
+    font-size: 13px;
+}
+
+.compra-total {
+    text-align: right;
+}
+
+.compra-total .label {
+    margin: 0;
+
+    color: #999;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.compra-total .preco {
+    margin: 3px 0 0;
+
+    color: var(--rosa);
+
+    font-size: 22px;
+    font-weight: 800;
+}
+
+/* =====================
+   PRODUTOS
+   ===================== */
+
+.compra-produtos {
+    padding: 20px 22px;
+}
+
+.compra-produtos h5 {
+    margin: 0 0 12px;
+
+    color: var(--texto);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.compra-produtos p {
+    margin: 7px 0;
+
+    color: var(--texto-secundario);
+    font-size: 14px;
+}
+
+/* =====================
+   RODAPÉ DA COMPRA
+   ===================== */
+
+.compra-footer {
+    padding: 13px 22px;
+
+    color: #777;
+    background: #fafafa;
+
+    border-top: 1px solid var(--borda);
+
+    font-size: 13px;
+}
+
+.compra-footer p {
+    margin: 0;
+}
+
+/* =====================
+   COMPRA VAZIA
+   ===================== */
+
+.compras-vazio {
+    padding: 55px 25px;
+
+    text-align: center;
+
+    background: white;
+
+    border: 1px solid var(--borda);
+    border-radius: 14px;
+
+    box-shadow: var(--sombra);
+}
+
+.compras-vazio p {
+    margin: 0 0 22px;
+
+    color: #999;
+    font-size: 15px;
+}
+
+.btn-comprar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 12px 25px;
+
+    color: white;
+    background: var(--rosa);
+
+    border-radius: 9px;
+
+    text-decoration: none;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    transition:
+        background .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.btn-comprar:hover {
+    color: white;
+    background: var(--rosa-escuro);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(233,30,99,.20);
+}
+
+/* =====================
+   LOGOUT
+   ===================== */
+
+.logout-section {
+    padding: 8px 0 20px;
+    text-align: center;
+}
+
+.btn-logout {
+    min-width: 190px;
+
+    padding: 12px 25px;
+
+    color: white;
+    background: var(--vermelho);
+
+    border: none;
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    transition:
+        background .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.btn-logout:hover {
+    background: #c62828;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(229,57,53,.20);
+}
+
+/* =====================
+   RESPONSIVO — TABLET
+   ===================== */
+
+@media (max-width: 768px) {
+
+    .container {
+        width: min(100% - 24px, 620px);
+        margin-top: 22px;
+    }
+
+    .perfil-section h2,
+    .compras-section h2 {
+        font-size: 22px;
+    }
+
+    .perfil-header {
+        padding: 25px;
+    }
+
+    .avatar {
+        width: 70px;
+        height: 70px;
+        font-size: 40px;
+    }
+
+    .info-usuario h3 {
+        font-size: 21px;
+    }
+
+    .perfil-dados,
+    .endereco-section {
+        padding: 22px;
+    }
+
+    .compra-header {
+        padding: 17px;
+    }
+
+    .compra-produtos {
+        padding: 17px;
+    }
+
+    .endereco-form {
+        grid-template-columns: 1fr;
+    }
+
+    .endereco-form label[for="ruaCadastro"],
+    .endereco-form input#ruaCadastro {
+        grid-column: span 1;
+    }
+}
+
+/* =====================
+   RESPONSIVO — CELULAR
+   ===================== */
+
+@media (max-width: 480px) {
+
+    .container {
+        width: calc(100% - 20px);
+        margin: 12px auto 40px;
+    }
+
+    .perfil-section,
+    .compras-section {
+        margin-bottom: 28px;
+    }
+
+    .perfil-section h2,
+    .compras-section h2 {
+        margin-bottom: 14px;
+        font-size: 20px;
+    }
+
+    .perfil-card,
+    .compra-card,
+    .compras-vazio {
+        border-radius: 12px;
+    }
+
+    .perfil-header {
+        flex-direction: column;
+        padding: 24px 18px;
+        text-align: center;
+    }
+
+    .avatar {
+        width: 65px;
+        height: 65px;
+        font-size: 36px;
+    }
+
+    .info-usuario h3 {
+        font-size: 20px;
+    }
+
+    .info-usuario p {
+        font-size: 13px;
+    }
+
+    .perfil-dados,
+    .endereco-section {
+        padding: 18px;
+    }
+
+    .perfil-dados p {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .endereco-display {
+        padding: 15px;
+    }
+
+    .endereco-display button {
+        width: 100%;
+    }
+
+    .compra-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .compra-total {
+        width: 100%;
+        text-align: left;
+    }
+
+    .compra-produtos {
+        padding: 16px;
+    }
+
+    .compra-footer {
+        padding: 12px 16px;
+    }
+
+    .compras-vazio {
+        padding: 40px 18px;
+    }
+
+    .btn-comprar,
+    .btn-logout {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}

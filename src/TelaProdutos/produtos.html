@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ZORA - Produto</title>
+
+    <link rel="stylesheet" href="produtos.css">
+
+    <link rel="stylesheet" href="../EstiloBase.css">
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     CAIXA DE PEDIDOS
+========================================================= -->
+
+<div id="Pedidos" class="caixa-pedidos">
+
+    <div class="topo-pedidos">
+
+        <h2>Meus Pedidos</h2>
+
+        <button onclick="fecharPedidos()">
+            ✖
+        </button>
+
+    </div>
+
+
+    <ul id="listaPedidos"></ul>
+
+
+    <div class="rodape-pedidos">
+
+        <h3>
+            Total:
+            R$
+            <span id="total">
+                0.00
+            </span>
+        </h3>
+
+    </div>
+
+
+    <div class="PedidosPagar">
+
+        <button onclick="pagarPedido()">
+            Pagar
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     MENU
+========================================================= -->
+
+<nav>
+
+
+    <!-- MENU LATERAL -->
+
+    <ul class="sidebar">
+
+        <li>
+
+            <a
+                href="#"
+                onclick="hideSidebar()">
+
+                ✕
+
+            </a>
+
+        </li>
+
+
+        <li>
+
+            <a href="../TelaProdutos/">
+                Produtos
+            </a>
+
+        </li>
+
+
+        <li>
+
+            <a
+                href="#"
+                onclick="abrirPedidos()">
+
+                Pedidos
+
+                <span class="badge-carrinho"></span>
+
+            </a>
+
+        </li>
+
+
+        <li>
+
+            <a href="#">
+                Sobre
+            </a>
+
+        </li>
+
+
+        <li class="hideOnMobile">
+
+            <a
+                href="#"
+                id="menuUsuarioMobile"
+                onclick="abrirPerfil()">
+
+                Login
+
+            </a>
+
+        </li>
+
+    </ul>
+
+
+
+    <!-- MENU PRINCIPAL -->
+
+    <ul>
+
+
+        <!-- LOGO -->
+
+        <li class="logo-menu">
+
+            <a href="../TelaInicial/index.html">
+
+                <img
+                    src="../img/Logo 1.png"
+                    alt="ZORA">
+
+            </a>
+
+        </li>
+
+
+
+        <!-- PRODUTOS -->
+
+        <li class="hideOnMobile">
+
+            <a href="../TelaProdutos/">
+
+                Produtos
+
+            </a>
+
+        </li>
+
+
+
+        <!-- PEDIDOS -->
+
+        <li class="hideOnMobile">
+
+            <a
+                href="#"
+                onclick="abrirPedidos()">
+
+                Pedidos
+
+                <span class="badge-carrinho"></span>
+
+            </a>
+
+        </li>
+
+
+
+        <!-- SOBRE -->
+
+        <li class="hideOnMobile">
+
+            <a href="#">
+
+                Sobre
+
+            </a>
+
+        </li>
+
+
+
+        <!-- LOGIN -->
+
+        <li class="hideOnMobile">
+
+            <a
+                href="#"
+                id="menuUsuario"
+                onclick="abrirPerfil()">
+
+                Login
+
+            </a>
+
+        </li>
+
+
+
+        <!-- MENU MOBILE -->
+
+        <li class="menu-button">
+
+            <a
+                href="#"
+                onclick="showSidebar()">
+
+                ☰
+
+            </a>
+
+        </li>
+
+
+    </ul>
+
+</nav>
+
+
+
+<!-- =========================================================
+     PÁGINA DO PRODUTO
+========================================================= -->
+
+<main class="produto-page">
+
+
+    <!-- =====================================================
+         IMAGEM DO PRODUTO
+    ====================================================== -->
+
+    <div class="imagem-produto">
+
+        <img
+            id="imagemProduto"
+            src=""
+            alt="Produto">
+
+    </div>
+
+
+
+    <!-- =====================================================
+         INFORMAÇÕES DO PRODUTO
+    ====================================================== -->
+
+    <div class="informacoes">
+
+
+        <!-- NOME -->
+
+        <h1 id="nomeProduto">
+
+            Carregando produto...
+
+        </h1>
+
+
+
+        <!-- PREÇO -->
+
+        <p
+            class="preco"
+            id="precoProduto">
+
+        </p>
+
+
+
+        <!-- DESCRIÇÃO -->
+
+        <div class="descricao-produto">
+
+            <h3>
+                Descrição
+            </h3>
+
+
+            <p id="descricaoProduto">
+
+                Carregando descrição...
+
+            </p>
+
+        </div>
+
+
+
+        <!-- DETALHES -->
+
+        <div class="detalhes-produto">
+
+
+            <p>
+
+                <strong>
+                    Tecido:
+                </strong>
+
+                <span id="tecidoProduto">
+                    -
+                </span>
+
+            </p>
+
+
+
+            <p>
+
+                <strong>
+                    Composição:
+                </strong>
+
+                <span id="composicaoProduto">
+                    -
+                </span>
+
+            </p>
+
+
+
+            <p id="linhaMarca">
+
+                <strong>
+                    Marca:
+                </strong>
+
+                <span id="marcaProduto">
+                    -
+                </span>
+
+            </p>
+
+
+
+            <p id="linhaColecao">
+
+                <strong>
+                    Coleção:
+                </strong>
+
+                <span id="colecaoProduto">
+                    -
+                </span>
+
+            </p>
+
+
+        </div>
+
+
+
+        <!-- =================================================
+             TAMANHO
+        ================================================== -->
+
+        <div class="area-tamanho">
+
+            <p>
+                <strong>
+                    Escolha seu tamanho:
+                </strong>
+            </p>
+
+
+            <div
+                class="tamanhos"
+                id="tamanhosProduto">
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             BOTÃO COMPRAR
+        ================================================== -->
+
+        <button
+            class="comprar"
+            id="botaoComprar"
+            type="button">
+
+            Adicionar ao carrinho
+
+        </button>
+
+
+    </div>
+
+
+</main>
+
+
+
+<!-- =========================================================
+     AVALIAÇÕES
+========================================================= -->
+
+<section class="avaliacoes">
+
+
+    <!-- =====================================================
+         TÍTULO E MÉDIA
+    ====================================================== -->
+
+    <div class="titulo-avaliacoes">
+
+
+        <h2>
+            Avaliações do produto
+        </h2>
+
+
+
+        <div class="media-avaliacao">
+
+
+            <span id="mediaNota">
+
+                0,0
+
+            </span>
+
+
+
+            <div
+                id="estrelasMedia"
+                class="estrelas">
+
+                ☆☆☆☆☆
+
+            </div>
+
+
+
+            <span id="quantidadeAvaliacoes">
+
+                0 avaliações
+
+            </span>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =====================================================
+         NOVA AVALIAÇÃO
+    ====================================================== -->
+
+    <div class="nova-avaliacao">
+
+
+        <h3>
+            Deixe sua avaliação
+        </h3>
+
+
+        <p>
+            Como você avalia este produto?
+        </p>
+
+
+
+        <!-- ESTRELAS -->
+
+        <div
+            class="estrelas-escolha"
+            id="estrelasEscolha">
+
+
+            <button
+                type="button"
+                data-nota="1">
+
+                ☆
+
+            </button>
+
+
+            <button
+                type="button"
+                data-nota="2">
+
+                ☆
+
+            </button>
+
+
+            <button
+                type="button"
+                data-nota="3">
+
+                ☆
+
+            </button>
+
+
+            <button
+                type="button"
+                data-nota="4">
+
+                ☆
+
+            </button>
+
+
+            <button
+                type="button"
+                data-nota="5">
+
+                ☆
+
+            </button>
+
+
+        </div>
+
+
+
+        <!-- COMENTÁRIO -->
+
+        <textarea
+            id="comentario"
+            placeholder="Conte o que achou do produto..."
+            maxlength="500">
+        </textarea>
+
+
+
+        <!-- PUBLICAR -->
+
+        <button
+            type="button"
+            class="botao-avaliar"
+            onclick="enviarAvaliacao()">
+
+            Publicar avaliação
+
+        </button>
+
+
+    </div>
+
+
+
+    <!-- =====================================================
+         COMENTÁRIOS
+    ====================================================== -->
+
+    <div class="lista-avaliacoes">
+
+
+        <h3>
+            Comentários
+        </h3>
+
+
+        <div id="comentarios">
+
+            <p class="sem-avaliacoes">
+
+                Ainda não existem avaliações.
+
+            </p>
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script src="../auth.js"></script>
+
+<script src="produtos.js"></script>
+
+
+</body>
+
+</html>

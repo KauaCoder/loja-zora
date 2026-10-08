@@ -1,0 +1,402 @@
+// =========================
+// PEDIDOS / CARRINHO
+// =========================
+
+let total = 0;
+let pedidosArray = [];
+
+// Carrega o carrinho salvo (se o usuário saiu e voltou, por ex.)
+function carregarCarrinho() {
+
+    const salvo = localStorage.getItem("carrinho");
+
+    if (!salvo) return;
+
+    try {
+        pedidosArray = JSON.parse(salvo);
+    } catch (erro) {
+        pedidosArray = [];
+    }
+
+    total = 0;
+
+    const lista = document.getElementById("listaPedidos");
+    lista.innerHTML = "";
+
+    pedidosArray.forEach(produto => {
+        renderizarItem(produto);
+        total += produto.preco * produto.quantidade;
+    });
+
+    atualizarTotal();
+    atualizarBadge();
+}
+
+// Salva o carrinho atual no localStorage
+function salvarCarrinho() {
+    localStorage.setItem("carrinho", JSON.stringify(pedidosArray));
+}
+
+// Cria o <li> de um item do carrinho na tela
+function renderizarItem(produto) {
+
+    const lista = document.getElementById("listaPedidos");
+
+    const item = document.createElement("li");
+    item.dataset.nome = produto.nome;
+
+    item.innerHTML = `
+        <span class="info-item">
+            ${produto.nome}<br>
+            R$ ${produto.preco.toFixed(2)}
+        </span>
+
+        <div class="qtd-controle">
+            <button class="qtd-btn" onclick="alterarQuantidade('${produto.nome.replace(/'/g, "\\'")}', -1)">−</button>
+            <span class="qtd-numero">${produto.quantidade}</span>
+            <button class="qtd-btn" onclick="alterarQuantidade('${produto.nome.replace(/'/g, "\\'")}', 1)">+</button>
+        </div>
+
+        <button class="remover-item" onclick="removerPedido('${produto.nome.replace(/'/g, "\\'")}')">
+            🗑
+        </button>
+    `;
+
+    lista.appendChild(item);
+}
+
+// Adicionar produto aos pedidos (ou aumentar quantidade se já existir)
+function adicionarPedidos(id_produto,nome, preco){
+
+    const existente = pedidosArray.find(p => p.id_produto === id_produto);
+
+    if (existente) {
+        existente.quantidade += 1;
+        atualizarLinhaDoItem(existente);
+    } else {
+        const novo = { id_produto: id_produto, nome: nome, preco: preco, quantidade: 1 };
+        pedidosArray.push(novo);
+        renderizarItem(novo);
+    }
+
+    total += preco;
+
+    atualizarTotal();
+    atualizarBadge();
+    salvarCarrinho();
+
+    // abre a caixa automaticamente
+    abrirPedidos();
+}
+
+// Ajusta a quantidade de um item (+1 / -1), removendo se chegar a zero
+function alterarQuantidade(nome, delta) {
+
+    const produto = pedidosArray.find(p => p.nome === nome);
+    if (!produto) return;
+
+    produto.quantidade += delta;
+    total += produto.preco * delta;
+
+    if (produto.quantidade <= 0) {
+        removerPedido(nome);
+        return;
+    }
+
+    atualizarLinhaDoItem(produto);
+    atualizarTotal();
+    atualizarBadge();
+    salvarCarrinho();
+}
+
+// Atualiza o número de quantidade exibido para um item específico
+function atualizarLinhaDoItem(produto) {
+    const item = document.querySelector(`#listaPedidos li[data-nome="${CSS.escape(produto.nome)}"]`);
+    if (!item) return;
+    const numero = item.querySelector(".qtd-numero");
+    if (numero) numero.textContent = produto.quantidade;
+}
+
+// Atualizar valor total
+function atualizarTotal(){
+    if (total < 0) total = 0;
+    document.getElementById("total").innerHTML = total.toFixed(2);
+}
+
+// Remover produto (remove a linha inteira, não importa a quantidade)
+function removerPedido(nome){
+
+    const produto = pedidosArray.find(p => p.nome === nome);
+    if (!produto) return;
+
+    total -= produto.preco * produto.quantidade;
+
+    const item = document.querySelector(`#listaPedidos li[data-nome="${CSS.escape(nome)}"]`);
+    if (item) item.remove();
+
+    pedidosArray = pedidosArray.filter(p => p.nome !== nome);
+
+    atualizarTotal();
+    atualizarBadge();
+    salvarCarrinho();
+}
+
+// Atualiza o contador (badge) que fica ao lado de "Pedidos" no menu
+function atualizarBadge() {
+
+    const quantidadeTotal = pedidosArray.reduce((soma, p) => soma + p.quantidade, 0);
+
+    document.querySelectorAll(".badge-carrinho").forEach(badge => {
+        if (quantidadeTotal > 0) {
+            badge.textContent = quantidadeTotal;
+            badge.classList.add("show");
+        } else {
+            badge.textContent = "";
+            badge.classList.remove("show");
+        }
+    });
+}
+
+// Abrir caixa de pedidos
+function abrirPedidos(){
+    const pedidos = document.getElementById("Pedidos");
+    pedidos.classList.add("ativo");
+}
+
+// Fechar caixa de pedidos
+function fecharPedidos(){
+    const pedidos = document.getElementById("Pedidos");
+    pedidos.classList.remove("ativo");
+}
+
+// =========================
+// PAGAMENTO
+// =========================
+
+function pagarPedido(){
+
+    if(total === 0 || pedidosArray.length === 0){
+        alert("Seu pedido está vazio!");
+        return;
+    }
+
+    const usuarioLogado = localStorage.getItem("usuarioLogado");
+
+    if (usuarioLogado !== "true") {
+        alert("Você precisa estar logado para fazer um pedido!");
+        window.location.href = "../TelaLogin/login.html";
+        return;
+    }
+
+    // Salva o valor e os itens do pedido (com quantidade) para a tela de entrega
+    localStorage.setItem("totalPedido", total.toFixed(2));
+    localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
+
+    // Vai para a tela de entrega
+    window.location.href = "../TelaEntrega/entrega.html";
+}
+
+// =========================
+// MENU LATERAL
+// =========================
+
+const sidebar = document.querySelector(".sidebar");
+
+function showSidebar(){
+    sidebar.classList.add("active");
+}
+
+function hideSidebar(){
+    sidebar.classList.remove("active");
+}
+
+// =========================
+// LOGIN / CLIENTE
+// =========================
+
+// =========================
+// LOGIN / CLIENTE
+// =========================
+
+function verificarLogin() {
+
+    const usuarioLogado =
+        localStorage.getItem("usuarioLogado");
+
+    const nomeUsuario =
+        localStorage.getItem("nomeUsuario");
+
+    const menuUsuario =
+        document.getElementById("menuUsuario");
+
+    const menuUsuarioMobile =
+        document.getElementById("menuUsuarioMobile");
+
+
+    // =========================
+    // USUÁRIO LOGADO
+    // =========================
+
+    if (usuarioLogado === "true") {
+
+        const textoPerfil =
+            nomeUsuario
+                ? `Olá, ${nomeUsuario.split(" ")[0]}`
+                : "Perfil";
+
+
+        if (menuUsuario) {
+
+            menuUsuario.textContent =
+                textoPerfil;
+        }
+
+
+        if (menuUsuarioMobile) {
+
+            menuUsuarioMobile.textContent =
+                textoPerfil;
+        }
+
+
+    // =========================
+    // USUÁRIO NÃO LOGADO
+    // =========================
+
+    } else {
+
+        if (menuUsuario) {
+
+            menuUsuario.textContent =
+                "Login";
+        }
+
+
+        if (menuUsuarioMobile) {
+
+            menuUsuarioMobile.textContent =
+                "Login";
+        }
+    }
+}
+
+
+// =========================
+// ABRIR PERFIL / LOGIN
+// =========================
+
+function abrirPerfil() {
+
+    const usuarioLogado =
+        localStorage.getItem("usuarioLogado");
+
+
+    if (usuarioLogado === "true") {
+
+        window.location.href =
+            "../TelaCliente/cliente.html";
+
+    } else {
+
+        window.location.href =
+            "../TelaLogin/login.html";
+    }
+}
+// Executa quando a página abre
+verificarLogin();
+carregarCarrinho();
+
+// =========================
+// ABRIR PERFIL
+// =========================
+
+function abrirPerfil() {
+
+    const usuarioLogado = localStorage.getItem("usuarioLogado");
+
+    if (usuarioLogado === "true") {
+
+        window.location.href = "../TelaCliente/cliente.html";
+
+    } else {
+
+        window.location.href = "../TelaLogin/login.html";
+
+    }
+}
+
+/* =========================
+   CARROSSEL DE PROMOÇÕES
+========================= */
+
+const slides = document.querySelectorAll(".promocao-slide");
+const indicadores = document.querySelectorAll(".indicador");
+
+let slideAtual = 0;
+
+
+/* MOSTRAR SLIDE */
+
+function mostrarSlide(numero) {
+
+    slides.forEach((slide) => {
+        slide.classList.remove("ativo");
+    });
+
+    indicadores.forEach((indicador) => {
+        indicador.classList.remove("ativo");
+    });
+
+
+    slides[numero].classList.add("ativo");
+
+    indicadores[numero].classList.add("ativo");
+
+    slideAtual = numero;
+}
+
+
+/* PRÓXIMO */
+
+function proximoSlide() {
+
+    let proximo = slideAtual + 1;
+
+    if (proximo >= slides.length) {
+        proximo = 0;
+    }
+
+    mostrarSlide(proximo);
+}
+
+
+/* ANTERIOR */
+
+function slideAnterior() {
+
+    let anterior = slideAtual - 1;
+
+    if (anterior < 0) {
+        anterior = slides.length - 1;
+    }
+
+    mostrarSlide(anterior);
+}
+
+
+/* IR PARA SLIDE */
+
+function irParaSlide(numero) {
+
+    mostrarSlide(numero);
+
+}
+
+
+/* TROCA AUTOMÁTICA */
+
+setInterval(() => {
+
+    proximoSlide();
+
+}, 5000);

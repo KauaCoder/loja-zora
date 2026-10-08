@@ -1,0 +1,682 @@
+-- =====================================================
+-- BANCO: LOJA
+-- PostgreSQL
+-- =====================================================
+
+
+-- =====================================================
+-- TABELA: ESTOQUE
+-- =====================================================
+
+CREATE TABLE Estoque (
+    id_item_estoque INTEGER GENERATED ALWAYS AS IDENTITY,
+    qtd_max_produto INTEGER NOT NULL,
+    categoria VARCHAR(100) NOT NULL,
+
+    CONSTRAINT pk_estoque
+        PRIMARY KEY (id_item_estoque)
+);
+
+
+-- =====================================================
+-- TABELA: CLIENTE
+-- =====================================================
+
+CREATE TABLE Cliente (
+    id_cliente INTEGER GENERATED ALWAYS AS IDENTITY,
+    senha VARCHAR(255) NOT NULL,
+    e_mail VARCHAR(150) NOT NULL,
+    nome VARCHAR(150) NOT NULL,
+
+    CONSTRAINT pk_cliente
+        PRIMARY KEY (id_cliente),
+
+    CONSTRAINT uk_cliente_email
+        UNIQUE (e_mail)
+);
+
+
+-- =====================================================
+-- TABELA: PRODUTO
+-- =====================================================
+
+CREATE TABLE Produto (
+    id_produto INTEGER GENERATED ALWAYS AS IDENTITY,
+    nm_produto VARCHAR(150) NOT NULL,
+    preco NUMERIC(10,2) NOT NULL,
+    qtd_item INTEGER NOT NULL,
+    categoria VARCHAR(100) NOT NULL,
+
+    id_item_estoque INTEGER NOT NULL,
+
+    CONSTRAINT pk_produto
+        PRIMARY KEY (id_produto),
+
+    CONSTRAINT fk_produto_estoque
+        FOREIGN KEY (id_item_estoque)
+        REFERENCES Estoque(id_item_estoque)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+
+-- =====================================================
+-- TABELA: VENDA
+-- =====================================================
+
+CREATE TABLE Venda (
+    id_venda INTEGER GENERATED ALWAYS AS IDENTITY,
+    valor_item_produto NUMERIC(10,2) NOT NULL,
+    data_venda DATE NOT NULL,
+
+    id_produto INTEGER NOT NULL,
+
+    CONSTRAINT pk_venda
+        PRIMARY KEY (id_venda),
+
+    CONSTRAINT fk_venda_produto
+        FOREIGN KEY (id_produto)
+        REFERENCES Produto(id_produto)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+
+-- =====================================================
+-- TABELA: FORNECEDOR
+-- =====================================================
+
+CREATE TABLE Fornecedor (
+    id_fornecedor INTEGER GENERATED ALWAYS AS IDENTITY,
+    id_item_estoque INTEGER NOT NULL,
+    nome VARCHAR(150) NOT NULL,
+    contato VARCHAR(30) NOT NULL,
+
+    CONSTRAINT pk_fornecedor
+        PRIMARY KEY (id_fornecedor),
+
+    CONSTRAINT fk_fornecedor_estoque
+        FOREIGN KEY (id_item_estoque)
+        REFERENCES Estoque(id_item_estoque)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+
+-- =====================================================
+-- TABELA: PEDIDO
+-- =====================================================
+
+CREATE TABLE Pedido (
+    id_pedido INTEGER GENERATED ALWAYS AS IDENTITY,
+    item_pedido VARCHAR(150) NOT NULL,
+    data_pedido DATE NOT NULL,
+
+    id_produto INTEGER NOT NULL,
+    id_cliente INTEGER NOT NULL,
+
+    CONSTRAINT pk_pedido
+        PRIMARY KEY (id_pedido),
+
+    CONSTRAINT fk_pedido_produto
+        FOREIGN KEY (id_produto)
+        REFERENCES Produto(id_produto)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_pedido_cliente
+        FOREIGN KEY (id_cliente)
+        REFERENCES Cliente(id_cliente)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+
+-- =====================================================
+-- TABELA: ENDERECO
+-- =====================================================
+
+CREATE TABLE Endereco (
+    id_endereco INTEGER GENERATED ALWAYS AS IDENTITY,
+    endereco VARCHAR(200) NOT NULL,
+    bairro VARCHAR(100) NOT NULL,
+    complemento VARCHAR(100),
+    numero VARCHAR(20) NOT NULL,
+    cep VARCHAR(10) NOT NULL,
+
+    id_cliente INTEGER NOT NULL,
+
+    CONSTRAINT pk_endereco
+        PRIMARY KEY (id_endereco),
+
+    CONSTRAINT fk_endereco_cliente
+        FOREIGN KEY (id_cliente)
+        REFERENCES Cliente(id_cliente)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+
+// =====================
+// MENU (mesmo padrão da tela inicial)
+// =====================
+
+const sidebar = document.querySelector(".sidebar");
+
+function showSidebar(){
+    sidebar.classList.add("active");
+}
+
+function hideSidebar(){
+    sidebar.classList.remove("active");
+}
+
+function verificarLogin() {
+
+    const usuarioLogado = localStorage.getItem("usuarioLogado");
+
+    const menuUsuario = document.getElementById("menuUsuario");
+    const menuUsuarioMobile = document.getElementById("menuUsuarioMobile");
+
+    const texto = usuarioLogado === "true" ? "Perfil" : "Login";
+
+    if (menuUsuario) menuUsuario.innerHTML = texto;
+    if (menuUsuarioMobile) menuUsuarioMobile.innerHTML = texto;
+}
+
+function abrirPerfil() {
+
+    const usuarioLogado = localStorage.getItem("usuarioLogado");
+
+    if (usuarioLogado === "true") {
+        window.location.href = "../TelaCliente/cliente.html";
+    } else {
+        window.location.href = "../TelaLogin/login.html";
+    }
+}
+
+verificarLogin();
+
+// =====================
+// CARREGAR PEDIDO (resumo + total)
+// =====================
+
+const totalPedido = localStorage.getItem("totalPedido");
+const pedidosSalvos = localStorage.getItem("pedidos");
+
+let itensPedido = [];
+
+if (pedidosSalvos) {
+    try {
+        // formato novo: JSON com [{nome, preco, quantidade}]
+        itensPedido = JSON.parse(pedidosSalvos);
+    } catch (erro) {
+        // formato antigo (HTML do carrinho) - mantém compatibilidade
+        itensPedido = extrairProdutosDeHTML(pedidosSalvos);
+    }
+}
+
+// Se não há pedido nenhum, não há o que entregar: volta para a loja
+if (!totalPedido || !itensPedido || itensPedido.length === 0) {
+    alert("Seu carrinho está vazio. Escolha algo antes de continuar.");
+    window.location.href = "../TelaInicial/index.html";
+}
+
+renderizarResumo();
+
+function renderizarResumo() {
+
+    const valorTotalEl = document.getElementById("valorTotal");
+    valorTotalEl.textContent = "R$ " + (totalPedido || "0,00").replace(".", ",");
+
+    const lista = document.getElementById("listaResumo");
+    lista.innerHTML = "";
+
+    itensPedido.forEach(produto => {
+        const quantidade = produto.quantidade || 1;
+        const item = document.createElement("li");
+        item.innerHTML = `
+            <span>${quantidade}x ${produto.nome}</span>
+            <span>R$ ${(produto.preco * quantidade).toFixed(2).replace(".", ",")}</span>
+        `;
+        lista.appendChild(item);
+    });
+}
+
+// Compatibilidade com o formato antigo, caso ainda exista no localStorage
+function extrairProdutosDeHTML(html) {
+    const produtos = [];
+    if (!html) return produtos;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const itens = doc.querySelectorAll("li");
+
+    itens.forEach(item => {
+        const texto = item.textContent;
+        const linhas = texto.split("\n").map(l => l.trim()).filter(Boolean);
+
+        if (linhas.length >= 2) {
+            const nome = linhas[0];
+            const preco = parseFloat(linhas[1].replace("R$", "").trim());
+            if (nome && !isNaN(preco)) {
+                produtos.push({ nome, preco, quantidade: 1 });
+            }
+        }
+    });
+
+    return produtos;
+}
+
+// =====================
+// MÁSCARA CPF
+// =====================
+
+const cpf = document.getElementById("cpf");
+
+cpf.addEventListener("input", () => {
+
+    let valor = cpf.value.replace(/\D/g, "");
+    valor = valor.substring(0, 11);
+
+    valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+    valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+    valor = valor.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+    cpf.value = valor;
+});
+
+// =====================
+// MÁSCARA + BUSCA DE CEP (ViaCEP)
+// =====================
+
+const cepInput = document.getElementById("cep");
+const statusCep = document.getElementById("statusCep");
+
+cepInput.addEventListener("input", () => {
+
+    let valor = cepInput.value.replace(/\D/g, "");
+    valor = valor.substring(0, 8);
+
+    if (valor.length > 5) {
+        valor = valor.replace(/^(\d{5})(\d)/, "$1-$2");
+    }
+
+    cepInput.value = valor;
+
+    // Se o usuário está editando o CEP, o endereço antigo não vale mais
+    statusCep.textContent = "";
+    statusCep.className = "status-cep";
+});
+
+cepInput.addEventListener("blur", buscarCEP);
+
+async function buscarCEP() {
+
+    const valor = cepInput.value.replace(/\D/g, "");
+
+    if (valor.length !== 8) {
+        limparEndereco();
+        if (valor.length > 0) {
+            statusCep.textContent = "CEP incompleto.";
+            statusCep.className = "status-cep erro";
+        }
+        return;
+    }
+
+    statusCep.textContent = "Buscando endereço...";
+    statusCep.className = "status-cep buscando";
+
+    try {
+        const resposta = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
+
+        if (!resposta.ok) {
+            throw new Error("Falha na consulta do CEP.");
+        }
+
+        const dados = await resposta.json();
+
+        if (dados.erro) {
+            statusCep.textContent = "CEP não encontrado.";
+            statusCep.className = "status-cep erro";
+            limparEndereco();
+            return;
+        }
+
+        document.getElementById("rua").value = dados.logradouro || "";
+        document.getElementById("bairro").value = dados.bairro || "";
+        document.getElementById("cidade").value = dados.localidade || "";
+        document.getElementById("estado").value = dados.uf || "";
+
+        if (dados.complemento) {
+            document.getElementById("complemento").value = dados.complemento;
+        }
+
+        statusCep.textContent = "✓ Endereço encontrado.";
+        statusCep.className = "status-cep encontrado";
+
+        document.getElementById("numero").focus();
+
+    } catch (erro) {
+        console.error("Erro no ViaCEP:", erro);
+        statusCep.textContent = "Não foi possível consultar o CEP. Verifique sua conexão.";
+        statusCep.className = "status-cep erro";
+        limparEndereco();
+    }
+}
+
+function limparEndereco() {
+    document.getElementById("rua").value = "";
+    document.getElementById("bairro").value = "";
+    document.getElementById("cidade").value = "";
+    document.getElementById("estado").value = "";
+}
+
+// =====================
+// ENVIAR PEDIDO
+// =====================
+
+// =====================
+// ENVIAR PEDIDO PARA O POSTGRESQL
+// =====================
+
+document.getElementById("formEntrega").addEventListener("submit", async function (event) {
+
+    event.preventDefault();
+
+    const nome = document.getElementById("nome").value.trim();
+    const cpfValor = document.getElementById("cpf").value.trim();
+    const cepValor = document.getElementById("cep").value.trim();
+    const rua = document.getElementById("rua").value.trim();
+    const numero = document.getElementById("numero").value.trim();
+    const bairro = document.getElementById("bairro").value.trim();
+    const cidade = document.getElementById("cidade").value.trim();
+    const estado = document.getElementById("estado").value.trim();
+    const complemento = document.getElementById("complemento").value.trim();
+
+    // =====================
+    // VERIFICAR LOGIN
+    // =====================
+
+    const idCliente = localStorage.getItem("idCliente");
+
+    if (!idCliente) {
+
+        alert("Sua sessão expirou. Faça login novamente.");
+
+        window.location.href = "../TelaLogin/login.html";
+
+        return;
+    }
+
+
+    // =====================
+    // VALIDAÇÕES
+    // =====================
+
+    if (!nome) {
+
+        alert("Informe seu nome completo.");
+
+        document.getElementById("nome").focus();
+
+        return;
+    }
+
+
+    if (cpfValor.replace(/\D/g, "").length !== 11) {
+
+        alert("Informe um CPF válido.");
+
+        document.getElementById("cpf").focus();
+
+        return;
+    }
+
+
+    if (
+        cepValor.replace(/\D/g, "").length !== 8 ||
+        !rua ||
+        !cidade
+    ) {
+
+        alert(
+            "Informe um CEP válido e aguarde o endereço ser encontrado."
+        );
+
+        document.getElementById("cep").focus();
+
+        return;
+    }
+
+
+    if (!numero) {
+
+        alert("Informe o número do endereço.");
+
+        document.getElementById("numero").focus();
+
+        return;
+    }
+
+
+    if (!itensPedido || itensPedido.length === 0) {
+
+        alert("Seu pedido está vazio.");
+
+        window.location.href = "../TelaInicial/index.html";
+
+        return;
+    }
+
+
+    // =====================
+    // BOTÃO
+    // =====================
+
+    const btn = document.getElementById("btnContinuar");
+
+    btn.disabled = true;
+
+    btn.textContent = "Finalizando pedido...";
+
+
+    try {
+
+        // =====================
+        // PREPARAR PRODUTOS
+        // =====================
+
+        const itens = itensPedido.map(produto => {
+
+            return {
+
+                id_produto: Number(produto.id_produto),
+
+                quantidade: Number(produto.quantidade),
+
+                preco: Number(produto.preco)
+
+            };
+
+        });
+
+
+        // =====================
+        // VERIFICAR IDs
+        // =====================
+
+        for (const item of itens) {
+
+            if (!item.id_produto || item.id_produto <= 0) {
+
+                throw new Error(
+                    "Um dos produtos do carrinho não possui ID válido."
+                );
+
+            }
+
+        }
+
+
+        // =====================
+        // ENVIAR PARA PHP
+        // =====================
+
+        const resposta = await fetch(
+            "../finalizar_pedido.php",
+            {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    id_cliente: Number(idCliente),
+
+                    cpf: cpfValor,
+
+                    nome: nome,
+
+                    endereco: {
+
+                        cep: cepValor,
+
+                        rua: rua,
+
+                        numero: numero,
+
+                        complemento: complemento,
+
+                        bairro: bairro,
+
+                        cidade: cidade,
+
+                        estado: estado
+
+                    },
+
+                    itens: itens
+
+                })
+
+            }
+        );
+
+
+        // =====================
+        // LER RESPOSTA
+        // =====================
+
+        const resultado = await resposta.json();
+
+
+        // =====================
+        // ERRO
+        // =====================
+
+        if (!resposta.ok || !resultado.sucesso) {
+
+            throw new Error(
+                resultado.mensagem ||
+                "Não foi possível finalizar o pedido."
+            );
+
+        }
+
+
+        // =====================
+        // SUCESSO
+        // =====================
+
+        const numeroPedido =
+            String(resultado.id_pedido).padStart(4, "0");
+
+
+        const valorFinal =
+            Number(resultado.valor_total)
+                .toFixed(2)
+                .replace(".", ",");
+
+
+        // =====================
+        // LIMPAR CARRINHO
+        // =====================
+
+        localStorage.removeItem("totalPedido");
+
+        localStorage.removeItem("pedidos");
+
+        localStorage.removeItem("carrinho");
+
+
+        // =====================
+        // SALVAR ENDEREÇO LOCALMENTE
+        // =====================
+
+        const endereco = {
+
+            cep: cepValor,
+
+            rua: rua,
+
+            numero: numero,
+
+            complemento: complemento,
+
+            bairro: bairro,
+
+            cidade: cidade,
+
+            estado: estado
+
+        };
+
+        localStorage.setItem(
+            "enderecoUsuario",
+            JSON.stringify(endereco)
+        );
+
+
+        // =====================
+        // MENSAGEM
+        // =====================
+
+        alert(
+            "✓ Pedido realizado com sucesso!\n\n" +
+            "Pedido #" + numeroPedido + "\n" +
+            "Valor: R$ " + valorFinal + "\n\n" +
+            "Obrigado pela compra!"
+        );
+
+
+        // =====================
+        // VOLTAR PARA LOJA
+        // =====================
+
+        window.location.href =
+            "../TelaInicial/index.html";
+
+
+    } catch (erro) {
+
+        console.error(
+            "Erro ao finalizar pedido:",
+            erro
+        );
+
+        alert(
+            erro.message ||
+            "Não foi possível finalizar o pedido."
+        );
+
+        btn.disabled = false;
+
+        btn.textContent =
+            "Continuar para Pagamento";
+    }
+
+});

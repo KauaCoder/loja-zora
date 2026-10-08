@@ -1,0 +1,982 @@
+/* ==========================================
+   FONTES
+========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Spectral:wght@500;600;700&display=swap');
+
+
+/* ==========================================
+   VARIÁVEIS
+========================================== */
+
+:root {
+    --paper: #EDEAE1;
+    --surface: #F7F5EF;
+    --ink: #26251F;
+    --ink-soft: #6B6656;
+    --line: #C9C3B2;
+
+    --accent: #2F6F62;
+    --accent-dark: #204E44;
+
+    --danger: #A6402F;
+    --danger-dark: #7E2F22;
+}
+
+
+/* ==========================================
+   RESET
+========================================== */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* ==========================================
+   BASE
+========================================== */
+
+body {
+    min-height: 100vh;
+
+    background: var(--paper);
+    color: var(--ink);
+
+    font-family: "IBM Plex Sans", sans-serif;
+
+    padding: 30px;
+}
+
+
+/* ==========================================
+   TÍTULOS
+========================================== */
+
+h1,
+h2,
+h3 {
+    font-family: "Spectral", serif;
+    color: var(--ink);
+}
+
+h1 {
+    font-size: 38px;
+}
+
+h2 {
+    font-size: 25px;
+}
+
+
+/* ==========================================
+   PARÁGRAFOS
+========================================== */
+
+p {
+    color: var(--ink-soft);
+    line-height: 1.6;
+}
+
+
+/* ==========================================
+   BOTÕES GERAIS
+========================================== */
+
+button {
+    font-family: "IBM Plex Sans", sans-serif;
+
+    cursor: pointer;
+
+    border: none;
+    border-radius: 6px;
+
+    transition: 0.2s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+
+/* ==========================================
+   PÁGINA INICIAL
+========================================== */
+
+.container {
+    min-height: calc(100vh - 60px);
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    text-align: center;
+}
+
+.container h1 {
+    margin-bottom: 12px;
+}
+
+.container p {
+    margin-bottom: 30px;
+}
+
+.container button {
+    background: var(--accent);
+    color: white;
+
+    padding: 14px 25px;
+
+    font-size: 16px;
+}
+
+.container button:hover {
+    background: var(--accent-dark);
+}
+
+
+/* ==========================================
+   LOGIN
+========================================== */
+
+.login-container {
+    width: 100%;
+    max-width: 420px;
+
+    min-height: calc(100vh - 60px);
+
+    margin: 0 auto;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+}
+
+.login-container h1 {
+    margin-bottom: 10px;
+}
+
+.login-container p {
+    margin-bottom: 30px;
+}
+
+.login-container form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-container label {
+    margin-bottom: 6px;
+
+    font-weight: 600;
+}
+
+.login-container input {
+    width: 100%;
+
+    padding: 12px;
+
+    margin-bottom: 18px;
+
+    border: 1px solid var(--line);
+    border-radius: 6px;
+
+    background: var(--surface);
+    color: var(--ink);
+
+    font-family: "IBM Plex Sans", sans-serif;
+}
+
+.login-container input:focus {
+    outline: none;
+
+    border-color: var(--accent);
+}
+
+.login-container button {
+    padding: 13px;
+
+    background: var(--accent);
+    color: white;
+
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.login-container button:hover {
+    background: var(--accent-dark);
+}
+
+
+/* ==========================================
+   DASHBOARD
+========================================== */
+
+.dashboard {
+    width: 90%;
+    max-width: 1100px;
+
+    min-height: calc(100vh - 60px);
+
+    margin: 0 auto;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    text-align: center;
+}
+
+.dashboard h1 {
+    margin-bottom: 10px;
+}
+
+.dashboard p {
+    margin-bottom: 35px;
+}
+
+.menu {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 20px;
+
+    flex-wrap: wrap;
+}
+
+.menu a {
+    text-decoration: none;
+}
+
+.menu button {
+    min-width: 180px;
+
+    padding: 15px 25px;
+
+    border: 1px solid var(--line);
+    border-radius: 8px;
+
+    background: var(--surface);
+    color: var(--ink);
+
+    font-family: "IBM Plex Sans", sans-serif;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.menu button:hover {
+    background: var(--accent);
+    color: white;
+
+    border-color: var(--accent);
+
+    transform: translateY(-2px);
+}
+
+
+/* ==========================================
+   ESTOQUE / FORNECEDORES
+========================================== */
+
+.estoque {
+    width: 95%;
+    max-width: 1200px;
+
+    margin: 0 auto;
+}
+
+.estoque h1 {
+    margin-bottom: 10px;
+}
+
+.estoque > p {
+    margin-bottom: 25px;
+}
+
+.estoque > button {
+    padding: 12px 20px;
+
+    background: var(--accent);
+    color: white;
+
+    font-weight: 600;
+
+    margin-bottom: 25px;
+}
+
+.estoque > button:hover {
+    background: var(--accent-dark);
+}
+
+
+/* ==========================================
+   FORMULÁRIOS DE ESTOQUE
+========================================== */
+
+#formProduto,
+#formFornecedor {
+    padding: 25px;
+
+    margin-bottom: 35px;
+
+    background: var(--surface);
+
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+#formProduto h2,
+#formFornecedor h2 {
+    margin-bottom: 20px;
+}
+
+#produtoForm,
+#fornecedorForm {
+    display: flex;
+    flex-direction: column;
+}
+
+#produtoForm label,
+#fornecedorForm label {
+    margin-bottom: 6px;
+
+    font-weight: 600;
+}
+
+#produtoForm input,
+#fornecedorForm input {
+    padding: 11px;
+
+    margin-bottom: 12px;
+
+    border: 1px solid var(--line);
+    border-radius: 6px;
+
+    background: white;
+
+    font-family: "IBM Plex Sans", sans-serif;
+}
+
+#produtoForm input:focus,
+#fornecedorForm input:focus {
+    outline: none;
+
+    border-color: var(--accent);
+}
+
+#produtoForm button,
+#fornecedorForm button {
+    padding: 12px 18px;
+
+    background: var(--accent);
+    color: white;
+
+    font-weight: 600;
+
+    margin-top: 5px;
+}
+
+#produtoForm button:hover,
+#fornecedorForm button:hover {
+    background: var(--accent-dark);
+}
+
+
+/* ==========================================
+   RESUMO DO ESTOQUE
+========================================== */
+
+.resumo-estoque {
+    display: none;
+
+    padding: 12px 15px;
+
+    margin-bottom: 20px;
+
+    border-left: 4px solid var(--danger);
+
+    background: #f3ddd8;
+
+    color: var(--danger-dark);
+
+    font-weight: 600;
+}
+
+.resumo-estoque.visivel {
+    display: block;
+}
+
+
+/* ==========================================
+   BARRA DE BUSCA
+========================================== */
+
+.barra-busca {
+    position: relative;
+
+    width: 100%;
+
+    margin: 20px 0;
+}
+
+.barra-busca select {
+    width: 100%;
+
+    padding: 12px 15px 12px 45px;
+
+    border: 1px solid var(--line);
+    border-radius: 7px;
+
+    background: var(--surface);
+    color: var(--ink);
+
+    font-family: "IBM Plex Sans", sans-serif;
+
+    cursor: pointer;
+}
+
+.barra-busca select:focus {
+    outline: none;
+
+    border-color: var(--accent);
+}
+
+.icone-busca {
+    position: absolute;
+
+    left: 15px;
+    top: 50%;
+
+    width: 20px;
+    height: 20px;
+
+    transform: translateY(-50%);
+
+    color: var(--ink-soft);
+
+    pointer-events: none;
+}
+
+
+/* ==========================================
+   TABELAS
+========================================== */
+
+table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    margin-top: 15px;
+
+    background: var(--surface);
+}
+
+th,
+td {
+    padding: 14px;
+
+    text-align: left;
+
+    border-bottom: 1px solid var(--line);
+}
+
+th {
+    background: #E3DFD3;
+
+    font-family: "IBM Plex Mono", monospace;
+
+    font-size: 13px;
+
+    text-transform: uppercase;
+}
+
+tbody tr:hover {
+    background: #F0EEE7;
+}
+
+
+/* ==========================================
+   PRODUTO
+========================================== */
+
+.produto-nome {
+    font-weight: 600;
+}
+
+
+/* ==========================================
+   ESTOQUE BAIXO
+========================================== */
+
+.linha-estoque-baixo {
+    background: #f5e1dc;
+}
+
+.linha-estoque-atencao {
+    background: #f5edd9;
+}
+
+.selo-estoque {
+    display: inline-block;
+
+    margin-left: 8px;
+
+    padding: 3px 8px;
+
+    border-radius: 20px;
+
+    font-size: 11px;
+
+    font-weight: 600;
+}
+
+.selo-baixo {
+    background: #e6b8ae;
+    color: var(--danger-dark);
+}
+
+.selo-atencao {
+    background: #e8d6a5;
+    color: #765d20;
+}
+
+
+/* ==========================================
+   BOTÕES DE PRODUTO
+========================================== */
+
+.btnEditar,
+.btnEditarFornecedor {
+    padding: 7px 12px;
+
+    margin-right: 5px;
+
+    background: var(--accent);
+
+    color: white;
+
+    font-size: 13px;
+}
+
+.btnEditar:hover,
+.btnEditarFornecedor:hover {
+    background: var(--accent-dark);
+}
+
+.btnExcluir,
+.btnExcluirFornecedor {
+    padding: 7px 12px;
+
+    background: var(--danger);
+
+    color: white;
+
+    font-size: 13px;
+}
+
+.btnExcluir:hover,
+.btnExcluirFornecedor:hover {
+    background: var(--danger-dark);
+}
+
+
+/* ==========================================
+   MODAL
+========================================== */
+
+.modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(38, 37, 31, 0.55);
+
+    z-index: 9999;
+}
+
+.modal-overlay.aberto {
+    display: flex;
+}
+
+.modal-box {
+    width: 90%;
+    max-width: 450px;
+
+    padding: 25px;
+
+    background: var(--surface);
+
+    border: 1px solid var(--line);
+    border-radius: 10px;
+
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.18);
+}
+
+.modal-mensagem {
+    margin-bottom: 20px;
+
+    color: var(--ink);
+
+    font-size: 16px;
+}
+
+.modal-input {
+    width: 100%;
+
+    padding: 11px;
+
+    margin-bottom: 20px;
+
+    border: 1px solid var(--line);
+    border-radius: 6px;
+
+    background: white;
+
+    font-family: "IBM Plex Sans", sans-serif;
+}
+
+.modal-input:focus {
+    outline: none;
+
+    border-color: var(--accent);
+}
+
+.modal-botoes {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 10px;
+}
+
+.modal-botoes button {
+    padding: 10px 18px;
+
+    font-weight: 600;
+}
+
+.modal-btn-principal {
+    background: var(--accent);
+
+    color: white;
+}
+
+.modal-btn-principal:hover {
+    background: var(--accent-dark);
+}
+
+.modal-btn-secundario {
+    background: #DDD9CC;
+
+    color: var(--ink);
+}
+
+.modal-btn-perigo {
+    background: var(--danger);
+
+    color: white;
+}
+
+.modal-btn-perigo:hover {
+    background: var(--danger-dark);
+}
+
+
+/* ==========================================
+   PAINEL DE VENDAS
+========================================== */
+
+.vendas {
+    width: 95%;
+    max-width: 1200px;
+
+    margin: 0 auto;
+}
+
+.vendas h1 {
+    margin-bottom: 10px;
+}
+
+.vendas > p {
+    margin-bottom: 30px;
+}
+
+
+/* ==========================================
+   FORMULÁRIO DE VENDA
+========================================== */
+
+.venda-form {
+    padding: 25px;
+
+    margin-bottom: 30px;
+
+    background: var(--surface);
+
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.venda-form h2 {
+    margin-bottom: 20px;
+}
+
+.venda-form form {
+    display: grid;
+
+    grid-template-columns: 1fr 150px auto;
+
+    gap: 15px;
+
+    align-items: end;
+}
+
+.venda-form label {
+    font-weight: 600;
+}
+
+.venda-form select,
+.venda-form input {
+    width: 100%;
+
+    padding: 11px;
+
+    border: 1px solid var(--line);
+    border-radius: 6px;
+
+    background: white;
+
+    font-family: "IBM Plex Sans", sans-serif;
+}
+
+.venda-form select:focus,
+.venda-form input:focus {
+    outline: none;
+
+    border-color: var(--accent);
+}
+
+.venda-form button {
+    padding: 12px 18px;
+
+    background: var(--accent);
+
+    color: white;
+
+    font-weight: 600;
+}
+
+.venda-form button:hover {
+    background: var(--accent-dark);
+}
+
+
+/* ==========================================
+   TABELA DO CARRINHO
+========================================== */
+
+.vendas table {
+    margin-bottom: 25px;
+}
+
+
+/* ==========================================
+   REMOVER ITEM
+========================================== */
+
+.btn-remover-item {
+    padding: 7px 12px;
+
+    background: var(--danger);
+
+    color: white;
+
+    font-size: 13px;
+}
+
+.btn-remover-item:hover {
+    background: var(--danger-dark);
+}
+
+
+/* ==========================================
+   RESUMO DA VENDA
+========================================== */
+
+.resumo-venda {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 20px;
+
+    margin-bottom: 20px;
+
+    background: var(--surface);
+
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.resumo-venda p {
+    margin: 0;
+
+    font-weight: 600;
+}
+
+.resumo-venda strong {
+    font-family: "IBM Plex Mono", monospace;
+
+    font-size: 25px;
+
+    color: var(--accent);
+}
+
+
+/* ==========================================
+   PAGAMENTO
+========================================== */
+
+.pagamento {
+    display: flex;
+
+    flex-direction: column;
+
+    max-width: 350px;
+
+    gap: 8px;
+
+    margin-bottom: 20px;
+}
+
+.pagamento label {
+    font-weight: 600;
+}
+
+.pagamento select {
+    padding: 11px;
+
+    border: 1px solid var(--line);
+    border-radius: 6px;
+
+    background: white;
+
+    font-family: "IBM Plex Sans", sans-serif;
+}
+
+.pagamento select:focus {
+    outline: none;
+
+    border-color: var(--accent);
+}
+
+
+/* ==========================================
+   FINALIZAR VENDA
+========================================== */
+
+.btn-finalizar-venda {
+    padding: 13px 22px;
+
+    background: var(--accent);
+
+    color: white;
+
+    font-size: 16px;
+
+    font-weight: 600;
+}
+
+.btn-finalizar-venda:hover {
+    background: var(--accent-dark);
+}
+
+
+/* ==========================================
+   LINKS
+========================================== */
+
+a {
+    color: var(--accent-dark);
+
+    font-weight: 600;
+}
+
+a:hover {
+    color: var(--accent);
+}
+
+
+/* ==========================================
+   RESPONSIVIDADE
+========================================== */
+
+@media (max-width: 700px) {
+
+    body {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 30px;
+    }
+
+    .menu {
+        flex-direction: column;
+
+        width: 100%;
+    }
+
+    .menu a {
+        width: 100%;
+    }
+
+    .menu button {
+        width: 100%;
+    }
+
+    .venda-form form {
+        grid-template-columns: 1fr;
+    }
+
+    table {
+        display: block;
+
+        overflow-x: auto;
+    }
+
+    th,
+    td {
+        white-space: nowrap;
+    }
+
+    .resumo-venda {
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 10px;
+    }
+
+}

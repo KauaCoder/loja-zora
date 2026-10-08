@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login - ZORA</title>
+
+    <link rel="stylesheet" href="style_login.css">
+    <link rel="stylesheet" href="../EstiloBase.css">
+
+</head>
+
+<body>
+
+<div class="login-box">
+
+    <h2>ZORA</h2>
+
+    <!-- TABS -->
+    <div class="tab-buttons">
+        <button class="tab-button active" onclick="mudarAba('login')">Login</button>
+        <button class="tab-button" onclick="mudarAba('cadastro')">Cadastro</button>
+    </div>
+
+    <!-- ABA LOGIN -->
+    <form id="formLogin" class="form-section active">
+
+        <div class="form-group">
+            <label for="emailLogin">E-mail</label>
+            <input 
+                type="email" 
+                id="emailLogin" 
+                placeholder="seu@email.com" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="senhaLogin">Senha</label>
+            <input 
+                type="password" 
+                id="senhaLogin" 
+                placeholder="Sua senha" 
+                required
+            >
+        </div>
+
+        <button type="submit">Entrar</button>
+
+        <a 
+            href="../TelaInicial/index.html" 
+            class="voltar"
+        >
+            ← Voltar para a loja
+        </a>
+
+    </form>
+
+    <!-- ABA CADASTRO -->
+    <form id="formCadastro" class="form-section">
+
+        <div class="form-group">
+            <label for="nomeCadastro">Nome Completo</label>
+            <input 
+                type="text" 
+                id="nomeCadastro" 
+                placeholder="Seu nome" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="emailCadastro">E-mail</label>
+            <input 
+                type="email" 
+                id="emailCadastro" 
+                placeholder="seu@email.com" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="telefoneCadastro">Telefone (opcional)</label>
+            <input 
+                type="tel" 
+                id="telefoneCadastro" 
+                placeholder="(11) 99999-9999"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="senhaCadastro">Senha</label>
+            <input 
+                type="password" 
+                id="senhaCadastro" 
+                placeholder="Mínimo 6 caracteres" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="confirmarSenhaCadastro">Confirmar Senha</label>
+            <input 
+                type="password" 
+                id="confirmarSenhaCadastro" 
+                placeholder="Confirme a senha" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="cepCadastro">CEP</label>
+            <input 
+                type="text" 
+                id="cepCadastro" 
+                placeholder="00000-000" 
+                maxlength="9"
+                required
+            >
+        </div>
+
+        <div class="endereco-info" id="enderecoInfo">
+            <p id="enderecoTexto"></p>
+        </div>
+
+        <div class="form-group">
+            <label for="ruaCadastro">Rua</label>
+            <input 
+                type="text" 
+                id="ruaCadastro" 
+                readonly
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="numeroCadastro">Número</label>
+            <input 
+                type="text" 
+                id="numeroCadastro" 
+                placeholder="Número" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="complementoCadastro">Complemento (opcional)</label>
+            <input 
+                type="text" 
+                id="complementoCadastro" 
+                placeholder="Apto, sala, etc"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="bairroCadastro">Bairro</label>
+            <input 
+                type="text" 
+                id="bairroCadastro" 
+                readonly
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="cidadeCadastro">Cidade</label>
+            <input 
+                type="text" 
+                id="cidadeCadastro" 
+                readonly
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="estadoCadastro">Estado</label>
+            <input 
+                type="text" 
+                id="estadoCadastro" 
+                readonly
+                required
+            >
+        </div>
+
+        <button type="submit">Cadastrar</button>
+
+        <a 
+            href="../TelaInicial/index.html" 
+            class="voltar"
+        >
+            ← Voltar para a loja
+        </a>
+
+    </form>
+
+</div>
+  <script src="login.js"></script>
+
+</body>
+</html>
