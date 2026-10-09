@@ -401,11 +401,11 @@ if (formCadastro) {
 
 
                 /* =========================
-                   ENVIAR PARA PHP
+                   ENVIAR PARA PHP (ROTA ABSOLUTA)
                    ========================= */
 
                 const resposta = await fetch(
-                    "../cadastrar_cliente.php",
+                    "/cadastro.php",
                     {
                         method: "POST",
 
@@ -467,14 +467,6 @@ if (formCadastro) {
                 alert(
                     "Cadastro realizado com sucesso! Agora faça login."
                 );
-
-                /* 
-                   O cadastro NÃO usa localStorage
-                   para criar uma sessão falsa.
-
-                   O login será responsável por criar
-                   a sessão PHP.
-                */
 
                 mudarAba("login");
 
@@ -545,11 +537,11 @@ if (formLogin) {
             try {
 
                 /* =========================
-                   ENVIAR PARA PHP
+                   ENVIAR PARA PHP (ROTA ABSOLUTA)
                    ========================= */
 
                 const resposta = await fetch(
-                    "../login.php",
+                    "/login.php",
                     {
                         method: "POST",
 
@@ -609,8 +601,9 @@ if (formLogin) {
                     "Login realizado com sucesso!"
                 );
 
+                // Redireciona para a pasta exata da Tela Inicial
                 window.location.href =
-                    "../TelaInicial/index.html";
+                    "/Telainicial/index.html";
 
 
             } catch (erro) {
