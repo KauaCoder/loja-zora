@@ -13,7 +13,7 @@ async function obterUsuarioLogado() {
     try {
 
         const resposta = await fetch(
-            "../usuario_logado.php",
+            "/usuario_logado.php",
             {
                 method: "GET",
                 credentials: "include"
@@ -73,7 +73,7 @@ async function protegerPagina() {
     if (!usuario) {
 
         window.location.replace(
-            "../TelaLogin/login.html"
+            "/TelaLogin/login.html"
         );
 
         return false;
@@ -96,7 +96,7 @@ async function logout(
     try {
 
         await fetch(
-            "../logout.php",
+            "/logout.php",
             {
                 method: "POST",
                 credentials: "include"
@@ -127,7 +127,7 @@ async function logout(
     if (redirecionar) {
 
         window.location.replace(
-            "../TelaInicial/index.html"
+            "/Telainicial/index.html"
         );
 
     }
@@ -182,12 +182,12 @@ async function abrirPerfil() {
     if (usuario) {
 
         window.location.href =
-            "../TelaCliente/cliente.html";
+            "/TelaCliente/cliente.html";
 
     } else {
 
         window.location.href =
-            "../TelaLogin/login.html";
+            "/TelaLogin/login.html";
 
     }
 
