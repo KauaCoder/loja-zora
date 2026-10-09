@@ -1,10 +1,20 @@
 <?php
 
+// Configura os parâmetros do cookie de sessão ANTES de iniciar a sessão
+// Necessário para funcionar no HTTPS do Render e manter o login ativo
+session_set_cookie_params([
+    'lifetime' => 86400, // 24 horas
+    'path'     => '/',
+    'secure'   => true,   // Obriga transmissão apenas via HTTPS
+    'httponly' => true,   // Protege contra scripts maliciosos no front
+    'samesite' => 'Lax'   // Permite que o cookie seja enviado nas requisições do site
+]);
+
 session_start();
 
 header("Content-Type: application/json; charset=UTF-8");
 
-// Inclui o arquivo de conexão presente na mesma pasta
+// Inclui o arquivo de conexão presente na mesma pasta (src/)
 require_once __DIR__ . "/conexao.php";
 
 try {
@@ -29,7 +39,6 @@ try {
     // PROCURAR CLIENTE
     // =========================
 
-    // Tabela e colunas no PostgreSQL
     $sql = "
         SELECT
             id_cliente,
@@ -78,17 +87,10 @@ try {
     // CRIAR SESSÃO
     // =========================
 
-    $_SESSION["id_cliente"] =
-        (int)$cliente["id_cliente"];
-
-    $_SESSION["nome"] =
-        $cliente["nome"];
-
-    $_SESSION["email"] =
-        $cliente["e_mail"];
-
-    $_SESSION["telefone"] =
-        $cliente["telefone"];
+    $_SESSION["id_cliente"] = (int)$cliente["id_cliente"];
+    $_SESSION["nome"]       = $cliente["nome"];
+    $_SESSION["email"]      = $cliente["e_mail"];
+    $_SESSION["telefone"]   = $cliente["telefone"];
 
     // =========================
     // RESPOSTA
@@ -103,17 +105,10 @@ try {
 
         "cliente" => [
 
-            "id_cliente" =>
-                (int)$cliente["id_cliente"],
-
-            "nome" =>
-                $cliente["nome"],
-
-            "email" =>
-                $cliente["e_mail"],
-
-            "telefone" =>
-                $cliente["telefone"]
+            "id_cliente" => (int)$cliente["id_cliente"],
+            "nome"       => $cliente["nome"],
+            "email"      => $cliente["e_mail"],
+            "telefone"   => $cliente["telefone"]
 
         ]
 
@@ -127,8 +122,7 @@ try {
 
         "sucesso" => false,
 
-        "mensagem" =>
-            $e->getMessage()
+        "mensagem" => $e->getMessage()
 
     ]);
 
