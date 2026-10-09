@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Instala extensões para suporte ao PostgreSQL no PHP
+# Instala o driver nativo do PostgreSQL (pdo_pgsql e pgsql)
 RUN apt-get update && apt-get install -y libpq-dev \
     && docker-php-ext-install pdo pdo_pgsql pgsql
 
