@@ -4,7 +4,8 @@ session_start();
 
 header("Content-Type: application/json; charset=UTF-8");
 
-include_once("../conexao.php");
+// Inclui o arquivo de conexão presente na mesma pasta
+require_once __DIR__ . "/conexao.php";
 
 try {
 
@@ -28,6 +29,7 @@ try {
     // PROCURAR CLIENTE
     // =========================
 
+    // Tabela e colunas no PostgreSQL
     $sql = "
         SELECT
             id_cliente,
@@ -35,7 +37,7 @@ try {
             e_mail,
             senha,
             telefone
-        FROM Cliente
+        FROM cliente
         WHERE e_mail = :email
         LIMIT 1
     ";
