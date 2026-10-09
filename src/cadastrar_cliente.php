@@ -2,7 +2,9 @@
 
 header("Content-Type: application/json; charset=UTF-8");
 
-include_once("../conexao.php");
+// Inclui o arquivo de conexão presente na mesma pasta (src/)
+require_once __DIR__ . "/conexao.php";
+
 try {
 
     // Recebe os dados enviados pelo JavaScript
@@ -81,7 +83,7 @@ try {
 
     $sqlEmail = "
         SELECT id_cliente
-        FROM Cliente
+        FROM cliente
         WHERE e_mail = :email
         LIMIT 1
     ";
@@ -116,7 +118,7 @@ try {
     // =========================
 
     $sqlCliente = "
-        INSERT INTO Cliente
+        INSERT INTO cliente
         (
             nome,
             e_mail,
@@ -149,7 +151,7 @@ try {
     // =========================
 
     $sqlEndereco = "
-        INSERT INTO Endereco
+        INSERT INTO endereco
         (
             id_cliente,
             cep,
@@ -200,8 +202,8 @@ try {
 
 } catch (Exception $e) {
 
-    // Se alguma coisa falhar, desfaz tudo
-    if ($conexao->inTransaction()) {
+    // Se alguma coisa falhar, desfaz a transação
+    if (isset($conexao) && $conexao->inTransaction()) {
         $conexao->rollBack();
     }
 
