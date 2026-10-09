@@ -1,24 +1,30 @@
 <?php
-// 1. Lê a URL do banco de dados das variáveis de ambiente do Render
+// 1. Lê a URL do banco configurada no Render (DATABASE_URL)
 $db_url = getenv('DATABASE_URL');
 
 if (!$db_url) {
     http_response_code(500);
-    die("Erro: A variável DATABASE_URL não foi configurada nas Environment Variables do Render.");
+    die("Erro: A variável DATABASE_URL não foi configurada no Render.");
 }
 
-// 2. Extrai os parâmetros da URL de conexão do Supabase
+// 2. Extrai os dados da URL de conexão do Supabase
 $dbopts = parse_url($db_url);
 
 $host     = $dbopts["host"] ?? '';
-$port     = $dbopts["port"] ?? 6543; // Utiliza a porta do Transaction Pooler do Supabase (6543)
+$port     = $dbopts["port"] ?? 6543;
 $user     = $dbopts["user"] ?? '';
-$password = $dbopts["pass"] ?? '';
+$password = isset($dbopts["pass"]) ? urldecode($dbopts["pass"]) : '';
 $dbname   = isset($dbopts["path"]) ? ltrim($dbopts["path"], '/') : 'postgres';
 
-// 3. Conecta ao PostgreSQL utilizando PDO
+// Caso a URL venha sem a porta explícita ou com formato estendido
+if (empty($host) || $host === 'port=6543') {
+    $host = 'aws-0-us-east-1.pooler.supabase.com'; // Host padrão do seu projeto Supabase
+}
+
+// 3. Monta a DSN do PDO de forma limpa e direta
 try {
     $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require";
+    
     $conexao = new PDO($dsn, $user, $password, [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
