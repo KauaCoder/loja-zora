@@ -1,10 +1,20 @@
 <?php
 
+// Configura os parâmetros do cookie de sessão ANTES de iniciar a sessão
+session_set_cookie_params([
+    'lifetime' => 86400, // 24 horas
+    'path'     => '/',
+    'secure'   => true,   // Exigido para HTTPS no Render
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+
 session_start();
 
 header("Content-Type: application/json; charset=UTF-8");
 
-include_once("../conexao.php");
+// Inclui o arquivo de conexão presente na mesma pasta
+require_once __DIR__ . "/conexao.php";
 
 try {
 
@@ -19,9 +29,7 @@ try {
         exit;
     }
 
-    $idCliente =
-        (int)$_SESSION["id_cliente"];
-
+    $idCliente = (int)$_SESSION["id_cliente"];
 
     // Busca os dados atuais no banco
     $sql = "
@@ -35,16 +43,13 @@ try {
         LIMIT 1
     ";
 
-    $stmt =
-        $conexao->prepare($sql);
+    $stmt = $conexao->prepare($sql);
 
     $stmt->execute([
         ":id_cliente" => $idCliente
     ]);
 
-    $cliente =
-        $stmt->fetch();
-
+    $cliente = $stmt->fetch();
 
     if (!$cliente) {
 
@@ -60,7 +65,6 @@ try {
         exit;
     }
 
-
     echo json_encode([
 
         "sucesso" => true,
@@ -69,17 +73,13 @@ try {
 
         "cliente" => [
 
-            "id_cliente" =>
-                (int)$cliente["id_cliente"],
+            "id_cliente" => (int)$cliente["id_cliente"],
 
-            "nome" =>
-                $cliente["nome"],
+            "nome" => $cliente["nome"],
 
-            "email" =>
-                $cliente["e_mail"],
+            "email" => $cliente["e_mail"],
 
-            "telefone" =>
-                $cliente["telefone"]
+            "telefone" => $cliente["telefone"]
 
         ]
 
@@ -95,8 +95,7 @@ try {
 
         "logado" => false,
 
-        "mensagem" =>
-            $erro->getMessage()
+        "mensagem" => $erro->getMessage()
 
     ]);
 
