@@ -4,9 +4,27 @@ session_start();
 
 header("Content-Type: application/json; charset=UTF-8");
 
-require_once "conexao.php";
+// Inclui o arquivo de conexão garantindo o caminho absoluto a partir do diretório atual
+require_once __DIR__ . "/conexao.php";
 
 try {
+
+    // =====================================================
+    // VERIFICAR MÉTODO HTTP
+    // =====================================================
+
+    if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+
+        http_response_code(405);
+
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "Método não permitido. Utilize POST."
+        ]);
+
+        exit;
+    }
+
 
     // =====================================================
     // VERIFICAR LOGIN
@@ -31,33 +49,23 @@ try {
     // RECEBER DADOS
     // =====================================================
 
-    $conteudo =
-        file_get_contents("php://input");
+    $conteudo = file_get_contents("php://input");
 
-    $dados =
-        json_decode($conteudo, true);
+    $dados = json_decode($conteudo, true);
 
 
     if (!is_array($dados)) {
 
-        throw new Exception(
-            "Dados do pedido inválidos."
-        );
+        throw new Exception("Dados do pedido inválidos.");
     }
 
 
-    $itens =
-        $dados["itens"] ?? [];
+    $itens = $dados["itens"] ?? [];
 
 
-    if (
-        !is_array($itens) ||
-        empty($itens)
-    ) {
+    if (!is_array($itens) || empty($itens)) {
 
-        throw new Exception(
-            "O pedido não possui produtos."
-        );
+        throw new Exception("O pedido não possui produtos.");
     }
 
 
@@ -69,10 +77,7 @@ try {
 
 
     // =====================================================
-    // BUSCAR PRODUTO NO BANCO
-    //
-    // FOR UPDATE bloqueia temporariamente a linha do produto
-    // durante a compra.
+    // BUSCAR PRODUTO NO BANCO (FOR UPDATE)
     // =====================================================
 
     $sqlProduto = "
@@ -86,9 +91,7 @@ try {
         FOR UPDATE
     ";
 
-
-    $stmtProduto =
-        $conexao->prepare($sqlProduto);
+    $stmtProduto = $conexao->prepare($sqlProduto);
 
 
     // =====================================================
@@ -102,138 +105,75 @@ try {
 
     foreach ($itens as $item) {
 
-        $idProduto =
-            (int) (
-                $item["id_produto"] ?? 0
-            );
+        $idProduto = (int) ($item["id_produto"] ?? 0);
+
+        $quantidade = (int) ($item["quantidade"] ?? 0);
 
 
-        $quantidade =
-            (int) (
-                $item["quantidade"] ?? 0
-            );
+        if ($idProduto <= 0 || $quantidade <= 0) {
 
-
-        // -------------------------
-        // Validar ID e quantidade
-        // -------------------------
-
-        if (
-            $idProduto <= 0 ||
-            $quantidade <= 0
-        ) {
-
-            throw new Exception(
-                "Produto inválido no pedido."
-            );
+            throw new Exception("Produto inválido no pedido.");
         }
 
 
-        // -------------------------
-        // Buscar produto
-        // -------------------------
-
+        // Buscar produto com lock de linha
         $stmtProduto->execute([
-            ":id_produto" =>
-                $idProduto
+            ":id_produto" => $idProduto
         ]);
 
-
-        $produto =
-            $stmtProduto->fetch();
+        $produto = $stmtProduto->fetch(PDO::FETCH_ASSOC);
 
 
         if (!$produto) {
 
-            throw new Exception(
-                "Produto de ID " .
-                $idProduto .
-                " não encontrado."
-            );
+            throw new Exception("Produto de ID " . $idProduto . " não encontrado.");
         }
 
 
-        // -------------------------
-        // Dados REAIS do banco
-        // -------------------------
+        $nomeProduto = $produto["nm_produto"];
 
-        $nomeProduto =
-            $produto["nm_produto"];
+        $preco = (float) $produto["preco"];
 
+        $estoque = (int) $produto["qtd_item"];
 
-        $preco =
-            (float) $produto["preco"];
-
-
-        $estoque =
-            (int) $produto["qtd_item"];
-
-
-        // -------------------------
-        // Verificar estoque
-        // -------------------------
 
         if ($estoque <= 0) {
 
-            throw new Exception(
-                'O produto "' .
-                $nomeProduto .
-                '" está sem estoque.'
-            );
+            throw new Exception('O produto "' . $nomeProduto . '" está sem estoque.');
         }
 
 
         if ($quantidade > $estoque) {
 
             throw new Exception(
-                'Estoque insuficiente para "' .
-                $nomeProduto .
-                '". Disponível: ' .
-                $estoque .
-                "."
+                'Estoque insuficiente para "' . $nomeProduto . '". Disponível: ' . $estoque . '.'
             );
         }
 
 
-        // -------------------------
-        // Calcular subtotal
-        // -------------------------
+        $subtotal = $preco * $quantidade;
 
-        $subtotal =
-            $preco * $quantidade;
+        $valorTotal += $subtotal;
 
-
-        $valorTotal +=
-            $subtotal;
-
-
-        // -------------------------
-        // Guardar item validado
-        // -------------------------
 
         $itensValidados[] = [
 
-            "id_produto" =>
-                $idProduto,
+            "id_produto" => $idProduto,
 
-            "nome" =>
-                $nomeProduto,
+            "nome" => $nomeProduto,
 
-            "quantidade" =>
-                $quantidade,
+            "quantidade" => $quantidade,
 
-            "preco" =>
-                $preco,
+            "preco" => $preco,
 
-            "subtotal" =>
-                $subtotal
+            "subtotal" => $subtotal
 
         ];
     }
 
 
     // =====================================================
-    // CRIAR PEDIDO
+    // CRIAR REGISTRO NA TABELA PEDIDO
     // =====================================================
 
     $sqlPedido = "
@@ -254,38 +194,27 @@ try {
         RETURNING id_pedido
     ";
 
-
-    $stmtPedido =
-        $conexao->prepare(
-            $sqlPedido
-        );
-
+    $stmtPedido = $conexao->prepare($sqlPedido);
 
     $stmtPedido->execute([
 
-        ":id_cliente" =>
-            $idCliente,
+        ":id_cliente" => $idCliente,
 
-        ":valor_total" =>
-            $valorTotal
+        ":valor_total" => round($valorTotal, 2)
 
     ]);
 
-
-    $idPedido =
-        $stmtPedido->fetchColumn();
+    $idPedido = $stmtPedido->fetchColumn();
 
 
     if (!$idPedido) {
 
-        throw new Exception(
-            "Não foi possível criar o pedido."
-        );
+        throw new Exception("Não foi possível gerar o pedido no banco de dados.");
     }
 
 
     // =====================================================
-    // PREPARAR INSERT DOS ITENS
+    // PREPARAR DEMAIS INSTRUÇÕES
     // =====================================================
 
     $sqlItem = "
@@ -307,75 +236,44 @@ try {
         )
     ";
 
+    $stmtItem = $conexao->prepare($sqlItem);
 
-    $stmtItem =
-        $conexao->prepare(
-            $sqlItem
-        );
-
-
-    // =====================================================
-    // PREPARAR BAIXA DO ESTOQUE
-    // =====================================================
 
     $sqlEstoque = "
         UPDATE produto
-        SET qtd_item =
-            qtd_item - :quantidade
-        WHERE id_produto =
-            :id_produto
+        SET qtd_item = qtd_item - :quantidade
+        WHERE id_produto = :id_produto
     ";
 
-
-    $stmtEstoque =
-        $conexao->prepare(
-            $sqlEstoque
-        );
+    $stmtEstoque = $conexao->prepare($sqlEstoque);
 
 
     // =====================================================
-    // INSERIR ITENS + DIMINUIR ESTOQUE
+    // INSERIR ITENS + ATUALIZAR ESTOQUE
     // =====================================================
 
-    foreach (
-        $itensValidados as $item
-    ) {
-
-        // -------------------------
-        // Registrar item
-        // -------------------------
+    foreach ($itensValidados as $item) {
 
         $stmtItem->execute([
 
-            ":id_pedido" =>
-                $idPedido,
+            ":id_pedido" => $idPedido,
 
-            ":id_produto" =>
-                $item["id_produto"],
+            ":id_produto" => $item["id_produto"],
 
-            ":quantidade" =>
-                $item["quantidade"],
+            ":quantidade" => $item["quantidade"],
 
-            ":preco_unitario" =>
-                $item["preco"],
+            ":preco_unitario" => $item["preco"],
 
-            ":subtotal" =>
-                $item["subtotal"]
+            ":subtotal" => $item["subtotal"]
 
         ]);
 
 
-        // -------------------------
-        // Baixar estoque
-        // -------------------------
-
         $stmtEstoque->execute([
 
-            ":quantidade" =>
-                $item["quantidade"],
+            ":quantidade" => $item["quantidade"],
 
-            ":id_produto" =>
-                $item["id_produto"]
+            ":id_produto" => $item["id_produto"]
 
         ]);
 
@@ -383,43 +281,33 @@ try {
 
 
     // =====================================================
-    // CONFIRMAR TUDO
+    // CONFIRMAR TRANSAÇÃO
     // =====================================================
 
     $conexao->commit();
 
 
     // =====================================================
-    // RESPOSTA
+    // RESPOSTA SUCESSO
     // =====================================================
 
     echo json_encode([
 
         "sucesso" => true,
 
-        "mensagem" =>
-            "Pedido realizado com sucesso!",
+        "mensagem" => "Pedido realizado com sucesso!",
 
-        "id_pedido" =>
-            (int) $idPedido,
+        "id_pedido" => (int) $idPedido,
 
-        "valor_total" =>
-            $valorTotal
+        "valor_total" => round($valorTotal, 2)
 
     ]);
 
 
 } catch (Throwable $erro) {
 
-
-    // =====================================================
-    // SE QUALQUER COISA DER ERRADO, DESFAZER TUDO
-    // =====================================================
-
-    if (
-        isset($conexao) &&
-        $conexao->inTransaction()
-    ) {
+    // Desfaz quaisquer alterações caso ocorra erro no fluxo
+    if (isset($conexao) && $conexao->inTransaction()) {
 
         $conexao->rollBack();
     }
@@ -432,8 +320,7 @@ try {
 
         "sucesso" => false,
 
-        "mensagem" =>
-            $erro->getMessage()
+        "mensagem" => $erro->getMessage()
 
     ]);
 }
