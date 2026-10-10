@@ -51,7 +51,7 @@ async function carregarCatalogo() {
     try {
 
         const resposta = await fetch(
-            "../produtos_catalogo.php"
+            "/produtos_catalogo.php"
         );
 
         const resultado =
@@ -156,7 +156,7 @@ function renderizarCatalogo(produtos) {
             document.createElement("a");
 
         link.href =
-            `../TelaProdutos/produtos.html?id=${id}`;
+            `/TelaProdutos/produtos.html?id=${id}`;
 
 
         // =========================
@@ -166,16 +166,16 @@ function renderizarCatalogo(produtos) {
         const imagem =
             document.createElement("img");
 
-if (produto.imagem) {
+        if (produto.imagem) {
 
-    imagem.src =
-        `../img/${produto.imagem}`;
+            imagem.src =
+                `/img/${produto.imagem}`;
 
-} else {
+        } else {
 
-    imagem.removeAttribute("src");
+            imagem.removeAttribute("src");
 
-}
+        }
 
         imagem.alt =
             nome;
@@ -732,7 +732,7 @@ async function pagarPedido() {
             );
 
             window.location.href =
-                "../TelaLogin/login.html";
+                "/TelaLogin/login.html";
 
             return;
         }
@@ -758,7 +758,7 @@ async function pagarPedido() {
 
 
     window.location.href =
-        "../TelaEntrega/entrega.html";
+        "/TelaEntrega/entrega.html";
 }
 
 
