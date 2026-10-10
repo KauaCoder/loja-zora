@@ -2,10 +2,27 @@
 
 header("Content-Type: application/json; charset=UTF-8");
 
-include_once("../conexao.php");
-
+// Inclui a conexão garantindo o caminho absoluto a partir da raiz
+require_once __DIR__ . "/conexao.php";
 
 try {
+
+    // =============================================
+    // VERIFICAR MÉTODO HTTP
+    // =============================================
+
+    if (!in_array($_SERVER["REQUEST_METHOD"], ["POST", "PUT"])) {
+
+        http_response_code(405);
+
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "Método não permitido. Utilize POST ou PUT."
+        ]);
+
+        exit;
+    }
+
 
     // =============================================
     // RECEBER JSON
@@ -19,30 +36,18 @@ try {
 
     if (!is_array($dados)) {
 
-        throw new Exception(
-            "Dados inválidos."
-        );
+        throw new Exception("Dados inválidos enviados na requisição.");
     }
 
 
-    $idProduto =
-        (int) ($dados["id_produto"] ?? 0);
+    $idProduto = (int) ($dados["id_produto"] ?? 0);
 
+    // Aceita tanto "nome" quanto "nm_produto"
+    $nome = trim($dados["nome"] ?? $dados["nm_produto"] ?? "");
 
-    $nome =
-        trim(
-            $dados["nome"] ?? ""
-        );
+    $preco = $dados["preco"] ?? null;
 
-
-    $preco =
-        $dados["preco"] ?? null;
-
-
-    $descricao =
-        trim(
-            $dados["descricao"] ?? ""
-        );
+    $descricao = trim($dados["descricao"] ?? "");
 
 
     // =============================================
@@ -51,48 +56,33 @@ try {
 
     if ($idProduto <= 0) {
 
-        throw new Exception(
-            "Produto inválido."
-        );
+        throw new Exception("ID do produto é inválido.");
     }
 
 
     if ($nome === "") {
 
-        throw new Exception(
-            "O nome do produto é obrigatório."
-        );
+        throw new Exception("O nome do produto é obrigatório.");
     }
 
 
-if (strlen($nome) > 150) {
+    if (mb_strlen($nome) > 150) {
 
-    throw new Exception(
-        "O nome do produto pode ter no máximo 150 caracteres."
-    );
-}
-
-
-    if (
-        !is_numeric($preco) ||
-        (float) $preco < 0
-    ) {
-
-        throw new Exception(
-            "Informe um preço válido."
-        );
+        throw new Exception("O nome do produto pode ter no máximo 150 caracteres.");
     }
 
 
-    $preco =
-        round(
-            (float) $preco,
-            2
-        );
+    if (!is_numeric($preco) || (float) $preco < 0) {
+
+        throw new Exception("Informe um preço válido maior ou igual a zero.");
+    }
+
+
+    $preco = round((float) $preco, 2);
 
 
     // =============================================
-    // VERIFICAR PRODUTO
+    // VERIFICAR SE O PRODUTO EXISTE
     // =============================================
 
     $sqlProduto = "
@@ -102,43 +92,36 @@ if (strlen($nome) > 150) {
         LIMIT 1
     ";
 
-
-    $stmtProduto =
-        $conexao->prepare(
-            $sqlProduto
-        );
-
+    $stmtProduto = $conexao->prepare($sqlProduto);
 
     $stmtProduto->execute([
-
-        ":id_produto" =>
-            $idProduto
-
+        ":id_produto" => $idProduto
     ]);
 
+    if (!$stmtProduto->fetch(PDO::FETCH_ASSOC)) {
 
-    if (!$stmtProduto->fetch()) {
+        http_response_code(404);
 
-        throw new Exception(
-            "Produto não encontrado."
-        );
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "Produto não encontrado no banco de dados."
+        ]);
+
+        exit;
     }
 
 
     // =============================================
-    // ATUALIZAR
+    // ATUALIZAR REGISTRO (POSTGRESQL)
     // =============================================
 
     $sql = "
         UPDATE produto
-
         SET
             nm_produto = :nome,
             preco = :preco,
             descricao = :descricao
-
         WHERE id_produto = :id_produto
-
         RETURNING
             id_produto,
             nm_produto,
@@ -146,52 +129,37 @@ if (strlen($nome) > 150) {
             descricao
     ";
 
-
-    $stmt =
-        $conexao->prepare($sql);
-
+    $stmt = $conexao->prepare($sql);
 
     $stmt->execute([
-
-        ":nome" =>
-            $nome,
-
-        ":preco" =>
-            $preco,
-
-        ":descricao" =>
-            $descricao,
-
-        ":id_produto" =>
-            $idProduto
-
+        ":nome" => $nome,
+        ":preco" => $preco,
+        ":descricao" => $descricao,
+        ":id_produto" => $idProduto
     ]);
 
+    $produto = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $produto =
-        $stmt->fetch();
 
+    // =============================================
+    // RESPOSTA
+    // =============================================
 
     echo json_encode([
 
         "sucesso" => true,
 
-        "mensagem" =>
-            "Produto atualizado com sucesso!",
+        "mensagem" => "Produto atualizado com sucesso!",
 
         "produto" => [
 
-            "id_produto" =>
-                (int) $produto["id_produto"],
+            "id_produto" => (int) $produto["id_produto"],
 
-            "nome" =>
-                $produto["nm_produto"],
+            "nome" => $produto["nm_produto"],
 
-            "preco" =>
-                (float) $produto["preco"],
+            "preco" => (float) $produto["preco"],
 
-            "descricao" =>
-                $produto["descricao"]
+            "descricao" => $produto["descricao"]
 
         ]
 
@@ -202,13 +170,11 @@ if (strlen($nome) > 150) {
 
     http_response_code(400);
 
-
     echo json_encode([
 
         "sucesso" => false,
 
-        "mensagem" =>
-            $erro->getMessage()
+        "mensagem" => $erro->getMessage()
 
     ]);
 }
