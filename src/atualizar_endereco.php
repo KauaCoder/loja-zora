@@ -5,7 +5,25 @@ session_start();
 header("Content-Type: application/json; charset=UTF-8");
 
 include_once("../conexao.php");
+
 try {
+
+    // =========================
+    // VERIFICAR MÉTODO HTTP
+    // =========================
+
+    if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+
+        http_response_code(405);
+
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "Método não permitido. Utilize POST."
+        ]);
+
+        exit;
+    }
+
 
     // =========================
     // VERIFICAR LOGIN
@@ -28,8 +46,7 @@ try {
     // PEGAR ID PELA SESSÃO
     // =========================
 
-    $idCliente =
-        (int) $_SESSION["id_cliente"];
+    $idCliente = (int) $_SESSION["id_cliente"];
 
 
     // =========================
@@ -41,11 +58,9 @@ try {
         true
     );
 
-    if (!$dados) {
+    if (!$dados || !is_array($dados)) {
 
-        throw new Exception(
-            "Dados inválidos."
-        );
+        throw new Exception("Dados de requisição inválidos.");
     }
 
 
@@ -53,26 +68,20 @@ try {
     // DADOS DO ENDEREÇO
     // =========================
 
-    $cep =
-        trim($dados["cep"] ?? "");
+    $cep = trim($dados["cep"] ?? "");
 
-    $rua =
-        trim($dados["rua"] ?? "");
+    // Aceita tanto "rua" quanto "endereco" vindo do JS
+    $rua = trim($dados["rua"] ?? $dados["endereco"] ?? "");
 
-    $numero =
-        trim($dados["numero"] ?? "");
+    $numero = trim($dados["numero"] ?? "");
 
-    $complemento =
-        trim($dados["complemento"] ?? "");
+    $complemento = trim($dados["complemento"] ?? "");
 
-    $bairro =
-        trim($dados["bairro"] ?? "");
+    $bairro = trim($dados["bairro"] ?? "");
 
-    $cidade =
-        trim($dados["cidade"] ?? "");
+    $cidade = trim($dados["cidade"] ?? "");
 
-    $estado =
-        trim($dados["estado"] ?? "");
+    $estado = strtoupper(trim($dados["estado"] ?? ""));
 
 
     // =========================
@@ -88,14 +97,12 @@ try {
         !$estado
     ) {
 
-        throw new Exception(
-            "Preencha todos os campos obrigatórios."
-        );
+        throw new Exception("Preencha todos os campos obrigatórios do endereço.");
     }
 
 
     // =========================
-    // VERIFICAR ENDEREÇO
+    // VERIFICAR ENDEREÇO EXISTENTE
     // =========================
 
     $sql = "
@@ -105,23 +112,22 @@ try {
         LIMIT 1
     ";
 
-    $stmt =
-        $conexao->prepare($sql);
+    $stmt = $conexao->prepare($sql);
 
     $stmt->execute([
         ":id_cliente" => $idCliente
     ]);
 
-    $endereco =
-        $stmt->fetch();
+    $endereco = $stmt->fetch(PDO::FETCH_ASSOC);
 
 
     // =========================
-    // ATUALIZAR ENDEREÇO
+    // ATUALIZAR OU CRIAR
     // =========================
 
     if ($endereco) {
 
+        // UPDATE
         $sql = "
             UPDATE endereco
             SET
@@ -132,47 +138,25 @@ try {
                 bairro = :bairro,
                 cidade = :cidade,
                 estado = :estado
-
             WHERE id_cliente = :id_cliente
         ";
 
-        $stmt =
-            $conexao->prepare($sql);
+        $stmt = $conexao->prepare($sql);
 
         $stmt->execute([
-
-            ":cep" =>
-                $cep,
-
-            ":endereco" =>
-                $rua,
-
-            ":numero" =>
-                $numero,
-
-            ":complemento" =>
-                $complemento,
-
-            ":bairro" =>
-                $bairro,
-
-            ":cidade" =>
-                $cidade,
-
-            ":estado" =>
-                $estado,
-
-            ":id_cliente" =>
-                $idCliente
+            ":cep" => $cep,
+            ":endereco" => $rua,
+            ":numero" => $numero,
+            ":complemento" => $complemento,
+            ":bairro" => $bairro,
+            ":cidade" => $cidade,
+            ":estado" => $estado,
+            ":id_cliente" => $idCliente
         ]);
-
 
     } else {
 
-        // =========================
-        // CRIAR ENDEREÇO
-        // =========================
-
+        // INSERT
         $sql = "
             INSERT INTO endereco
             (
@@ -185,7 +169,6 @@ try {
                 cidade,
                 estado
             )
-
             VALUES
             (
                 :id_cliente,
@@ -199,34 +182,17 @@ try {
             )
         ";
 
-        $stmt =
-            $conexao->prepare($sql);
+        $stmt = $conexao->prepare($sql);
 
         $stmt->execute([
-
-            ":id_cliente" =>
-                $idCliente,
-
-            ":cep" =>
-                $cep,
-
-            ":endereco" =>
-                $rua,
-
-            ":numero" =>
-                $numero,
-
-            ":complemento" =>
-                $complemento,
-
-            ":bairro" =>
-                $bairro,
-
-            ":cidade" =>
-                $cidade,
-
-            ":estado" =>
-                $estado
+            ":id_cliente" => $idCliente,
+            ":cep" => $cep,
+            ":endereco" => $rua,
+            ":numero" => $numero,
+            ":complemento" => $complemento,
+            ":bairro" => $bairro,
+            ":cidade" => $cidade,
+            ":estado" => $estado
         ]);
     }
 
@@ -236,12 +202,8 @@ try {
     // =========================
 
     echo json_encode([
-
         "sucesso" => true,
-
-        "mensagem" =>
-            "Endereço atualizado com sucesso!"
-
+        "mensagem" => "Endereço atualizado com sucesso!"
     ]);
 
 } catch (Throwable $erro) {
@@ -249,11 +211,7 @@ try {
     http_response_code(500);
 
     echo json_encode([
-
         "sucesso" => false,
-
-        "mensagem" =>
-            $erro->getMessage()
-
+        "mensagem" => $erro->getMessage()
     ]);
 }
