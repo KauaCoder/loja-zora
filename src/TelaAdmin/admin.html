@@ -1,993 +1,405 @@
 <!DOCTYPE html>
-
 <html lang="pt-br">
 
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZORA - Administração</title>
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
-    <title>
-        ZORA - Administração
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="../EstiloBase.css">
-
-    <link
-        rel="stylesheet"
-        href="admin.css">
-
+    <link rel="stylesheet" href="/EstiloBase.css">
+    <link rel="stylesheet" href="admin.css">
 </head>
 
-
 <body>
-
 
     <!-- =========================================
          MENU
     ========================================== -->
-
     <header class="topo-admin">
-
         <div class="logo-admin">
-
-            <a href="../TelaInicial/index.html">
-
-                <img
-                    src="../img/Logo 1.png"
-                    alt="ZORA">
-
+            <a href="/Telainicial/index.html">
+                <img src="/img/Logo 1.png" alt="ZORA">
             </a>
-
         </div>
-
 
         <div class="titulo-topo">
-
-            <span>
-                PAINEL ADMINISTRATIVO
-            </span>
-
+            <span>PAINEL ADMINISTRATIVO</span>
         </div>
 
-
-        <a
-            class="botao-site"
-            href="../TelaInicial/index.html">
-
+        <a class="botao-site" href="/Telainicial/index.html">
             Ver loja
-
         </a>
-
     </header>
-
 
 
     <!-- =========================================
          CONTEÚDO
     ========================================== -->
-
     <main class="admin-container">
 
-
         <!-- CABEÇALHO -->
-
         <section class="cabecalho-pagina">
-
             <div>
-
-                <span class="mini-titulo">
-                    ZORA MANAGEMENT
-                </span>
-
-                <h1>
-                    Controle de Estoque
-                </h1>
-
-                <p>
-                    Gerencie produtos, estoque
-                    e fornecedores da loja.
-                </p>
-
+                <span class="mini-titulo">ZORA MANAGEMENT</span>
+                <h1>Controle de Estoque</h1>
+                <p>Gerencie produtos, estoque e fornecedores da loja.</p>
             </div>
-
         </section>
-
 
 
         <!-- =====================================
              RESUMO
         ====================================== -->
-
         <section class="resumo">
 
-
             <div class="card-resumo">
-
-                <span class="card-label">
-                    Produtos
-                </span>
-
-                <strong id="totalProdutos">
-                    0
-                </strong>
-
-                <small>
-                    cadastrados
-                </small>
-
+                <span class="card-label">Produtos</span>
+                <strong id="totalProdutos">0</strong>
+                <small>cadastrados</small>
             </div>
 
-
             <div class="card-resumo">
-
-                <span class="card-label">
-                    Unidades
-                </span>
-
-                <strong id="totalUnidades">
-                    0
-                </strong>
-
-                <small>
-                    disponíveis
-                </small>
-
+                <span class="card-label">Unidades</span>
+                <strong id="totalUnidades">0</strong>
+                <small>disponíveis</small>
             </div>
 
-
             <div class="card-resumo">
-
-                <span class="card-label">
-                    Estoque baixo
-                </span>
-
-                <strong id="totalEstoqueBaixo">
-                    0
-                </strong>
-
-                <small>
-                    produtos
-                </small>
-
+                <span class="card-label">Estoque baixo</span>
+                <strong id="totalEstoqueBaixo">0</strong>
+                <small>produtos</small>
             </div>
 
-
             <div class="card-resumo">
-
-                <span class="card-label">
-                    Esgotados
-                </span>
-
-                <strong id="totalEsgotados">
-                    0
-                </strong>
-
-                <small>
-                    produtos
-                </small>
-
+                <span class="card-label">Esgotados</span>
+                <strong id="totalEsgotados">0</strong>
+                <small>produtos</small>
             </div>
-
 
         </section>
-
 
 
         <!-- =====================================
              FILTROS
         ====================================== -->
-
         <section class="barra-filtros">
 
-
             <div class="campo-busca">
-
-                <label for="pesquisaProduto">
-                    Buscar produto
-                </label>
-
-                <input
-                    type="text"
-                    id="pesquisaProduto"
-                    placeholder="Digite o nome do produto...">
-
+                <label for="pesquisaProduto">Buscar produto</label>
+                <input type="text" id="pesquisaProduto" placeholder="Digite o nome do produto...">
             </div>
-
 
             <div class="campo-filtro">
-
-                <label for="filtroCategoria">
-                    Categoria
-                </label>
-
+                <label for="filtroCategoria">Categoria</label>
                 <select id="filtroCategoria">
-
-                    <option value="">
-                        Todas as categorias
-                    </option>
-
+                    <option value="">Todas as categorias</option>
                 </select>
-
             </div>
-
 
         </section>
 
-<!-- =========================================
-     DASHBOARD DE VENDAS
-========================================== -->
 
-<section class="dashboard-vendas">
+        <!-- =========================================
+             DASHBOARD DE VENDAS
+        ========================================== -->
+        <section class="dashboard-vendas">
 
-    <div class="dashboard-cabecalho">
+            <div class="dashboard-cabecalho">
+                <div>
+                    <span class="mini-titulo">VISÃO GERAL</span>
+                    <h2>Dashboard de Vendas</h2>
+                </div>
 
-        <div>
-            <span class="mini-titulo">
-                VISÃO GERAL
-            </span>
+                <button type="button" class="botao-atualizar-dashboard" onclick="carregarDashboard()">
+                    Atualizar
+                </button>
+            </div>
 
-            <h2>
-                Dashboard de Vendas
-            </h2>
-        </div>
+            <div class="cards-dashboard">
 
-        <button
-            type="button"
-            class="botao-atualizar-dashboard"
-            onclick="carregarDashboard()">
+                <article class="card-dashboard">
+                    <span>Faturamento</span>
+                    <strong id="dashboardFaturamento">R$ 0,00</strong>
+                </article>
 
-            Atualizar
+                <article class="card-dashboard">
+                    <span>Pedidos</span>
+                    <strong id="dashboardPedidos">0</strong>
+                </article>
 
-        </button>
+                <article class="card-dashboard">
+                    <span>Produtos vendidos</span>
+                    <strong id="dashboardVendidos">0</strong>
+                </article>
 
-    </div>
-
-
-    <div class="cards-dashboard">
-
-        <article class="card-dashboard">
-
-            <span>
-                Faturamento
-            </span>
-
-            <strong id="dashboardFaturamento">
-                R$ 0,00
-            </strong>
-
-        </article>
-
-
-        <article class="card-dashboard">
-
-            <span>
-                Pedidos
-            </span>
-
-            <strong id="dashboardPedidos">
-                0
-            </strong>
-
-        </article>
-
-
-        <article class="card-dashboard">
-
-            <span>
-                Produtos vendidos
-            </span>
-
-            <strong id="dashboardVendidos">
-                0
-            </strong>
-
-        </article>
-
-
-        <article class="card-dashboard">
-
-            <span>
-                Ticket médio
-            </span>
-
-            <strong id="dashboardTicket">
-                R$ 0,00
-            </strong>
-
-        </article>
-
-    </div>
-
-
-    <div class="mais-vendido">
-
-        <span>
-            PRODUTO MAIS VENDIDO
-        </span>
-
-        <strong id="dashboardMaisVendido">
-            Nenhuma venda registrada
-        </strong>
-
-    </div>
-
-
-    <div class="pedidos-recentes">
-
-        <div class="titulo-pedidos">
-
-            <div>
-
-                <span class="mini-titulo">
-                    HISTÓRICO
-                </span>
-
-                <h3>
-                    Pedidos recentes
-                </h3>
+                <article class="card-dashboard">
+                    <span>Ticket médio</span>
+                    <strong id="dashboardTicket">R$ 0,00</strong>
+                </article>
 
             </div>
 
-        </div>
+            <div class="mais-vendido">
+                <span>PRODUTO MAIS VENDIDO</span>
+                <strong id="dashboardMaisVendido">Nenhuma venda registrada</strong>
+            </div>
 
+            <div class="pedidos-recentes">
 
-        <div class="tabela-dashboard-container">
+                <div class="titulo-pedidos">
+                    <div>
+                        <span class="mini-titulo">HISTÓRICO</span>
+                        <h3>Pedidos recentes</h3>
+                    </div>
+                </div>
 
-            <table class="tabela-dashboard">
+                <div class="tabela-dashboard-container">
+                    <table class="tabela-dashboard">
+                        <thead>
+                            <tr>
+                                <th>Pedido</th>
+                                <th>Cliente</th>
+                                <th>Data</th>
+                                <th>Itens</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardListaPedidos">
+                            <tr>
+                                <td colspan="6">Carregando pedidos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                <thead>
+            </div>
 
-                    <tr>
-                        <th>Pedido</th>
-                        <th>Cliente</th>
-                        <th>Data</th>
-                        <th>Itens</th>
-                        <th>Valor</th>
-                        <th>Status</th>
-                    </tr>
+        </section>
 
-                </thead>
-
-                <tbody id="dashboardListaPedidos">
-
-                    <tr>
-                        <td colspan="6">
-                            Carregando pedidos...
-                        </td>
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
-
-</section>
 
         <!-- =====================================
              TABELA
         ====================================== -->
-
         <section class="painel-tabela">
 
-
             <div class="titulo-tabela">
-
                 <div>
-
-                    <span class="mini-titulo">
-                        INVENTÁRIO
-                    </span>
-
-                    <h2>
-                        Produtos
-                    </h2>
-
+                    <span class="mini-titulo">INVENTÁRIO</span>
+                    <h2>Produtos</h2>
                 </div>
-
-
-                <span
-                    id="quantidadeResultados"
-                    class="quantidade-resultados">
-
+                <span id="quantidadeResultados" class="quantidade-resultados">
                     0 produtos
-
                 </span>
-
             </div>
-
-
 
             <div class="tabela-container">
-
-
                 <table>
-
-
                     <thead>
-
                         <tr>
-
-                            <th>
-                                Produto
-                            </th>
-
-                            <th>
-                                Categoria
-                            </th>
-
-                            <th>
-                                Preço
-                            </th>
-
-                            <th>
-                                Estoque
-                            </th>
-
-                            <th>
-                                Fornecedor
-                            </th>
-
-                            <th>
-                                Contato
-                            </th>
-
-                            <th>
-                                Status
-                            </th>
-
-                            <th>
-                                Ações
-                            </th>
-
+                            <th>Produto</th>
+                            <th>Categoria</th>
+                            <th>Preço</th>
+                            <th>Estoque</th>
+                            <th>Fornecedor</th>
+                            <th>Contato</th>
+                            <th>Status</th>
+                            <th>Ações</th>
                         </tr>
-
                     </thead>
-
-
                     <tbody id="tabelaProdutos">
-
                         <tr>
-
-                            <td
-                                colspan="8"
-                                class="carregando">
-
+                            <td colspan="8" class="carregando">
                                 Carregando produtos...
-
                             </td>
-
                         </tr>
-
                     </tbody>
-
-
                 </table>
-
-
             </div>
-
 
         </section>
 
-
     </main>
-
 
 
     <!-- =========================================
          MODAL REPOSIÇÃO
     ========================================== -->
-
-    <div
-        id="modalReposicao"
-        class="modal-overlay">
-
-
+    <div id="modalReposicao" class="modal-overlay">
         <div class="modal-reposicao">
 
-
-            <button
-                type="button"
-                class="modal-fechar"
-                onclick="fecharModalReposicao()">
-
+            <button type="button" class="modal-fechar" onclick="fecharModalReposicao()">
                 ✕
-
             </button>
 
-
-            <span class="mini-titulo">
-                REPOSIÇÃO DE ESTOQUE
-            </span>
-
-
-            <h2 id="modalNomeProduto">
-                Produto
-            </h2>
-
-
-            <p class="modal-descricao">
-
-                Informe quantas unidades deseja
-                adicionar ao estoque.
-
-            </p>
-
-
+            <span class="mini-titulo">REPOSIÇÃO DE ESTOQUE</span>
+            <h2 id="modalNomeProduto">Produto</h2>
+            <p class="modal-descricao">Informe quantas unidades deseja adicionar ao estoque.</p>
 
             <div class="modal-estoque-info">
-
-
                 <div>
-
-                    <span>
-                        Estoque atual
-                    </span>
-
-                    <strong id="modalEstoqueAtual">
-                        0
-                    </strong>
-
+                    <span>Estoque atual</span>
+                    <strong id="modalEstoqueAtual">0</strong>
                 </div>
-
-
                 <div>
-
-                    <span>
-                        Limite
-                    </span>
-
-                    <strong id="modalEstoqueMaximo">
-                        0
-                    </strong>
-
+                    <span>Limite</span>
+                    <strong id="modalEstoqueMaximo">0</strong>
                 </div>
-
-
                 <div>
-
-                    <span>
-                        Espaço disponível
-                    </span>
-
-                    <strong id="modalDisponivel">
-                        0
-                    </strong>
-
+                    <span>Espaço disponível</span>
+                    <strong id="modalDisponivel">0</strong>
                 </div>
-
-
             </div>
-
-
 
             <form id="formReposicao">
+                <input type="hidden" id="modalIdProduto">
 
+                <label for="quantidadeReposicao">Quantidade para adicionar</label>
+                <input type="number" id="quantidadeReposicao" min="1" step="1" required placeholder="Ex: 10">
 
-                <input
-                    type="hidden"
-                    id="modalIdProduto">
-
-
-                <label for="quantidadeReposicao">
-
-                    Quantidade para adicionar
-
-                </label>
-
-
-                <input
-                    type="number"
-                    id="quantidadeReposicao"
-                    min="1"
-                    step="1"
-                    required
-                    placeholder="Ex: 10">
-
-
-                <div
-                    id="mensagemReposicao"
-                    class="mensagem-modal">
-
-                </div>
-
+                <div id="mensagemReposicao" class="mensagem-modal"></div>
 
                 <div class="modal-acoes">
-
-
-                    <button
-                        type="button"
-                        class="botao-cancelar"
-                        onclick="fecharModalReposicao()">
-
+                    <button type="button" class="botao-cancelar" onclick="fecharModalReposicao()">
                         Cancelar
-
                     </button>
-
-
-                    <button
-                        type="submit"
-                        id="botaoConfirmarReposicao"
-                        class="botao-confirmar">
-
+                    <button type="submit" id="botaoConfirmarReposicao" class="botao-confirmar">
                         Confirmar reposição
-
                     </button>
-
-
                 </div>
-
-
             </form>
 
-
         </div>
-
-
     </div>
 
-<!-- =========================================
-     MODAL EDITAR PRODUTO
-========================================== -->
 
-<div
-    id="modalEditarProduto"
-    class="modal-overlay">
+    <!-- =========================================
+         MODAL EDITAR PRODUTO
+    ========================================== -->
+    <div id="modalEditarProduto" class="modal-overlay">
+        <div class="modal-reposicao modal-edicao">
 
+            <button type="button" class="modal-fechar" onclick="fecharModalEdicao()">
+                ✕
+            </button>
 
-    <div class="modal-reposicao modal-edicao">
+            <span class="mini-titulo">GERENCIAMENTO DE PRODUTO</span>
+            <h2>Editar produto</h2>
+            <p class="modal-descricao">Altere as informações comerciais do produto.</p>
 
+            <form id="formEditarProduto">
+                <input type="hidden" id="editarIdProduto">
 
-        <button
-            type="button"
-            class="modal-fechar"
-            onclick="fecharModalEdicao()">
-
-            ✕
-
-        </button>
-
-
-        <span class="mini-titulo">
-            GERENCIAMENTO DE PRODUTO
-        </span>
-
-
-        <h2>
-            Editar produto
-        </h2>
-
-
-        <p class="modal-descricao">
-
-            Altere as informações comerciais
-            do produto.
-
-        </p>
-
-
-        <form id="formEditarProduto">
-
-
-            <input
-                type="hidden"
-                id="editarIdProduto">
-
-
-            <!-- NOME -->
-
-            <div class="campo-edicao">
-
-                <label for="editarNome">
-
-                    Nome do produto
-
-                </label>
-
-
-                <input
-                    type="text"
-                    id="editarNome"
-                    maxlength="150"
-                    required>
-
-            </div>
-
-
-            <!-- PREÇO -->
-
-            <div class="campo-edicao">
-
-                <label for="editarPreco">
-
-                    Preço
-
-                </label>
-
-
-                <div class="campo-preco">
-
-                    <span>
-                        R$
-                    </span>
-
-
-                    <input
-                        type="number"
-                        id="editarPreco"
-                        min="0"
-                        step="0.01"
-                        required>
-
+                <!-- NOME -->
+                <div class="campo-edicao">
+                    <label for="editarNome">Nome do produto</label>
+                    <input type="text" id="editarNome" maxlength="150" required>
                 </div>
 
-            </div>
+                <!-- PREÇO -->
+                <div class="campo-edicao">
+                    <label for="editarPreco">Preço</label>
+                    <div class="campo-preco">
+                        <span>R$</span>
+                        <input type="number" id="editarPreco" min="0" step="0.01" required>
+                    </div>
+                </div>
 
+                <!-- DESCRIÇÃO -->
+                <div class="campo-edicao">
+                    <label for="editarDescricao">Descrição</label>
+                    <textarea id="editarDescricao" rows="5" placeholder="Descrição do produto..."></textarea>
+                </div>
 
-            <!-- DESCRIÇÃO -->
+                <div id="mensagemEdicao" class="mensagem-modal"></div>
 
-            <div class="campo-edicao">
-
-                <label for="editarDescricao">
-
-                    Descrição
-
-                </label>
-
-
-                <textarea
-                    id="editarDescricao"
-                    rows="5"
-                    placeholder="Descrição do produto...">
-                </textarea>
-
-            </div>
-
-
-            <div
-                id="mensagemEdicao"
-                class="mensagem-modal">
-            </div>
-
-
-            <div class="modal-acoes">
-
-
-                <button
-                    type="button"
-                    class="botao-cancelar"
-                    onclick="fecharModalEdicao()">
-
-                    Cancelar
-
-                </button>
-
-
-                <button
-                    type="submit"
-                    id="botaoSalvarProduto"
-                    class="botao-confirmar">
-
-                    Salvar alterações
-
-                </button>
-
-
-            </div>
-
-
-        </form>
-
-
-    </div>
-
-</div>
-
-<!-- =========================================
-     MODAL EDITAR FORNECEDOR
-========================================== -->
-
-<div
-    id="modalFornecedor"
-    class="modal-overlay">
-
-
-    <div class="modal-reposicao modal-fornecedor">
-
-
-        <button
-            type="button"
-            class="modal-fechar"
-            onclick="fecharModalFornecedor()">
-
-            ✕
-
-        </button>
-
-
-        <span class="mini-titulo">
-            GERENCIAMENTO DE FORNECEDOR
-        </span>
-
-
-        <h2>
-            Editar fornecedor
-        </h2>
-
-
-        <p class="modal-descricao">
-
-            Altere os dados do fornecedor
-            responsável por este grupo de produtos.
-
-        </p>
-
-
-        <div class="fornecedor-relacao">
-
-            <div>
-
-                <span>
-                    Categoria
-                </span>
-
-                <strong id="fornecedorCategoria">
-                    -
-                </strong>
-
-            </div>
-
-
-            <div>
-
-                <span>
-                    Estoque
-                </span>
-
-                <strong id="fornecedorEstoque">
-                    -
-                </strong>
-
-            </div>
+                <div class="modal-acoes">
+                    <button type="button" class="botao-cancelar" onclick="fecharModalEdicao()">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="botaoSalvarProduto" class="botao-confirmar">
+                        Salvar alterações
+                    </button>
+                </div>
+            </form>
 
         </div>
-
-
-        <form id="formFornecedor">
-
-
-            <input
-                type="hidden"
-                id="fornecedorId">
-
-
-            <input
-                type="hidden"
-                id="fornecedorIdEstoque">
-
-
-            <div class="campo-edicao">
-
-                <label for="fornecedorNome">
-
-                    Nome do fornecedor
-
-                </label>
-
-
-                <input
-                    type="text"
-                    id="fornecedorNome"
-                    maxlength="150"
-                    required>
-
-            </div>
-
-
-            <div class="campo-edicao">
-
-                <label for="fornecedorContato">
-
-                    Contato
-
-                </label>
-
-
-                <input
-                    type="text"
-                    id="fornecedorContato"
-                    maxlength="30"
-                    placeholder="Ex: (21) 99999-9999"
-                    required>
-
-            </div>
-
-
-            <div class="aviso-fornecedor">
-
-                <strong>
-                    Atenção
-                </strong>
-
-                <p>
-                    Este fornecedor está relacionado
-                    à categoria de estoque. Alterações
-                    poderão aparecer em outros produtos
-                    da mesma categoria.
-                </p>
-
-            </div>
-
-
-            <div
-                id="mensagemFornecedor"
-                class="mensagem-modal">
-            </div>
-
-
-            <div class="modal-acoes">
-
-
-                <button
-                    type="button"
-                    class="botao-cancelar"
-                    onclick="fecharModalFornecedor()">
-
-                    Cancelar
-
-                </button>
-
-
-                <button
-                    type="submit"
-                    id="botaoSalvarFornecedor"
-                    class="botao-confirmar">
-
-                    Salvar fornecedor
-
-                </button>
-
-
-            </div>
-
-
-        </form>
-
-
     </div>
 
-</div>
+
+    <!-- =========================================
+         MODAL EDITAR FORNECEDOR
+    ========================================== -->
+    <div id="modalFornecedor" class="modal-overlay">
+        <div class="modal-reposicao modal-fornecedor">
+
+            <button type="button" class="modal-fechar" onclick="fecharModalFornecedor()">
+                ✕
+            </button>
+
+            <span class="mini-titulo">GERENCIAMENTO DE FORNECEDOR</span>
+            <h2>Editar fornecedor</h2>
+            <p class="modal-descricao">
+                Altere os dados do fornecedor responsável por este grupo de produtos.
+            </p>
+
+            <div class="fornecedor-relacao">
+                <div>
+                    <span>Categoria</span>
+                    <strong id="fornecedorCategoria">-</strong>
+                </div>
+                <div>
+                    <span>Estoque</span>
+                    <strong id="fornecedorEstoque">-</strong>
+                </div>
+            </div>
+
+            <form id="formFornecedor">
+                <input type="hidden" id="fornecedorId">
+                <input type="hidden" id="fornecedorIdEstoque">
+
+                <div class="campo-edicao">
+                    <label for="fornecedorNome">Nome do fornecedor</label>
+                    <input type="text" id="fornecedorNome" maxlength="150" required>
+                </div>
+
+                <div class="campo-edicao">
+                    <label for="fornecedorContato">Contato</label>
+                    <input type="text" id="fornecedorContato" maxlength="30" placeholder="Ex: (21) 99999-9999" required>
+                </div>
+
+                <div class="aviso-fornecedor">
+                    <strong>Atenção</strong>
+                    <p>
+                        Este fornecedor está relacionado à categoria de estoque. Alterações poderão aparecer em outros produtos da mesma categoria.
+                    </p>
+                </div>
+
+                <div id="mensagemFornecedor" class="mensagem-modal"></div>
+
+                <div class="modal-acoes">
+                    <button type="button" class="botao-cancelar" onclick="fecharModalFornecedor()">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="botaoSalvarFornecedor" class="botao-confirmar">
+                        Salvar fornecedor
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
 
     <!-- =========================================
          RODAPÉ
     ========================================== -->
-
     <footer class="rodape-admin">
-
-        <img
-            src="../img/Logo 1.png"
-            alt="ZORA">
-
-        <p>
-            Painel de gerenciamento ZORA
-        </p>
-
+        <img src="/img/Logo 1.png" alt="ZORA">
+        <p>Painel de gerenciamento ZORA</p>
     </footer>
 
-
-
     <script src="admin.js"></script>
-
-
 </body>
 
 </html>
