@@ -8,7 +8,7 @@
     <title>ZORA - Loja Feminina</title>
 
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="../EstiloBase.css">
+    <link rel="stylesheet" href="/EstiloBase.css">
 </head>
 
 <body>
@@ -64,7 +64,7 @@
 
     <nav>
 
-        <!-- MENU LATERAL -->
+        <!-- MENU LATERAL MOBILE -->
 
         <ul class="sidebar">
 
@@ -78,7 +78,7 @@
 
 
             <li>
-                <a href="#catalogoProdutos">
+                <a href="#catalogoProdutos" onclick="hideSidebar();">
                     Produtos
                 </a>
             </li>
@@ -88,7 +88,7 @@
 
                 <a
                     href="#"
-                    onclick="abrirPedidos(); return false;">
+                    onclick="hideSidebar(); abrirPedidos(); return false;">
 
                     Pedidos
 
@@ -100,7 +100,7 @@
 
 
             <li>
-                <a href="#">
+                <a href="#" onclick="hideSidebar();">
                     Sobre
                 </a>
             </li>
@@ -111,7 +111,7 @@
                 <a
                     href="#"
                     id="menuUsuarioMobile"
-                    onclick="abrirPerfil(); return false;">
+                    onclick="hideSidebar(); abrirPerfil(); return false;">
 
                     Login
 
@@ -130,10 +130,10 @@
 
             <li class="logo-menu">
 
-                <a href="index.html">
+                <a href="/Telainicial/index.html">
 
                     <img
-                        src="../img/Logo 1.png"
+                        src="/img/Logo 1.png"
                         alt="ZORA">
 
                 </a>
@@ -196,7 +196,7 @@
             </li>
 
 
-            <!-- MENU MOBILE -->
+            <!-- MENU MOBILE BUTTON -->
 
             <li class="menu-button">
 
@@ -231,7 +231,7 @@
             <div class="promocao-slide ativo">
 
                 <img
-                    src="../img/img10.jpeg"
+                    src="/img/img10.jpeg"
                     alt="Produto em promoção">
 
                 <div class="promocao-info">
@@ -248,7 +248,7 @@
                         Produtos selecionados com condições especiais.
                     </p>
 
-                    <a href="../TelaProdutos/produtos.html?id=10">
+                    <a href="/TelaProdutos/produtos.html?id=10">
                         Ver produto
                     </a>
 
@@ -264,7 +264,7 @@
             <div class="promocao-slide">
 
                 <img
-                    src="../img/img8.jpeg"
+                    src="/img/img8.jpeg"
                     alt="Produto em promoção">
 
                 <div class="promocao-info">
@@ -281,7 +281,7 @@
                         Confira nossa seleção de peças.
                     </p>
 
-                    <a href="../TelaProdutos/produtos.html?id=8">
+                    <a href="/TelaProdutos/produtos.html?id=8">
                         Ver produto
                     </a>
 
@@ -297,7 +297,7 @@
             <div class="promocao-slide">
 
                 <img
-                    src="../img/img7.jpeg"
+                    src="/img/img7.jpeg"
                     alt="Produto em promoção">
 
                 <div class="promocao-info">
@@ -314,7 +314,7 @@
                         Escolha sua próxima peça favorita.
                     </p>
 
-                    <a href="../TelaProdutos/produtos.html?id=7">
+                    <a href="/TelaProdutos/produtos.html?id=7">
                         Ver produto
                     </a>
 
@@ -330,7 +330,7 @@
             <div class="promocao-slide">
 
                 <img
-                    src="../img/img10.jpeg"
+                    src="/img/img10.jpeg"
                     alt="Produto em promoção">
 
                 <div class="promocao-info">
@@ -347,7 +347,7 @@
                         Aproveite enquanto estiver disponível.
                     </p>
 
-                    <a href="../TelaProdutos/produtos.html?id=10">
+                    <a href="/TelaProdutos/produtos.html?id=10">
                         Ver produto
                     </a>
 
@@ -449,7 +449,7 @@
             <div class="rodape-coluna">
 
                 <img
-                    src="../img/Logo 1.png"
+                    src="/img/Logo 1.png"
                     alt="ZORA"
                     class="logo-rodape">
 
@@ -469,7 +469,7 @@
                 <ul>
 
                     <li>
-                        <a href="index.html">Início</a>
+                        <a href="/Telainicial/index.html">Início</a>
                     </li>
 
                     <li>
@@ -546,7 +546,7 @@
          JAVASCRIPT
     ========================== -->
 
-    <script src="../auth.js"></script>
+    <script src="/auth.js"></script>
     <script src="script.js"></script>
 
 </body>
