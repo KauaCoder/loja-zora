@@ -2,10 +2,27 @@
 
 header("Content-Type: application/json; charset=UTF-8");
 
-// Garante a inclusão do arquivo de conexão na raiz do projeto
+// Inclui a conexão garantindo o caminho absoluto a partir da raiz do projeto
 require_once __DIR__ . "/conexao.php";
 
 try {
+
+    // =============================================
+    // VERIFICAR MÉTODO HTTP
+    // =============================================
+
+    if ($_SERVER["REQUEST_METHOD"] !== "GET") {
+
+        http_response_code(405);
+
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "Método não permitido. Utilize GET."
+        ]);
+
+        exit;
+    }
+
 
     // =============================================
     // PEGAR E VALIDAR ID
@@ -18,11 +35,14 @@ try {
         !is_numeric($idProduto) ||
         (int)$idProduto <= 0
     ) {
+
         http_response_code(400);
+
         echo json_encode([
             "sucesso" => false,
-            "mensagem" => "ID do produto inválido."
+            "mensagem" => "ID do produto é inválido."
         ]);
+
         exit;
     }
 
@@ -30,7 +50,7 @@ try {
 
 
     // =============================================
-    // BUSCAR PRODUTO
+    // BUSCAR PRODUTO NO POSTGRESQL
     // =============================================
 
     $sql = "
@@ -53,12 +73,11 @@ try {
         ":id_produto" => $idProduto
     ]);
 
-    // Busca como array associativo obrigatoriamente
     $produto = $stmt->fetch(PDO::FETCH_ASSOC);
 
 
     // =============================================
-    // NÃO ENCONTRADO
+    // PRODUTO NÃO ENCONTRADO
     // =============================================
 
     if (!$produto) {
@@ -67,7 +86,7 @@ try {
 
         echo json_encode([
             "sucesso" => false,
-            "mensagem" => "Produto não encontrado."
+            "mensagem" => "Produto não encontrado no banco de dados."
         ]);
 
         exit;
@@ -75,7 +94,7 @@ try {
 
 
     // =============================================
-    // RETORNAR PRODUTO
+    // RETORNAR ESTRUTURA PADRONIZADA
     // =============================================
 
     echo json_encode([
@@ -84,19 +103,19 @@ try {
 
         "produto" => [
 
-            "id_produto" => (int)$produto["id_produto"],
+            "id_produto" => (int) $produto["id_produto"],
 
-            "nome" => $produto["nm_produto"],
+            "nome"       => $produto["nm_produto"],
 
-            "preco" => (float)$produto["preco"],
+            "preco"      => round((float) $produto["preco"], 2),
 
-            "estoque" => (int)$produto["qtd_item"],
+            "estoque"    => (int) $produto["qtd_item"],
 
-            "categoria" => $produto["categoria"],
+            "categoria"  => $produto["categoria"] ?? "Geral",
 
-            "imagem" => $produto["imagem"],
+            "imagem"     => $produto["imagem"] ?? "default.jpg",
 
-            "descricao" => $produto["descricao"]
+            "descricao"  => $produto["descricao"] ?? ""
 
         ]
 
