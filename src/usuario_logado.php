@@ -34,9 +34,9 @@ try {
     if (!isset($_SESSION["id_cliente"])) {
 
         echo json_encode([
-            "sucesso" => true,
-            "logado"  => false,
-            "is_admin"=> false
+            "sucesso"  => true,
+            "logado"   => false,
+            "is_admin" => false
         ], JSON_UNESCAPED_UNICODE);
 
         exit;
@@ -45,7 +45,7 @@ try {
     $idCliente = (int) $_SESSION["id_cliente"];
 
     // =============================================
-    // BUSCAR DADOS ATUALIZADOS DO CLIENTE
+    // BUSCAR DADOS DO CLIENTE (SEM FORÇAR IS_ADMIN)
     // =============================================
 
     $sql = "
@@ -53,8 +53,7 @@ try {
             id_cliente,
             nome,
             e_mail,
-            telefone,
-            COALESCE(is_admin, FALSE) AS is_admin
+            telefone
         FROM cliente
         WHERE id_cliente = :id_cliente
         LIMIT 1
@@ -89,16 +88,32 @@ try {
         session_destroy();
 
         echo json_encode([
-            "sucesso" => true,
-            "logado"  => false,
-            "is_admin"=> false
+            "sucesso"  => true,
+            "logado"   => false,
+            "is_admin" => false
         ], JSON_UNESCAPED_UNICODE);
 
         exit;
     }
 
-    // Mantém a flag atualizada na sessão
-    $_SESSION["is_admin"] = (bool) $cliente["is_admin"];
+    // =============================================
+    // CHECAR IS_ADMIN DE FORMA SEGURA
+    // =============================================
+
+    $isAdmin = false;
+
+    try {
+        $stmtAdmin = $conexao->prepare("SELECT is_admin FROM cliente WHERE id_cliente = :id_cliente LIMIT 1");
+        $stmtAdmin->execute([":id_cliente" => $idCliente]);
+        $rowAdmin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
+        $isAdmin = !empty($rowAdmin["is_admin"]);
+    } catch (Throwable $eAdmin) {
+        // Se a coluna is_admin ainda não existir no banco, assume false e não interrompe a sessão
+        $isAdmin = false;
+    }
+
+    // Mantém a permissão atualizada na sessão
+    $_SESSION["is_admin"] = $isAdmin;
 
     // =============================================
     // RESPOSTA COMPLETA DA SESSÃO
@@ -110,7 +125,7 @@ try {
 
         "logado"   => true,
 
-        "is_admin" => (bool) $cliente["is_admin"],
+        "is_admin" => $isAdmin,
 
         "cliente"  => [
 
@@ -122,7 +137,7 @@ try {
 
             "telefone"   => $cliente["telefone"],
 
-            "is_admin"   => (bool) $cliente["is_admin"]
+            "is_admin"   => $isAdmin
 
         ]
 
