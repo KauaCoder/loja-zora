@@ -7,6 +7,23 @@ include_once("../conexao.php");
 try {
 
     // =============================================
+    // VERIFICAR MÉTODO HTTP
+    // =============================================
+
+    if (!in_array($_SERVER["REQUEST_METHOD"], ["POST", "PUT"])) {
+
+        http_response_code(405);
+
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "Método não permitido. Utilize POST ou PUT."
+        ]);
+
+        exit;
+    }
+
+
+    // =============================================
     // RECEBER JSON
     // =============================================
 
@@ -18,30 +35,17 @@ try {
 
     if (!is_array($dados)) {
 
-        throw new Exception(
-            "Dados inválidos."
-        );
+        throw new Exception("Dados de requisição inválidos.");
     }
 
 
-    $idFornecedor =
-        (int) ($dados["id_fornecedor"] ?? 0);
+    $idFornecedor = (int) ($dados["id_fornecedor"] ?? 0);
 
+    $idItemEstoque = (int) ($dados["id_item_estoque"] ?? 0);
 
-    $idItemEstoque =
-        (int) ($dados["id_item_estoque"] ?? 0);
+    $nome = trim($dados["nome"] ?? "");
 
-
-    $nome =
-        trim(
-            $dados["nome"] ?? ""
-        );
-
-
-    $contato =
-        trim(
-            $dados["contato"] ?? ""
-        );
+    $contato = trim($dados["contato"] ?? "");
 
 
     // =============================================
@@ -50,49 +54,37 @@ try {
 
     if ($idFornecedor <= 0) {
 
-        throw new Exception(
-            "Fornecedor inválido."
-        );
+        throw new Exception("Fornecedor inválido.");
     }
 
 
     if ($idItemEstoque <= 0) {
 
-        throw new Exception(
-            "Estoque relacionado inválido."
-        );
+        throw new Exception("Estoque relacionado inválido.");
     }
 
 
     if ($nome === "") {
 
-        throw new Exception(
-            "O nome do fornecedor é obrigatório."
-        );
+        throw new Exception("O nome do fornecedor é obrigatório.");
     }
 
 
-    if (strlen($nome) > 150) {
+    if (mb_strlen($nome) > 150) {
 
-        throw new Exception(
-            "O nome do fornecedor pode ter no máximo 150 caracteres."
-        );
+        throw new Exception("O nome do fornecedor pode ter no máximo 150 caracteres.");
     }
 
 
     if ($contato === "") {
 
-        throw new Exception(
-            "O contato do fornecedor é obrigatório."
-        );
+        throw new Exception("O contato do fornecedor é obrigatório.");
     }
 
 
-    if (strlen($contato) > 30) {
+    if (mb_strlen($contato) > 30) {
 
-        throw new Exception(
-            "O contato pode ter no máximo 30 caracteres."
-        );
+        throw new Exception("O contato pode ter no máximo 30 caracteres.");
     }
 
 
@@ -104,7 +96,7 @@ try {
 
 
     // =============================================
-    // LOCALIZAR FORNECEDOR
+    // LOCALIZAR FORNECEDOR (LOCK COM FOR UPDATE)
     // =============================================
 
     $sqlFornecedor = "
@@ -113,38 +105,25 @@ try {
             id_item_estoque,
             nome,
             contato
-
         FROM fornecedor
-
         WHERE id_fornecedor = :id_fornecedor
-
         FOR UPDATE
     ";
 
 
-    $stmtFornecedor =
-        $conexao->prepare(
-            $sqlFornecedor
-        );
-
+    $stmtFornecedor = $conexao->prepare($sqlFornecedor);
 
     $stmtFornecedor->execute([
-
-        ":id_fornecedor" =>
-            $idFornecedor
-
+        ":id_fornecedor" => $idFornecedor
     ]);
 
 
-    $fornecedor =
-        $stmtFornecedor->fetch();
+    $fornecedor = $stmtFornecedor->fetch(PDO::FETCH_ASSOC);
 
 
     if (!$fornecedor) {
 
-        throw new Exception(
-            "Fornecedor não encontrado."
-        );
+        throw new Exception("Fornecedor não encontrado.");
     }
 
 
@@ -152,15 +131,9 @@ try {
     // SEGURANÇA DA RELAÇÃO
     // =============================================
 
-    if (
-        (int) $fornecedor["id_item_estoque"]
-        !==
-        $idItemEstoque
-    ) {
+    if ((int) $fornecedor["id_item_estoque"] !== $idItemEstoque) {
 
-        throw new Exception(
-            "O fornecedor não pertence ao estoque informado."
-        );
+        throw new Exception("O fornecedor não pertence ao estoque informado.");
     }
 
 
@@ -170,13 +143,10 @@ try {
 
     $sqlUpdate = "
         UPDATE fornecedor
-
         SET
             nome = :nome,
             contato = :contato
-
         WHERE id_fornecedor = :id_fornecedor
-
         RETURNING
             id_fornecedor,
             id_item_estoque,
@@ -185,57 +155,40 @@ try {
     ";
 
 
-    $stmtUpdate =
-        $conexao->prepare(
-            $sqlUpdate
-        );
-
+    $stmtUpdate = $conexao->prepare($sqlUpdate);
 
     $stmtUpdate->execute([
-
-        ":nome" =>
-            $nome,
-
-        ":contato" =>
-            $contato,
-
-        ":id_fornecedor" =>
-            $idFornecedor
-
+        ":nome" => $nome,
+        ":contato" => $contato,
+        ":id_fornecedor" => $idFornecedor
     ]);
 
 
-    $fornecedorAtualizado =
-        $stmtUpdate->fetch();
+    $fornecedorAtualizado = $stmtUpdate->fetch(PDO::FETCH_ASSOC);
 
 
     $conexao->commit();
 
 
     // =============================================
-    // RESPOSTA
+    // RESPOSTA SUCESSO
     // =============================================
 
     echo json_encode([
 
         "sucesso" => true,
 
-        "mensagem" =>
-            "Fornecedor atualizado com sucesso!",
+        "mensagem" => "Fornecedor atualizado com sucesso!",
 
         "fornecedor" => [
 
-            "id_fornecedor" =>
-                (int) $fornecedorAtualizado["id_fornecedor"],
+            "id_fornecedor" => (int) $fornecedorAtualizado["id_fornecedor"],
 
-            "id_item_estoque" =>
-                (int) $fornecedorAtualizado["id_item_estoque"],
+            "id_item_estoque" => (int) $fornecedorAtualizado["id_item_estoque"],
 
-            "nome" =>
-                $fornecedorAtualizado["nome"],
+            "nome" => $fornecedorAtualizado["nome"],
 
-            "contato" =>
-                $fornecedorAtualizado["contato"]
+            "contato" => $fornecedorAtualizado["contato"]
 
         ]
 
@@ -260,8 +213,7 @@ try {
 
         "sucesso" => false,
 
-        "mensagem" =>
-            $erro->getMessage()
+        "mensagem" => $erro->getMessage()
 
     ]);
 }
