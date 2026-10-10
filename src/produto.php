@@ -2,32 +2,31 @@
 
 header("Content-Type: application/json; charset=UTF-8");
 
-include_once("../conexao.php");
+// Garante a inclusão do arquivo de conexão na raiz do projeto
+require_once __DIR__ . "/conexao.php";
 
 try {
 
     // =============================================
-    // PEGAR ID
+    // PEGAR E VALIDAR ID
     // =============================================
 
-    $idProduto =
-        $_GET["id"] ?? null;
-
+    $idProduto = $_GET["id"] ?? null;
 
     if (
         !$idProduto ||
         !is_numeric($idProduto) ||
         (int)$idProduto <= 0
     ) {
-
-        throw new Exception(
-            "ID do produto inválido."
-        );
+        http_response_code(400);
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "ID do produto inválido."
+        ]);
+        exit;
     }
 
-
-    $idProduto =
-        (int)$idProduto;
+    $idProduto = (int)$idProduto;
 
 
     // =============================================
@@ -48,19 +47,14 @@ try {
         LIMIT 1
     ";
 
-
-    $stmt =
-        $conexao->prepare($sql);
-
+    $stmt = $conexao->prepare($sql);
 
     $stmt->execute([
-        ":id_produto" =>
-            $idProduto
+        ":id_produto" => $idProduto
     ]);
 
-
-    $produto =
-        $stmt->fetch();
+    // Busca como array associativo obrigatoriamente
+    $produto = $stmt->fetch(PDO::FETCH_ASSOC);
 
 
     // =============================================
@@ -73,8 +67,7 @@ try {
 
         echo json_encode([
             "sucesso" => false,
-            "mensagem" =>
-                "Produto não encontrado."
+            "mensagem" => "Produto não encontrado."
         ]);
 
         exit;
@@ -91,26 +84,19 @@ try {
 
         "produto" => [
 
-            "id_produto" =>
-                (int)$produto["id_produto"],
+            "id_produto" => (int)$produto["id_produto"],
 
-            "nome" =>
-                $produto["nm_produto"],
+            "nome" => $produto["nm_produto"],
 
-            "preco" =>
-                (float)$produto["preco"],
+            "preco" => (float)$produto["preco"],
 
-            "estoque" =>
-                (int)$produto["qtd_item"],
+            "estoque" => (int)$produto["qtd_item"],
 
-            "categoria" =>
-                $produto["categoria"],
+            "categoria" => $produto["categoria"],
 
-            "imagem" =>
-                $produto["imagem"],
+            "imagem" => $produto["imagem"],
 
-            "descricao" =>
-                $produto["descricao"]
+            "descricao" => $produto["descricao"]
 
         ]
 
@@ -119,14 +105,13 @@ try {
 
 } catch (Throwable $erro) {
 
-    http_response_code(400);
+    http_response_code(500);
 
     echo json_encode([
 
         "sucesso" => false,
 
-        "mensagem" =>
-            $erro->getMessage()
+        "mensagem" => $erro->getMessage()
 
     ]);
 }
