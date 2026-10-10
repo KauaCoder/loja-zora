@@ -159,7 +159,7 @@ async function carregarProduto() {
     try {
 
         const resposta = await fetch(
-            `../produto.php?id=${encodeURIComponent(idProduto)}`
+            `/produto.php?id=${encodeURIComponent(idProduto)}`
         );
 
 
@@ -187,22 +187,23 @@ async function carregarProduto() {
            NOME
         ========================= */
 
-        document.getElementById(
-            "nomeProduto"
-        ).textContent =
-            produto.nome;
+        const elNome = document.getElementById("nomeProduto");
+        if (elNome) {
+            elNome.textContent = produto.nome;
+        }
 
 
         /* =========================
            PREÇO
         ========================= */
 
-        document.getElementById(
-            "precoProduto"
-        ).textContent =
-            `R$ ${Number(produto.preco)
-                .toFixed(2)
-                .replace(".", ",")}`;
+        const elPreco = document.getElementById("precoProduto");
+        if (elPreco) {
+            elPreco.textContent =
+                `R$ ${Number(produto.preco)
+                    .toFixed(2)
+                    .replace(".", ",")}`;
+        }
 
 
         /* =========================
@@ -215,72 +216,79 @@ async function carregarProduto() {
             );
 
 
-        if (produto.imagem) {
+        if (imagem) {
 
-            imagem.src =
-                `../img/${produto.imagem}`;
+            if (produto.imagem) {
 
-        } else {
+                imagem.src =
+                    `/img/${produto.imagem}`;
 
-            imagem.removeAttribute(
-                "src"
-            );
+            } else {
 
+                imagem.removeAttribute(
+                    "src"
+                );
+
+            }
+
+            imagem.alt =
+                produto.nome;
         }
-
-
-        imagem.alt =
-            produto.nome;
 
 
         /* =========================
            DESCRIÇÃO
         ========================= */
 
-        document.getElementById(
-            "descricaoProduto"
-        ).textContent =
-            produto.descricao || "-";
+        const elDescricao = document.getElementById("descricaoProduto");
+        if (elDescricao) {
+            elDescricao.textContent =
+                produto.descricao || "-";
+        }
 
 
         /* =========================
            TECIDO
         ========================= */
 
-        document.getElementById(
-            "tecidoProduto"
-        ).textContent =
-            detalhes.tecido;
+        const elTecido = document.getElementById("tecidoProduto");
+        if (elTecido) {
+            elTecido.textContent =
+                detalhes.tecido;
+        }
 
 
         /* =========================
            COMPOSIÇÃO
         ========================= */
 
-        document.getElementById(
-            "composicaoProduto"
-        ).textContent =
-            detalhes.composicao;
+        const elComposicao = document.getElementById("composicaoProduto");
+        if (elComposicao) {
+            elComposicao.textContent =
+                detalhes.composicao;
+        }
 
 
         /* =========================
            MARCA
         ========================= */
 
-        document.getElementById(
-            "marcaProduto"
-        ).textContent =
-            detalhes.marca;
+        const elMarca = document.getElementById("marcaProduto");
+        if (elMarca) {
+            elMarca.textContent =
+                detalhes.marca;
+        }
 
 
         /* =========================
            COLEÇÃO
         ========================= */
 
-        document.getElementById(
-            "colecaoProduto"
-        ).textContent =
-            detalhes.colecao;
+        const elColecao = document.getElementById("colecaoProduto");
+        if (elColecao) {
+            elColecao.textContent =
+                detalhes.colecao;
+        }
 
 
         /* =========================
@@ -604,7 +612,7 @@ if (botaoComprar) {
 
                     imagem:
                         produto.imagem
-                            ? `../img/${produto.imagem}`
+                            ? `/img/${produto.imagem}`
                             : ""
 
                 })
@@ -1300,13 +1308,6 @@ function adicionarPedidos(
 
     /*
      * Consideramos produto + tamanho para o carrinho.
-     *
-     * Assim:
-     * Vestido P
-     * e
-     * Vestido M
-     *
-     * podem aparecer separadamente.
      */
 
     const produtoExistente =
@@ -1526,7 +1527,7 @@ async function pagarPedido() {
 
 
             window.location.href =
-                "../TelaLogin/login.html";
+                "/TelaLogin/login.html";
 
 
             return;
@@ -1553,7 +1554,7 @@ async function pagarPedido() {
 
 
     window.location.href =
-        "../TelaEntrega/entrega.html";
+        "/TelaEntrega/entrega.html";
 }
 
 
