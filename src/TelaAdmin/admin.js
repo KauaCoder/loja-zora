@@ -20,10 +20,11 @@ async function carregarDadosAdmin() {
 
         const resposta =
             await fetch(
-                "../admin_dados.php",
+                "/admin_dados.php",
                 {
                     method: "GET",
-                    cache: "no-store"
+                    cache: "no-store",
+                    credentials: "include"
                 }
             );
 
@@ -428,7 +429,7 @@ function renderizarProdutos(
             if (produto.imagem) {
 
                 imagem.src =
-                    `../img/${produto.imagem}`;
+                    `/img/${produto.imagem}`;
 
             }
 
@@ -657,107 +658,107 @@ function renderizarProdutos(
             }
 
 
-const grupoAcoes =
-    document.createElement(
-        "div"
-    );
+            const grupoAcoes =
+                document.createElement(
+                    "div"
+                );
 
 
-grupoAcoes.className =
-    "grupo-acoes";
+            grupoAcoes.className =
+                "grupo-acoes";
 
 
-const botaoEditar =
-    document.createElement(
-        "button"
-    );
+            const botaoEditar =
+                document.createElement(
+                    "button"
+                );
 
 
-botaoEditar.type =
-    "button";
+            botaoEditar.type =
+                "button";
 
 
-botaoEditar.className =
-    "botao-editar";
+            botaoEditar.className =
+                "botao-editar";
 
 
-botaoEditar.textContent =
-    "Editar";
+            botaoEditar.textContent =
+                "Editar";
 
 
-botaoEditar.addEventListener(
-    "click",
-    function () {
+            botaoEditar.addEventListener(
+                "click",
+                function () {
 
-        abrirModalEdicao(
-            produto
-        );
-    }
-);
-
-
-const botaoFornecedor =
-    document.createElement(
-        "button"
-    );
-
-
-botaoFornecedor.type =
-    "button";
-
-
-botaoFornecedor.className =
-    "botao-fornecedor";
-
-
-botaoFornecedor.textContent =
-    "Fornecedor";
-
-
-if (
-    produto.id_fornecedor &&
-    produto.id_item_estoque
-) {
-
-    botaoFornecedor.addEventListener(
-        "click",
-        function () {
-
-            abrirModalFornecedor(
-                produto
+                    abrirModalEdicao(
+                        produto
+                    );
+                }
             );
-        }
-    );
-
-} else {
-
-    botaoFornecedor.disabled =
-        true;
 
 
-    botaoFornecedor.textContent =
-        "Sem fornecedor";
-}
+            const botaoFornecedor =
+                document.createElement(
+                    "button"
+                );
 
 
-grupoAcoes.appendChild(
-    botaoEditar
-);
+            botaoFornecedor.type =
+                "button";
 
 
-grupoAcoes.appendChild(
-    botaoRepor
-);
+            botaoFornecedor.className =
+                "botao-fornecedor";
 
 
-grupoAcoes.appendChild(
-    botaoFornecedor
-);
+            botaoFornecedor.textContent =
+                "Fornecedor";
 
 
-colunaAcoes.appendChild(
-    grupoAcoes
-);
+            if (
+                produto.id_fornecedor &&
+                produto.id_item_estoque
+            ) {
+
+                botaoFornecedor.addEventListener(
+                    "click",
+                    function () {
+
+                        abrirModalFornecedor(
+                            produto
+                        );
+                    }
+                );
+
+            } else {
+
+                botaoFornecedor.disabled =
+                    true;
+
+
+                botaoFornecedor.textContent =
+                    "Sem fornecedor";
+            }
+
+
+            grupoAcoes.appendChild(
+                botaoEditar
+            );
+
+
+            grupoAcoes.appendChild(
+                botaoRepor
+            );
+
+
+            grupoAcoes.appendChild(
+                botaoFornecedor
+            );
+
+
+            colunaAcoes.appendChild(
+                grupoAcoes
+            );
 
 
             // =====================================
@@ -872,11 +873,6 @@ function criarStatus(
 
     return status;
 }
-
-
-// =====================================================
-// ABRIR MODAL
-// =====================================================
 
 
 // =====================================================
@@ -1127,7 +1123,7 @@ async function salvarFornecedor(
 
         const resposta =
             await fetch(
-                "../atualizar_fornecedor.php",
+                "/atualizar_fornecedor.php",
                 {
 
                     method:
@@ -1139,6 +1135,8 @@ async function salvarFornecedor(
                             "application/json"
 
                     },
+
+                    credentials: "include",
 
                     body:
                         JSON.stringify({
@@ -1181,10 +1179,6 @@ async function salvarFornecedor(
             "sucesso"
         );
 
-
-        // Atualiza toda a tabela.
-        // Isso é importante porque vários produtos
-        // podem compartilhar o mesmo fornecedor.
 
         await carregarDadosAdmin();
 
@@ -1266,8 +1260,6 @@ function mostrarMensagemFornecedor(
         );
     }
 }
-
-
 
 
 function abrirModalReposicao(
@@ -1503,7 +1495,7 @@ async function enviarReposicao(
 
         const resposta =
             await fetch(
-                "../repor_estoque.php",
+                "/repor_estoque.php",
                 {
 
                     method:
@@ -1515,6 +1507,8 @@ async function enviarReposicao(
                             "application/json"
 
                     },
+
+                    credentials: "include",
 
                     body:
                         JSON.stringify({
@@ -1670,27 +1664,27 @@ document.addEventListener(
         carregarDashboard();
 
         const modalEdicao =
-    document.getElementById(
-        "modalEditarProduto"
-    );
+            document.getElementById(
+                "modalEditarProduto"
+            );
 
 
-if (modalEdicao) {
+        if (modalEdicao) {
 
-    modalEdicao.addEventListener(
-        "click",
-        function (evento) {
+            modalEdicao.addEventListener(
+                "click",
+                function (evento) {
 
-            if (
-                evento.target ===
-                modalEdicao
-            ) {
+                    if (
+                        evento.target ===
+                        modalEdicao
+                    ) {
 
-                fecharModalEdicao();
-            }
+                        fecharModalEdicao();
+                    }
+                }
+            );
         }
-    );
-}
 
         const pesquisa =
             document.getElementById(
@@ -1709,8 +1703,6 @@ if (modalEdicao) {
                 "formReposicao"
             );
 
-            
-
 
         const modal =
             document.getElementById(
@@ -1718,46 +1710,46 @@ if (modalEdicao) {
             );
 
 
-            const formularioEdicao =
-    document.getElementById(
-        "formEditarProduto"
-    );
+        const formularioEdicao =
+            document.getElementById(
+                "formEditarProduto"
+            );
 
-    const formularioFornecedor =
-    document.getElementById(
-        "formFornecedor"
-    );
+        const formularioFornecedor =
+            document.getElementById(
+                "formFornecedor"
+            );
 
 
-const modalFornecedor =
-    document.getElementById(
-        "modalFornecedor"
-    );
+        const modalFornecedor =
+            document.getElementById(
+                "modalFornecedor"
+            );
 
-    if (formularioFornecedor) {
+        if (formularioFornecedor) {
 
-    formularioFornecedor.addEventListener(
-        "submit",
-        salvarFornecedor
-    );
-}
-
-if (modalFornecedor) {
-
-    modalFornecedor.addEventListener(
-        "click",
-        function (evento) {
-
-            if (
-                evento.target ===
-                modalFornecedor
-            ) {
-
-                fecharModalFornecedor();
-            }
+            formularioFornecedor.addEventListener(
+                "submit",
+                salvarFornecedor
+            );
         }
-    );
-}
+
+        if (modalFornecedor) {
+
+            modalFornecedor.addEventListener(
+                "click",
+                function (evento) {
+
+                    if (
+                        evento.target ===
+                        modalFornecedor
+                    ) {
+
+                        fecharModalFornecedor();
+                    }
+                }
+            );
+        }
 
 
         if (pesquisa) {
@@ -1788,11 +1780,11 @@ if (modalFornecedor) {
 
         if (formularioEdicao) {
 
-    formularioEdicao.addEventListener(
-        "submit",
-        salvarEdicaoProduto
-    );
-}
+            formularioEdicao.addEventListener(
+                "submit",
+                salvarEdicaoProduto
+            );
+        }
 
 
         // Clicar fora fecha modal
@@ -1817,8 +1809,6 @@ if (modalFornecedor) {
         carregarDadosAdmin();
 
     }
-
-    
 );
 
 
@@ -1830,16 +1820,16 @@ document.addEventListener(
     "keydown",
     function (evento) {
 
-if (
-    evento.key === "Escape"
-) {
+        if (
+            evento.key === "Escape"
+        ) {
 
-    fecharModalReposicao();
+            fecharModalReposicao();
 
-    fecharModalEdicao();
+            fecharModalEdicao();
 
-    fecharModalFornecedor();
-}
+            fecharModalFornecedor();
+        }
     }
 );
 
@@ -2048,7 +2038,7 @@ async function salvarEdicaoProduto(
 
         const resposta =
             await fetch(
-                "../editar_produto.php",
+                "/editar_produto.php",
                 {
 
                     method:
@@ -2060,6 +2050,8 @@ async function salvarEdicaoProduto(
                             "application/json"
 
                     },
+
+                    credentials: "include",
 
                     body:
                         JSON.stringify({
@@ -2102,9 +2094,6 @@ async function salvarEdicaoProduto(
             "sucesso"
         );
 
-
-        // Atualiza os dados da tabela
-        // sem precisar recarregar a página.
 
         await carregarDadosAdmin();
 
@@ -2203,7 +2192,10 @@ async function carregarDashboard() {
 
         const resposta =
             await fetch(
-                "../dashboard_admin.php"
+                "/dashboard_admin.php",
+                {
+                    credentials: "include"
+                }
             );
 
 
@@ -2487,9 +2479,6 @@ function formatarDataPedido(
         return "-";
     }
 
-
-    // PostgreSQL normalmente retorna:
-    // 2026-10-06 20:30:00
 
     const dataConvertida =
         new Date(
