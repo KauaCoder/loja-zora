@@ -2,16 +2,32 @@
 
 header("Content-Type: application/json; charset=UTF-8");
 
-// Inclui o arquivo de conexão presente na mesma pasta (src/)
+// Inclui o arquivo de conexão presente na mesma pasta
 require_once __DIR__ . "/conexao.php";
 
 try {
 
-    // Recebe os dados enviados pelo JavaScript
+    // =========================
+    // VERIFICAR MÉTODO HTTP
+    // =========================
+
+    if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+        http_response_code(405);
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "Método não permitido. Utilize POST."
+        ]);
+        exit;
+    }
+
+    // =========================
+    // RECEBER JSON
+    // =========================
+
     $dados = json_decode(file_get_contents("php://input"), true);
 
-    if (!$dados) {
-        throw new Exception("Dados inválidos.");
+    if (!$dados || !is_array($dados)) {
+        throw new Exception("Dados de requisição inválidos.");
     }
 
     // =========================
@@ -19,34 +35,34 @@ try {
     // =========================
 
     $nome = trim($dados["nome"] ?? "");
-    $email = strtolower(trim($dados["email"] ?? ""));
+    $email = strtolower(trim($dados["email"] ?? $dados["e_mail"] ?? ""));
     $telefone = trim($dados["telefone"] ?? "");
     $senha = $dados["senha"] ?? "";
 
     // =========================
-    // DADOS DO ENDEREÇO
+    // DADOS DO ENDEREÇO (SUPORTA ANINHADO OU RAIZ)
     // =========================
 
     $endereco = $dados["endereco"] ?? [];
 
-    $cep = trim($endereco["cep"] ?? "");
-    $rua = trim($endereco["rua"] ?? "");
-    $numero = trim($endereco["numero"] ?? "");
-    $complemento = trim($endereco["complemento"] ?? "");
-    $bairro = trim($endereco["bairro"] ?? "");
-    $cidade = trim($endereco["cidade"] ?? "");
-    $estado = trim($endereco["estado"] ?? "");
+    $cep = trim($endereco["cep"] ?? $dados["cep"] ?? "");
+    $rua = trim($endereco["rua"] ?? $endereco["endereco"] ?? $dados["rua"] ?? $dados["endereco"] ?? "");
+    $numero = trim($endereco["numero"] ?? $dados["numero"] ?? "");
+    $complemento = trim($endereco["complemento"] ?? $dados["complemento"] ?? "");
+    $bairro = trim($endereco["bairro"] ?? $dados["bairro"] ?? "");
+    $cidade = trim($endereco["cidade"] ?? $dados["cidade"] ?? "");
+    $estado = strtoupper(trim($endereco["estado"] ?? $dados["estado"] ?? ""));
 
     // =========================
-    // VALIDAÇÕES
+    // VALIDAÇÕES DOS DADOS
     // =========================
 
     if ($nome === "") {
-        throw new Exception("Nome é obrigatório.");
+        throw new Exception("O nome é obrigatório.");
     }
 
-    if ($email === "") {
-        throw new Exception("E-mail é obrigatório.");
+    if ($email === "" || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new Exception("Forneça um endereço de e-mail válido.");
     }
 
     if ($senha === "" || strlen($senha) < 6) {
@@ -54,31 +70,31 @@ try {
     }
 
     if ($cep === "") {
-        throw new Exception("CEP é obrigatório.");
+        throw new Exception("O CEP é obrigatório.");
     }
 
     if ($rua === "") {
-        throw new Exception("Rua é obrigatória.");
+        throw new Exception(" O endereço/rua é obrigatório.");
     }
 
     if ($numero === "") {
-        throw new Exception("Número é obrigatório.");
+        throw new Exception("O número do endereço é obrigatório.");
     }
 
     if ($bairro === "") {
-        throw new Exception("Bairro é obrigatório.");
+        throw new Exception("O bairro é obrigatório.");
     }
 
     if ($cidade === "") {
-        throw new Exception("Cidade é obrigatória.");
+        throw new Exception("A cidade é obrigatória.");
     }
 
     if ($estado === "") {
-        throw new Exception("Estado é obrigatório.");
+        throw new Exception("O estado (UF) é obrigatório.");
     }
 
     // =========================
-    // VERIFICAR E-MAIL
+    // VERIFICAR E-MAIL DUPLICADO
     // =========================
 
     $sqlEmail = "
@@ -89,12 +105,11 @@ try {
     ";
 
     $stmtEmail = $conexao->prepare($sqlEmail);
-
     $stmtEmail->execute([
         ":email" => $email
     ]);
 
-    if ($stmtEmail->fetch()) {
+    if ($stmtEmail->fetch(PDO::FETCH_ASSOC)) {
         throw new Exception("Este e-mail já está cadastrado.");
     }
 
@@ -102,10 +117,7 @@ try {
     // HASH DA SENHA
     // =========================
 
-    $senhaHash = password_hash(
-        $senha,
-        PASSWORD_DEFAULT
-    );
+    $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
 
     // =========================
     // INICIAR TRANSAÇÃO
@@ -136,7 +148,6 @@ try {
     ";
 
     $stmtCliente = $conexao->prepare($sqlCliente);
-
     $stmtCliente->execute([
         ":nome" => $nome,
         ":email" => $email,
@@ -144,7 +155,11 @@ try {
         ":telefone" => $telefone
     ]);
 
-    $idCliente = $stmtCliente->fetchColumn();
+    $idCliente = (int) $stmtCliente->fetchColumn();
+
+    if (!$idCliente) {
+        throw new Exception("Erro ao obter ID do cliente gerado.");
+    }
 
     // =========================
     // CADASTRAR ENDEREÇO
@@ -176,7 +191,6 @@ try {
     ";
 
     $stmtEndereco = $conexao->prepare($sqlEndereco);
-
     $stmtEndereco->execute([
         ":id_cliente" => $idCliente,
         ":cep" => $cep,
@@ -200,9 +214,9 @@ try {
         "id_cliente" => $idCliente
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
 
-    // Se alguma coisa falhar, desfaz a transação
+    // Desfaz alterações no banco de dados se houver falhas
     if (isset($conexao) && $conexao->inTransaction()) {
         $conexao->rollBack();
     }
@@ -213,5 +227,4 @@ try {
         "sucesso" => false,
         "mensagem" => $e->getMessage()
     ]);
-
 }
