@@ -16,13 +16,21 @@ async function obterUsuarioLogado() {
             "/usuario_logado.php",
             {
                 method: "GET",
+                headers: {
+                    "Cache-Control": "no-cache, no-store"
+                },
                 credentials: "include"
             }
         );
 
+        if (!resposta.ok) {
+            return null;
+        }
+
         const resultado = await resposta.json();
 
         if (
+            resultado &&
             resultado.sucesso === true &&
             resultado.logado === true
         ) {
@@ -113,9 +121,7 @@ async function logout(
     }
 
 
-    // Remove dados antigos do localStorage.
-    // A autenticação verdadeira agora é feita pela sessão PHP.
-
+    // Remove dados residuais do localStorage.
     localStorage.removeItem("usuarioLogado");
     localStorage.removeItem("idCliente");
     localStorage.removeItem("emailUsuario");
@@ -195,7 +201,7 @@ async function abrirPerfil() {
 
 
 // =====================================================
-// DISPONIBILIZAR FUNÇÕES
+// DISPONIBILIZAR FUNÇÕES GLOBAIS
 // =====================================================
 
 window.estaLogado =
