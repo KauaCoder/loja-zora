@@ -38,7 +38,7 @@ async function verificarLogin() {
     try {
 
         const resposta = await fetch(
-            "../usuario_logado.php",
+            "/usuario_logado.php",
             {
                 method: "GET",
                 credentials: "include"
@@ -101,12 +101,12 @@ async function abrirPerfil() {
     if (logado) {
 
         window.location.href =
-            "../TelaCliente/cliente.html";
+            "/TelaCliente/cliente.html";
 
     } else {
 
         window.location.href =
-            "../TelaLogin/login.html";
+            "/TelaLogin/login.html";
 
     }
 
@@ -163,7 +163,7 @@ if (
 ) {
 
     window.location.href =
-        "../TelaInicial/index.html";
+        "/Telainicial/index.html";
 
 } else {
 
@@ -616,7 +616,7 @@ if (formEntrega) {
 
 
                 window.location.href =
-                    "../TelaLogin/login.html";
+                    "/TelaLogin/login.html";
 
 
                 return;
@@ -781,7 +781,7 @@ if (formEntrega) {
 
 
                 window.location.href =
-                    "../TelaInicial/index.html";
+                    "/Telainicial/index.html";
 
 
                 return;
@@ -881,7 +881,7 @@ if (formEntrega) {
 
                 const resposta =
                     await fetch(
-                        "../finalizar_pedido.php",
+                        "/finalizar_pedido.php",
                         {
 
                             method: "POST",
@@ -996,7 +996,7 @@ if (formEntrega) {
 
 
                         window.location.href =
-                            "../TelaLogin/login.html";
+                            "/TelaLogin/login.html";
 
 
                         return;
@@ -1072,7 +1072,7 @@ if (formEntrega) {
                 // =====================================
 
                 window.location.href =
-                    "../TelaInicial/index.html";
+                    "/Telainicial/index.html";
 
 
             } catch (erro) {
