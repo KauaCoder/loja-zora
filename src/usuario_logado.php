@@ -1,6 +1,7 @@
 <?php
 
 // Configura os parâmetros do cookie de sessão ANTES de iniciar a sessão
+// Necessário para funcionar no HTTPS do Render e manter a persistência
 session_set_cookie_params([
     'lifetime' => 86400, // 24 horas
     'path'     => '/',
@@ -12,32 +13,48 @@ session_set_cookie_params([
 session_start();
 
 header("Content-Type: application/json; charset=UTF-8");
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
 
-// Inclui o arquivo de conexão presente na mesma pasta
-require_once __DIR__ . "/conexao.php";
+// Localiza o conexao.php na pasta /src ou na raiz
+$caminho_conexao = __DIR__ . '/src/conexao.php';
+
+if (!file_exists($caminho_conexao)) {
+    $caminho_conexao = __DIR__ . '/conexao.php';
+}
+
+require_once $caminho_conexao;
 
 try {
 
-    // Verifica se existe cliente na sessão
+    // =============================================
+    // VERIFICAR SESSÃO ATIVA
+    // =============================================
+
     if (!isset($_SESSION["id_cliente"])) {
 
         echo json_encode([
             "sucesso" => true,
-            "logado" => false
-        ]);
+            "logado"  => false,
+            "is_admin"=> false
+        ], JSON_UNESCAPED_UNICODE);
 
         exit;
     }
 
-    $idCliente = (int)$_SESSION["id_cliente"];
+    $idCliente = (int) $_SESSION["id_cliente"];
 
-    // Busca os dados atuais no banco
+    // =============================================
+    // BUSCAR DADOS ATUALIZADOS DO CLIENTE
+    // =============================================
+
     $sql = "
         SELECT
             id_cliente,
             nome,
             e_mail,
-            telefone
+            telefone,
+            COALESCE(is_admin, FALSE) AS is_admin
         FROM cliente
         WHERE id_cliente = :id_cliente
         LIMIT 1
@@ -49,41 +66,67 @@ try {
         ":id_cliente" => $idCliente
     ]);
 
-    $cliente = $stmt->fetch();
+    $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // Se o cliente foi removido do banco, destrói a sessão
     if (!$cliente) {
 
-        // Cliente não existe mais
-        session_unset();
+        $_SESSION = [];
+
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
+            );
+        }
+
         session_destroy();
 
         echo json_encode([
             "sucesso" => true,
-            "logado" => false
-        ]);
+            "logado"  => false,
+            "is_admin"=> false
+        ], JSON_UNESCAPED_UNICODE);
 
         exit;
     }
 
+    // Mantém a flag atualizada na sessão
+    $_SESSION["is_admin"] = (bool) $cliente["is_admin"];
+
+    // =============================================
+    // RESPOSTA COMPLETA DA SESSÃO
+    // =============================================
+
     echo json_encode([
 
-        "sucesso" => true,
+        "sucesso"  => true,
 
-        "logado" => true,
+        "logado"   => true,
 
-        "cliente" => [
+        "is_admin" => (bool) $cliente["is_admin"],
 
-            "id_cliente" => (int)$cliente["id_cliente"],
+        "cliente"  => [
 
-            "nome" => $cliente["nome"],
+            "id_cliente" => (int) $cliente["id_cliente"],
 
-            "email" => $cliente["e_mail"],
+            "nome"       => $cliente["nome"],
 
-            "telefone" => $cliente["telefone"]
+            "email"      => $cliente["e_mail"],
+
+            "telefone"   => $cliente["telefone"],
+
+            "is_admin"   => (bool) $cliente["is_admin"]
 
         ]
 
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $erro) {
 
@@ -91,12 +134,14 @@ try {
 
     echo json_encode([
 
-        "sucesso" => false,
+        "sucesso"  => false,
 
-        "logado" => false,
+        "logado"   => false,
 
-        "mensagem" => $erro->getMessage()
+        "is_admin" => false,
 
-    ]);
+        "mensagem" => "Erro de verificação: " . $erro->getMessage()
+
+    ], JSON_UNESCAPED_UNICODE);
 
 }
