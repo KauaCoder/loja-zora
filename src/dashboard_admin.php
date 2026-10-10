@@ -97,12 +97,18 @@ try {
     $pedidos = [];
 
     foreach ($dadosPedidos as $pedido) {
+
+        // Formata data caso venha no padrão timestamp do banco
+        $dataFormatada = $pedido["data_pedido"]
+            ? date("d/m/Y H:i", strtotime($pedido["data_pedido"]))
+            : "-";
+
         $pedidos[] = [
             "id_pedido" => (int) $pedido["id_pedido"],
             "cliente" => $pedido["cliente"],
-            "data_pedido" => $pedido["data_pedido"],
-            "valor_total" => (float) $pedido["valor_total"],
-            "status" => $pedido["status"],
+            "data_pedido" => $dataFormatada,
+            "valor_total" => round((float) $pedido["valor_total"], 2),
+            "status" => $pedido["status"] ?? "Pendente",
             "quantidade_itens" => (int) $pedido["quantidade_itens"]
         ];
     }
@@ -115,10 +121,10 @@ try {
     echo json_encode([
         "sucesso" => true,
         "resumo" => [
-            "faturamento" => (float) ($resumo["faturamento"] ?? 0),
+            "faturamento" => round((float) ($resumo["faturamento"] ?? 0), 2),
             "total_pedidos" => (int) ($resumo["total_pedidos"] ?? 0),
             "produtos_vendidos" => (int) ($vendidos["produtos_vendidos"] ?? 0),
-            "ticket_medio" => (float) ($resumo["ticket_medio"] ?? 0)
+            "ticket_medio" => round((float) ($resumo["ticket_medio"] ?? 0), 2)
         ],
         "mais_vendido" => $maisVendido ? [
             "nome" => $maisVendido["nm_produto"],
