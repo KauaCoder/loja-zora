@@ -13,7 +13,7 @@ async function verificarLogin() {
     try {
 
         const resposta = await fetch(
-            "../usuario_logado.php",
+            "/usuario_logado.php",
             {
                 method: "GET",
                 credentials: "include"
@@ -29,7 +29,7 @@ async function verificarLogin() {
         ) {
 
             window.location.replace(
-                "../TelaLogin/login.html"
+                "/TelaLogin/login.html"
             );
 
             return false;
@@ -45,7 +45,7 @@ async function verificarLogin() {
         );
 
         window.location.replace(
-            "../TelaLogin/login.html"
+            "/TelaLogin/login.html"
         );
 
         return false;
@@ -69,15 +69,8 @@ async function carregarDadosPerfil() {
 
     try {
 
-        /*
-         * Agora o cliente.php também será baseado
-         * na sessão PHP.
-         *
-         * Não precisamos mais enviar id_cliente.
-         */
-
         const resposta = await fetch(
-            "cliente.php",
+            "/cliente.php",
             {
                 method: "GET",
                 credentials: "include"
@@ -262,7 +255,7 @@ async function mostrarEdicaoEndereco() {
     try {
 
         const resposta = await fetch(
-            "cliente.php",
+            "/cliente.php",
             {
                 method: "GET",
                 credentials: "include"
@@ -450,7 +443,7 @@ async function salvarEndereco() {
     try {
 
         const resposta = await fetch(
-            "../atualizar_endereco.php",
+            "/atualizar_endereco.php",
             {
                 method: "POST",
 
@@ -704,7 +697,7 @@ async function carregarCompras() {
     try {
 
         const resposta = await fetch(
-            "../historico_pedidos.php",
+            "/historico_pedidos.php",
             {
                 method: "GET",
                 credentials: "include"
@@ -963,108 +956,7 @@ async function sairDoPerfil() {
     try {
 
         await fetch(
-            "../logout.php",
+            "/logout.php",
             {
                 method: "POST",
-                credentials: "include"
-            }
-        );
-
-    } catch (erro) {
-
-        console.error(
-            "Erro ao fazer logout:",
-            erro
-        );
-
-    }
-
-
-    // Limpar dados antigos de compatibilidade
-
-    localStorage.removeItem(
-        "usuarioLogado"
-    );
-
-    localStorage.removeItem(
-        "idCliente"
-    );
-
-    localStorage.removeItem(
-        "emailUsuario"
-    );
-
-    localStorage.removeItem(
-        "nomeUsuario"
-    );
-
-    localStorage.removeItem(
-        "telefoneUsuario"
-    );
-
-    localStorage.removeItem(
-        "enderecoUsuario"
-    );
-
-
-    window.location.replace(
-        "../TelaInicial/index.html"
-    );
-}
-
-
-// Mantém compatibilidade caso o HTML tenha onclick="logout()"
-window.logout =
-    sairDoPerfil;
-
-
-// =====================================================
-// MENU LATERAL
-// =====================================================
-
-const sidebar =
-    document.querySelector(
-        ".sidebar"
-    );
-
-
-function showSidebar() {
-
-    if (sidebar) {
-
-        sidebar.classList.add(
-            "active"
-        );
-
-    }
-
-}
-
-
-function hideSidebar() {
-
-    if (sidebar) {
-
-        sidebar.classList.remove(
-            "active"
-        );
-
-    }
-
-}
-
-
-// =====================================================
-// INICIALIZAR PÁGINA
-// =====================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
-
-        carregarDadosPerfil();
-
-        carregarCompras();
-
-    }
-);
+                credentials
