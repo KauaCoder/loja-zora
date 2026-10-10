@@ -14,8 +14,12 @@ session_start();
 
 header("Content-Type: application/json; charset=UTF-8");
 
-// Inclui o arquivo de conexão presente na mesma pasta
-require_once __DIR__ . "/conexao.php";
+// Inclui o conexao.php buscando tanto na raiz quanto na subpasta /src
+$caminho_conexao = __DIR__ . '/src/conexao.php';
+if (!file_exists($caminho_conexao)) {
+    $caminho_conexao = __DIR__ . '/conexao.php';
+}
+require_once $caminho_conexao;
 
 try {
 
@@ -28,7 +32,7 @@ try {
         echo json_encode([
             "sucesso" => false,
             "mensagem" => "Método não permitido. Utilize POST."
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -41,7 +45,7 @@ try {
         throw new Exception("Dados de requisição inválidos.");
     }
 
-    $email = strtolower(trim($dados["email"] ?? ""));
+    $email = strtolower(trim($dados["email"] ?? $dados["e_mail"] ?? ""));
     $senha = $dados["senha"] ?? "";
 
     if ($email === "" || $senha === "") {
@@ -93,7 +97,7 @@ try {
     $_SESSION["is_admin"]   = (bool) $cliente["is_admin"]; // Salva permissão na sessão
 
     // =========================
-    // DEFINIR ROTA SEGREDA / REDIRECIONAMENTO
+    // DEFINIR ROTA SECRETA / REDIRECIONAMENTO
     // =========================
 
     $isAdmin = (bool) $cliente["is_admin"];
@@ -123,18 +127,17 @@ try {
 
         ]
 
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
 
-    http_response_code(400);
-
+    // Retorna a resposta limpa sem quebrar o formato JSON
     echo json_encode([
 
         "sucesso" => false,
 
-        "mensagem" => $e.getMessage()
+        "mensagem" => $e->getMessage() // Corrigido de $e.getMessage() para $e->getMessage()
 
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
 
 }
