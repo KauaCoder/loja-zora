@@ -1,21 +1,40 @@
 <?php
 header("Content-Type: application/json; charset=UTF-8");
 
-// Inclui o conexao.php buscando dentro da pasta src/
+// =============================================
+// VERIFICAR MÉTODO HTTP
+// =============================================
+
+if ($_SERVER["REQUEST_METHOD"] !== "GET") {
+    http_response_code(405);
+    echo json_encode([
+        "sucesso" => false,
+        "mensagem" => "Método não permitido. Utilize GET."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// =============================================
+// LOCALIZAR E CARREGAR CONEXÃO
+// =============================================
+
 $caminho_conexao = __DIR__ . '/src/conexao.php';
 
 if (!file_exists($caminho_conexao)) {
-    // Tenta incluir se o conexao.php estiver no mesmo diretório
     $caminho_conexao = __DIR__ . '/conexao.php';
 }
 
 require_once $caminho_conexao;
 
 try {
-    // Garante que $conexao exista
+
     if (!isset($conexao)) {
         throw new Exception("Variável \$conexao não foi definida no arquivo conexao.php.");
     }
+
+    // =============================================
+    // CONSULTA AO POSTGRESQL
+    // =============================================
 
     $sql = "
         SELECT
@@ -41,11 +60,12 @@ try {
         $produtos[] = [
             "id_produto" => (int) $produto["id_produto"],
             "nome"       => $produto["nm_produto"],
-            "preco"      => (float) $produto["preco"],
+            "preco"      => round((float) $produto["preco"], 2),
             "estoque"    => (int) $produto["qtd_item"],
-            "categoria"  => $produto["categoria"],
-            "imagem"     => $produto["imagem"],
-            "descricao"  => $produto["descricao"]
+            "qtd_item"   => (int) $produto["qtd_item"], // Mantido para compatibilidade legado
+            "categoria"  => $produto["categoria"] ?? "Geral",
+            "imagem"     => $produto["imagem"] ?? "default.jpg",
+            "descricao"  => $produto["descricao"] ?? ""
         ];
     }
 
@@ -55,6 +75,7 @@ try {
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $erro) {
+
     http_response_code(500);
 
     echo json_encode([
@@ -62,4 +83,3 @@ try {
         "mensagem" => "Erro no servidor: " . $erro->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
-?>
