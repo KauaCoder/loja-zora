@@ -4,8 +4,6 @@ include_once("../conexao.php");
 
 header("Content-Type: application/json; charset=UTF-8");
 
-// REMOVIDO: require_once "conexao.php"; (Ele causava conflito e erro de arquivo não encontrado)
-
 try {
 
     $sql = "
@@ -36,11 +34,10 @@ try {
         ORDER BY p.id_produto
     ";
 
-    // Certifique-se de usar a mesma variável definida no seu conexao.php ($conexao ou $pdo)
     $stmt = $conexao->prepare($sql);
     $stmt->execute();
 
-    $dados = $stmt->fetchAll();
+    $dados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $produtos = [];
 
@@ -58,6 +55,10 @@ try {
                 (float) $produto["preco"],
 
             "qtd_item" =>
+                (int) $produto["qtd_item"],
+
+            // Adicionado para compatibilidade direta com script.js / produtos.js
+            "estoque" =>
                 (int) $produto["qtd_item"],
 
             "categoria" =>
