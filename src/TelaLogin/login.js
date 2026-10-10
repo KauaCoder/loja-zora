@@ -195,18 +195,27 @@ async function buscarCEPCadastro() {
             "complementoCadastro"
         ).value = dados.complemento || "";
 
-        document.getElementById(
-            "enderecoTexto"
-        ).textContent =
-            `✓ Endereço encontrado: ${dados.logradouro || ""}, ${dados.bairro || ""} - ${dados.localidade || ""}, ${dados.uf || ""}`;
+        const enderecoTexto =
+            document.getElementById("enderecoTexto");
 
-        document.getElementById(
-            "enderecoInfo"
-        ).classList.add("show");
+        const enderecoInfo =
+            document.getElementById("enderecoInfo");
 
-        document.getElementById(
-            "numeroCadastro"
-        ).focus();
+        if (enderecoTexto) {
+            enderecoTexto.textContent =
+                `✓ Endereço encontrado: ${dados.logradouro || ""}, ${dados.bairro || ""} - ${dados.localidade || ""}, ${dados.uf || ""}`;
+        }
+
+        if (enderecoInfo) {
+            enderecoInfo.classList.add("show");
+        }
+
+        const numeroCadastro =
+            document.getElementById("numeroCadastro");
+
+        if (numeroCadastro) {
+            numeroCadastro.focus();
+        }
 
     } catch (erro) {
 
@@ -230,25 +239,25 @@ async function buscarCEPCadastro() {
 
 function limparEnderecos() {
 
-    document.getElementById(
-        "ruaCadastro"
-    ).value = "";
-
-    document.getElementById(
-        "bairroCadastro"
-    ).value = "";
-
-    document.getElementById(
-        "cidadeCadastro"
-    ).value = "";
-
-    document.getElementById(
-        "estadoCadastro"
-    ).value = "";
-
-    document.getElementById(
+    const campos = [
+        "ruaCadastro",
+        "bairroCadastro",
+        "cidadeCadastro",
+        "estadoCadastro",
         "complementoCadastro"
-    ).value = "";
+    ];
+
+    campos.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = "";
+        }
+    });
+
+    const info = document.getElementById("enderecoInfo");
+    if (info) {
+        info.classList.remove("show");
+    }
 }
 
 
