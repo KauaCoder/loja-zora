@@ -2,7 +2,9 @@
 
 header("Content-Type: application/json; charset=UTF-8");
 
-require_once "conexao.php";
+// Tenta localizar conexao.php na raiz ou na pasta /src
+$caminho_conexao = file_exists(__DIR__ . '/src/conexao.php') ? __DIR__ . '/src/conexao.php' : __DIR__ . '/conexao.php';
+require_once $caminho_conexao;
 
 try {
 
@@ -17,10 +19,10 @@ try {
     // DADOS DO CLIENTE
     // =========================
 
-    $nome = trim($dados["nome"] ?? "");
-    $email = strtolower(trim($dados["email"] ?? ""));
+    $nome     = trim($dados["nome"] ?? "");
+    $email    = strtolower(trim($dados["email"] ?? $dados["e_mail"] ?? ""));
     $telefone = trim($dados["telefone"] ?? "");
-    $senha = $dados["senha"] ?? "";
+    $senha    = $dados["senha"] ?? "";
 
     // =========================
     // DADOS DO ENDEREÇO
@@ -28,61 +30,37 @@ try {
 
     $endereco = $dados["endereco"] ?? [];
 
-    $cep = trim($endereco["cep"] ?? "");
-    $rua = trim($endereco["rua"] ?? "");
-    $numero = trim($endereco["numero"] ?? "");
+    $cep         = trim($endereco["cep"] ?? "");
+    $rua         = trim($endereco["rua"] ?? $endereco["endereco"] ?? "");
+    $numero      = trim($endereco["numero"] ?? "");
     $complemento = trim($endereco["complemento"] ?? "");
-    $bairro = trim($endereco["bairro"] ?? "");
-    $cidade = trim($endereco["cidade"] ?? "");
-    $estado = trim($endereco["estado"] ?? "");
+    $bairro      = trim($endereco["bairro"] ?? "");
+    $cidade      = trim($endereco["cidade"] ?? "");
+    $estado      = strtoupper(trim($endereco["estado"] ?? ""));
 
     // =========================
     // VALIDAÇÕES
     // =========================
 
-    if ($nome === "") {
-        throw new Exception("Nome é obrigatório.");
-    }
-
-    if ($email === "") {
-        throw new Exception("E-mail é obrigatório.");
-    }
-
-    if ($senha === "" || strlen($senha) < 6) {
-        throw new Exception("A senha deve ter no mínimo 6 caracteres.");
-    }
-
-    if ($cep === "") {
-        throw new Exception("CEP é obrigatório.");
-    }
-
-    if ($rua === "") {
-        throw new Exception("Rua é obrigatória.");
-    }
-
-    if ($numero === "") {
-        throw new Exception("Número é obrigatório.");
-    }
-
-    if ($bairro === "") {
-        throw new Exception("Bairro é obrigatório.");
-    }
-
-    if ($cidade === "") {
-        throw new Exception("Cidade é obrigatória.");
-    }
-
-    if ($estado === "") {
-        throw new Exception("Estado é obrigatório.");
-    }
+    if ($nome === "")     throw new Exception("Nome é obrigatório.");
+    if ($email === "")    throw new Exception("E-mail é obrigatório.");
+    if ($senha === "" || strlen($senha) < 6) throw new Exception("A senha deve ter no mínimo 6 caracteres.");
+    if ($cep === "")      throw new Exception("CEP é obrigatório.");
+    if ($rua === "")      throw new Exception("Rua é obrigatória.");
+    if ($numero === "")   throw new Exception("Número é obrigatório.");
+    if ($bairro === "")   throw new Exception("Bairro é obrigatório.");
+    if ($cidade === "")   throw new Exception("Cidade é obrigatória.");
+    if ($estado === "")   throw new Exception("Estado é obrigatório.");
 
     // =========================
     // VERIFICAR E-MAIL
+    // Tabela: cliente (sem aspas)
+    // Coluna: "e-mail" (com aspas por conta do hífen)
     // =========================
 
     $sqlEmail = '
         SELECT id_cliente
-        FROM "Cliente"
+        FROM cliente
         WHERE "e-mail" = :email
         LIMIT 1
     ';
@@ -117,7 +95,7 @@ try {
     // =========================
 
     $sqlCliente = '
-        INSERT INTO "Cliente"
+        INSERT INTO cliente
         (
             nome,
             "e-mail",
@@ -137,20 +115,24 @@ try {
     $stmtCliente = $conexao->prepare($sqlCliente);
 
     $stmtCliente->execute([
-        ":nome" => $nome,
-        ":email" => $email,
-        ":senha" => $senhaHash,
+        ":nome"     => $nome,
+        ":email"    => $email,
+        ":senha"    => $senhaHash,
         ":telefone" => $telefone
     ]);
 
-    $idCliente = $stmtCliente->fetchColumn();
+    $idCliente = (int) $stmtCliente->fetchColumn();
+
+    if (!$idCliente) {
+        throw new Exception("Não foi possível gerar o ID do cliente.");
+    }
 
     // =========================
     // CADASTRAR ENDEREÇO
     // =========================
 
     $sqlEndereco = '
-        INSERT INTO "Endereco"
+        INSERT INTO endereco
         (
             id_cliente,
             cep,
@@ -177,14 +159,14 @@ try {
     $stmtEndereco = $conexao->prepare($sqlEndereco);
 
     $stmtEndereco->execute([
-        ":id_cliente" => $idCliente,
-        ":cep" => $cep,
-        ":endereco" => $rua,
-        ":numero" => $numero,
+        ":id_cliente"  => $idCliente,
+        ":cep"         => $cep,
+        ":endereco"    => $rua,
+        ":numero"      => $numero,
         ":complemento" => $complemento,
-        ":bairro" => $bairro,
-        ":cidade" => $cidade,
-        ":estado" => $estado
+        ":bairro"      => $bairro,
+        ":cidade"      => $cidade,
+        ":estado"      => $estado
     ]);
 
     // =========================
@@ -194,10 +176,10 @@ try {
     $conexao->commit();
 
     echo json_encode([
-        "sucesso" => true,
-        "mensagem" => "Cadastro realizado com sucesso!",
+        "sucesso"    => true,
+        "mensagem"   => "Cadastro realizado com sucesso!",
         "id_cliente" => $idCliente
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {
 
@@ -206,10 +188,14 @@ try {
         $conexao->rollBack();
     }
 
-    // Mantém resposta 200 para o JS ler o JSON com a mensagem de erro original
+    $msg = $e->getMessage();
+    if (strpos($msg, "23505") !== false) {
+        $msg = "Este e-mail já está cadastrado.";
+    }
+
     echo json_encode([
-        "sucesso" => false,
-        "mensagem" => $e->getMessage()
-    ]);
+        "sucesso"  => false,
+        "mensagem" => $msg
+    ], JSON_UNESCAPED_UNICODE);
 
 }
