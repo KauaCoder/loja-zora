@@ -273,9 +273,18 @@ if (formCadastro) {
                 body: JSON.stringify({ nome, email, telefone, senha, endereco })
             });
 
-            const resultado = await resposta.json();
+            // Converte e lê a resposta textual primeiro para garantir que o JSON é válido
+            const textoResposta = await resposta.text();
+            let resultado;
 
-            // Lê a resposta do backend
+            try {
+                resultado = JSON.parse(textoResposta);
+            } catch (e) {
+                console.error("Erro na resposta do servidor (HTML/Invalido):", textoResposta);
+                alert("Erro ao processar cadastro no servidor. Tente novamente.");
+                return;
+            }
+
             if (!resultado.sucesso) {
                 alert(resultado.mensagem || "Não foi possível realizar o cadastro.");
                 return;
@@ -319,7 +328,16 @@ if (formLogin) {
                 body: JSON.stringify({ email, senha })
             });
 
-            const resultado = await resposta.json();
+            const textoResposta = await resposta.text();
+            let resultado;
+
+            try {
+                resultado = JSON.parse(textoResposta);
+            } catch (e) {
+                console.error("Erro na resposta do servidor (HTML/Invalido):", textoResposta);
+                alert("Erro ao processar login no servidor.");
+                return;
+            }
 
             if (!resultado.sucesso) {
                 alert(resultado.mensagem || "E-mail ou senha incorretos.");
@@ -327,7 +345,7 @@ if (formLogin) {
             }
 
             alert("Login realizado com sucesso!");
-            window.location.href = resultado.redirecionar || "/Telainicial/index.html";
+            window.location.replace(resultado.redirecionar || "/Telainicial/index.html");
 
         } catch (erro) {
             console.error("Erro no login:", erro);
