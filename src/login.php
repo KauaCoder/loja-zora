@@ -1,24 +1,45 @@
 <?php
 
-// Configura cookies de sessão antes do session_start
-session_set_cookie_params([
-    'lifetime' => 86400, // 24 horas
-    'path'     => '/',
-    'secure'   => true,   // Requerido no Render (HTTPS)
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
+// =========================================================
+// ZORA - LOGIN DO CLIENTE
+// Suporte a HTTPS + Proxy Reverso (Render & Local)
+// =========================================================
 
-session_start();
+// 1. Reconhece o HTTPS vindo do Proxy Reverso do Render
+$isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
+           (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+if ($isHttps) {
+    $_SERVER['HTTPS'] = 'on';
+}
+
+// 2. Configura os cookies da sessão dinamicamente
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 86400,   // 24 horas
+        'path'     => '/',
+        'secure'   => $isHttps, // True em HTTPS (Render), False em HTTP (local)
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
 
 header("Content-Type: application/json; charset=UTF-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
 
-// Inclui o conexao.php (suporta /src ou raiz)
-$caminho_conexao = __DIR__ . '/src/conexao.php';
+// Inclui conexao.php (suporta /src ou raiz)
+$caminho_conexao = file_exists(__DIR__ . '/src/conexao.php') ? __DIR__ . '/src/conexao.php' : __DIR__ . '/conexao.php';
+
 if (!file_exists($caminho_conexao)) {
-    $caminho_conexao = __DIR__ . '/conexao.php';
+    echo json_encode([
+        "sucesso" => false,
+        "mensagem" => "Não foi possível localizar o arquivo conexao.php"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
 }
+
 require_once $caminho_conexao;
 
 try {
@@ -45,7 +66,7 @@ try {
         throw new Exception("E-mail e senha são obrigatórios.");
     }
 
-    // Tenta buscar o cliente incluindo a coluna is_admin
+    // Busca o cliente na tabela cliente (coluna e_mail)
     try {
         $sql = "
             SELECT
@@ -63,7 +84,7 @@ try {
         $stmt->execute([":email" => $email]);
         $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Throwable $eSelect) {
-        // Fallback para tabelas antigas sem a coluna is_admin
+        // Fallback se a coluna is_admin ainda não existir
         $sqlFallback = "
             SELECT id_cliente, nome, e_mail, senha, telefone
             FROM cliente
@@ -84,6 +105,9 @@ try {
 
     $isAdmin = filter_var($cliente["is_admin"] ?? false, FILTER_VALIDATE_BOOLEAN);
 
+    // Regenera o ID da sessão por segurança e para forçar o envio do cookie atualizado
+    session_regenerate_id(true);
+
     // Salva na sessão do PHP
     $_SESSION["id_cliente"] = (int) $cliente["id_cliente"];
     $_SESSION["nome"]       = $cliente["nome"];
@@ -94,11 +118,11 @@ try {
     $redirecionar = $isAdmin ? "/TelaAdmin/admin.html" : "/Telainicial/index.html";
 
     echo json_encode([
-        "sucesso" => true,
-        "mensagem" => "Login realizado com sucesso!",
-        "is_admin" => $isAdmin,
+        "sucesso"      => true,
+        "mensagem"     => "Login realizado com sucesso!",
+        "is_admin"     => $isAdmin,
         "redirecionar" => $redirecionar,
-        "cliente" => [
+        "cliente"      => [
             "id_cliente" => (int) $cliente["id_cliente"],
             "nome"       => $cliente["nome"],
             "email"      => $cliente["e_mail"],
@@ -110,7 +134,7 @@ try {
 } catch (Throwable $e) {
 
     echo json_encode([
-        "sucesso" => false,
+        "sucesso"  => false,
         "mensagem" => $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 
