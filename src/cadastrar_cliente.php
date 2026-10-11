@@ -1,20 +1,39 @@
 <?php
-
 header("Content-Type: application/json; charset=UTF-8");
 
-// Localiza o conexao.php na pasta /src ou na raiz do projeto
-$caminho_conexao = __DIR__ . '/src/conexao.php';
+// =========================================================
+// LOCALIZAR E INCLUIR A CONEXÃO (INCLUI A PASTA PAI /..)
+// =========================================================
+$caminho_conexao = __DIR__ . '/../conexao.php'; // Busca na pasta pai
+
 if (!file_exists($caminho_conexao)) {
-    $caminho_conexao = __DIR__ . '/conexao.php';
+    $caminho_conexao = __DIR__ . '/conexao.php'; // Busca na mesma pasta
 }
+
+if (!file_exists($caminho_conexao)) {
+    $caminho_conexao = __DIR__ . '/src/conexao.php'; // Busca na pasta src
+}
+
+if (!file_exists($caminho_conexao)) {
+    http_response_code(500);
+    echo json_encode([
+        "sucesso" => false,
+        "mensagem" => "Arquivo de conexão com o banco de dados não foi encontrado."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 require_once $caminho_conexao;
 
 try {
+    // Verifica se a conexão com PDO foi estabelecida com sucesso
+    if (!isset($conexao) || !($conexao instanceof PDO)) {
+        throw new Exception("Falha na conexão com o banco de dados.");
+    }
 
     // =========================
     // VERIFICAR MÉTODO HTTP
     // =========================
-
     if ($_SERVER["REQUEST_METHOD"] !== "POST") {
         http_response_code(405);
         echo json_encode([
@@ -27,8 +46,8 @@ try {
     // =========================
     // RECEBER JSON
     // =========================
-
-    $dados = json_decode(file_get_contents("php://input"), true);
+    $conteudo = file_get_contents("php://input");
+    $dados = json_decode($conteudo, true);
 
     if (!$dados || !is_array($dados)) {
         throw new Exception("Dados de requisição inválidos.");
@@ -37,16 +56,14 @@ try {
     // =========================
     // DADOS DO CLIENTE
     // =========================
-
     $nome     = trim($dados["nome"] ?? "");
     $email    = strtolower(trim($dados["email"] ?? $dados["e_mail"] ?? ""));
     $telefone = trim($dados["telefone"] ?? "");
     $senha    = $dados["senha"] ?? "";
 
     // =========================
-    // DADOS DO ENDEREÇO (SUPORTA ANINHADO OU RAIZ)
+    // DADOS DO ENDEREÇO
     // =========================
-
     $endereco = $dados["endereco"] ?? [];
 
     $cep         = trim($endereco["cep"] ?? $dados["cep"] ?? "");
@@ -60,96 +77,56 @@ try {
     // =========================
     // VALIDAÇÕES DOS DADOS
     // =========================
+    if ($nome === "") throw new Exception("O nome é obrigatório.");
+    if ($email === "" || !filter_var($email, FILTER_VALIDATE_EMAIL)) throw new Exception("Forneça um e-mail válido.");
+    if ($senha === "" || strlen($senha) < 6) throw new Exception("A senha deve ter no mínimo 6 caracteres.");
+    if ($cep === "") throw new Exception("O CEP é obrigatório.");
+    if ($rua === "") throw new Exception("O endereço/rua é obrigatório.");
+    if ($numero === "") throw new Exception("O número do endereço é obrigatório.");
+    if ($bairro === "") throw new Exception("O bairro é obrigatório.");
+    if ($cidade === "") throw new Exception("A cidade é obrigatória.");
+    if ($estado === "") throw new Exception("O estado (UF) é obrigatório.");
 
-    if ($nome === "") {
-        throw new Exception("O nome é obrigatório.");
-    }
-
-    if ($email === "" || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        throw new Exception("Forneça um endereço de e-mail válido.");
-    }
-
-    if ($senha === "" || strlen($senha) < 6) {
-        throw new Exception("A senha deve ter no mínimo 6 caracteres.");
-    }
-
-    if ($cep === "") {
-        throw new Exception("O CEP é obrigatório.");
-    }
-
-    if ($rua === "") {
-        throw new Exception("O endereço/rua é obrigatório.");
-    }
-
-    if ($numero === "") {
-        throw new Exception("O número do endereço é obrigatório.");
-    }
-
-    if ($bairro === "") {
-        throw new Exception("O bairro é obrigatório.");
-    }
-
-    if ($cidade === "") {
-        throw new Exception("A cidade é obrigatória.");
-    }
-
-    if ($estado === "") {
-        throw new Exception("O estado (UF) é obrigatório.");
+    // =========================
+    // DESCOBRIR NOME DA TABELA (cliente OU clientes)
+    // =========================
+    $tabelaCliente = "cliente";
+    try {
+        $teste = $conexao->query("SELECT 1 FROM clientes LIMIT 1");
+        if ($teste !== false) $tabelaCliente = "clientes";
+    } catch (Exception $e) {
+        // Mantém 'cliente' caso 'clientes' não exista
     }
 
     // =========================
     // VERIFICAR E-MAIL DUPLICADO
     // =========================
-
-    $sqlEmail = "
-        SELECT id_cliente
-        FROM cliente
-        WHERE e_mail = :email
-        LIMIT 1
-    ";
-
+    $sqlEmail = "SELECT id_cliente FROM {$tabelaCliente} WHERE e_mail = :email OR email = :email LIMIT 1";
     $stmtEmail = $conexao->prepare($sqlEmail);
-    $stmtEmail->execute([
-        ":email" => $email
-    ]);
+    $stmtEmail->execute([":email" => $email]);
 
-    if ($stmtEmail->fetch(PDO::FETCH_ASSOC)) {
+    if ($stmtEmail->fetch()) {
         throw new Exception("Este e-mail já está cadastrado.");
     }
 
     // =========================
     // HASH DA SENHA
     // =========================
-
     $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
 
     // =========================
     // INICIAR TRANSAÇÃO
     // =========================
-
     $conexao->beginTransaction();
 
     // =========================
     // CADASTRAR CLIENTE
     // =========================
-
     $sqlCliente = "
-        INSERT INTO cliente
-        (
-            nome,
-            e_mail,
-            senha,
-            telefone,
-            is_admin
-        )
+        INSERT INTO {$tabelaCliente}
+        (nome, e_mail, senha, telefone, is_admin)
         VALUES
-        (
-            :nome,
-            :email,
-            :senha,
-            :telefone,
-            FALSE
-        )
+        (:nome, :email, :senha, :telefone, FALSE)
         RETURNING id_cliente
     ";
 
@@ -164,36 +141,17 @@ try {
     $idCliente = (int) $stmtCliente->fetchColumn();
 
     if (!$idCliente) {
-        throw new Exception("Erro ao obter ID do cliente gerado.");
+        throw new Exception("Erro ao registrar o cliente no banco de dados.");
     }
 
     // =========================
     // CADASTRAR ENDEREÇO
     // =========================
-
     $sqlEndereco = "
         INSERT INTO endereco
-        (
-            id_cliente,
-            cep,
-            endereco,
-            numero,
-            complemento,
-            bairro,
-            cidade,
-            estado
-        )
+        (id_cliente, cep, endereco, numero, complemento, bairro, cidade, estado)
         VALUES
-        (
-            :id_cliente,
-            :cep,
-            :endereco,
-            :numero,
-            :complemento,
-            :bairro,
-            :cidade,
-            :estado
-        )
+        (:id_cliente, :cep, :endereco, :numero, :complemento, :bairro, :cidade, :estado)
     ";
 
     $stmtEndereco = $conexao->prepare($sqlEndereco);
@@ -211,7 +169,6 @@ try {
     // =========================
     // CONFIRMAR TRANSAÇÃO
     // =========================
-
     $conexao->commit();
 
     echo json_encode([
@@ -221,8 +178,6 @@ try {
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $e) {
-
-    // Desfaz alterações no banco de dados se houver falhas
     if (isset($conexao) && $conexao->inTransaction()) {
         $conexao->rollBack();
     }
@@ -231,7 +186,6 @@ try {
 
     $mensagem = $e->getMessage();
 
-    // Trata erro de chave duplicada no PostgreSQL
     if (strpos($mensagem, "cliente_e_mail_key") !== false || strpos($mensagem, "23505") !== false) {
         $mensagem = "Este e-mail já está cadastrado no sistema.";
     }
