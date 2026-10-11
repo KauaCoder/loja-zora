@@ -7,7 +7,7 @@ header("Content-Type: application/json; charset=UTF-8");
 require_once __DIR__ . '/conexao.php';
 
 try {
-    // 1. Verifica se a variável $conexao do conexao.php foi instanciada
+    // 1. Verifica se a conexão com o banco está ativa
     if (!isset($conexao) || !($conexao instanceof PDO)) {
         throw new Exception("Falha na conexão com o banco de dados.");
     }
@@ -47,7 +47,7 @@ try {
     $cidade      = trim($endereco["cidade"] ?? $dados["cidade"] ?? "");
     $estado      = strtoupper(trim($endereco["estado"] ?? $dados["estado"] ?? ""));
 
-    // 6. Validações
+    // 6. Validações dos campos
     if ($nome === "") throw new Exception("O nome é obrigatório.");
     if ($email === "" || !filter_var($email, FILTER_VALIDATE_EMAIL)) throw new Exception("Forneça um e-mail válido.");
     if ($senha === "" || strlen($senha) < 6) throw new Exception("A senha deve ter no mínimo 6 caracteres.");
@@ -58,19 +58,8 @@ try {
     if ($cidade === "") throw new Exception("A cidade é obrigatória.");
     if ($estado === "") throw new Exception("O estado (UF) é obrigatório.");
 
-    // 7. Descobrir dinamicamente o nome da tabela (cliente ou clientes)
-    $tabelaCliente = "cliente";
-    try {
-        $teste = $conexao->query("SELECT 1 FROM clientes LIMIT 1");
-        if ($teste !== false) {
-            $tabelaCliente = "clientes";
-        }
-    } catch (Exception $e) {
-        // Mantém 'cliente' se a tabela 'clientes' não existir
-    }
-
-    // 8. Verificar E-mail Duplicado
-    $sqlEmail = "SELECT id_cliente FROM {$tabelaCliente} WHERE e_mail = :email OR email = :email LIMIT 1";
+    // 7. Verificar E-mail Duplicado na coluna oficial 'e_mail'
+    $sqlEmail = "SELECT id_cliente FROM cliente WHERE e_mail = :email LIMIT 1";
     $stmtEmail = $conexao->prepare($sqlEmail);
     $stmtEmail->execute([":email" => $email]);
 
@@ -78,15 +67,15 @@ try {
         throw new Exception("Este e-mail já está cadastrado.");
     }
 
-    // 9. Hash da Senha
+    // 8. Hash da Senha
     $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
 
-    // 10. Iniciar Transação
+    // 9. Iniciar Transação
     $conexao->beginTransaction();
 
-    // 11. Inserir Cliente
+    // 10. Inserir Cliente
     $sqlCliente = "
-        INSERT INTO {$tabelaCliente}
+        INSERT INTO cliente
         (nome, e_mail, senha, telefone, is_admin)
         VALUES
         (:nome, :email, :senha, :telefone, FALSE)
@@ -107,7 +96,7 @@ try {
         throw new Exception("Não foi possível gerar o ID do cliente.");
     }
 
-    // 12. Inserir Endereço
+    // 11. Inserir Endereço
     $sqlEndereco = "
         INSERT INTO endereco
         (id_cliente, cep, endereco, numero, complemento, bairro, cidade, estado)
@@ -127,7 +116,7 @@ try {
         ":estado"      => $estado
     ]);
 
-    // 13. Confirmar Transação
+    // 12. Confirmar Transação
     $conexao->commit();
 
     echo json_encode([
@@ -141,18 +130,10 @@ try {
         $conexao->rollBack();
     }
 
-    http_response_code(400);
-
-    $mensagem = $e->getMessage();
-
-    // Trata erro de chave única duplicada no PostgreSQL
-    if (strpos($mensagem, "cliente_e_mail_key") !== false || strpos($mensagem, "23505") !== false) {
-        $mensagem = "Este e-mail já está cadastrado no sistema.";
-    }
-
+    // Retorna mensagem formatada para o alerta do JavaScript
     echo json_encode([
         "sucesso"  => false,
-        "mensagem" => $mensagem
+        "mensagem" => $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
 ?>
