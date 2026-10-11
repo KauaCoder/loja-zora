@@ -24,12 +24,14 @@ body {
     background: rgba(0, 0, 0, 0.5);
     z-index: 1800;
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .overlay.ativo {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
 }
 
@@ -125,7 +127,8 @@ nav a:hover {
     z-index: 3000;
 }
 
-.sidebar.active {
+.sidebar.active,
+.sidebar.ativo {
     right: 0;
 }
 
