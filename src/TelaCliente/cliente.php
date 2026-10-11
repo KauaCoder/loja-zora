@@ -1,10 +1,27 @@
 <?php
 
+// Configura cookies de sessão para persistência e segurança via HTTPS no Render
+session_set_cookie_params([
+    'lifetime' => 86400, // 24 horas
+    'path'     => '/',
+    'secure'   => true,   // Exigido para HTTPS no Render
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+
 session_start();
 
 header("Content-Type: application/json; charset=UTF-8");
+header("Cache-Control: no-cache, no-store, must-revalidate");
 
-require_once __DIR__ . "/conexao.php";
+// Localiza o conexao.php na subpasta /src ou na raiz
+$caminho_conexao = __DIR__ . '/src/conexao.php';
+
+if (!file_exists($caminho_conexao)) {
+    $caminho_conexao = __DIR__ . '/conexao.php';
+}
+
+require_once $caminho_conexao;
 
 try {
 
@@ -19,7 +36,7 @@ try {
         echo json_encode([
             "sucesso" => false,
             "mensagem" => "Usuário não está logado."
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
 
         exit;
     }
@@ -66,7 +83,7 @@ try {
         ":id_cliente" => $idCliente
     ]);
 
-    $cliente = $stmt->fetch();
+    $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // =========================================
     // CLIENTE NÃO ENCONTRADO
@@ -74,21 +91,35 @@ try {
 
     if (!$cliente) {
 
-        session_unset();
+        $_SESSION = [];
+
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
+            );
+        }
+
         session_destroy();
 
         http_response_code(404);
 
         echo json_encode([
             "sucesso" => false,
-            "mensagem" => "Cliente não encontrado."
-        ]);
+            "mensagem" => "Cliente não encontrado no sistema."
+        ], JSON_UNESCAPED_UNICODE);
 
         exit;
     }
 
     // =========================================
-    // RETORNAR DADOS
+    // RETORNAR DADOS ESTRUTURADOS
     // =========================================
 
     echo json_encode([
@@ -97,49 +128,37 @@ try {
 
         "cliente" => [
 
-            "id_cliente" =>
-                (int) $cliente["id_cliente"],
+            "id_cliente" => (int) $cliente["id_cliente"],
 
-            "nome" =>
-                $cliente["nome"],
+            "nome"       => $cliente["nome"] ?? "Usuário",
 
-            "email" =>
-                $cliente["e_mail"],
+            "email"      => $cliente["e_mail"] ?? "-",
 
-            "telefone" =>
-                $cliente["telefone"]
+            "telefone"   => $cliente["telefone"] ?? "-"
 
         ],
 
         "endereco" => [
 
-            "id_endereco" =>
-                $cliente["id_endereco"],
+            "id_endereco" => $cliente["id_endereco"] ? (int) $cliente["id_endereco"] : null,
 
-            "cep" =>
-                $cliente["cep"],
+            "cep"         => $cliente["cep"] ?? "-",
 
-            "rua" =>
-                $cliente["endereco"],
+            "rua"         => $cliente["endereco"] ?? "-",
 
-            "numero" =>
-                $cliente["numero"],
+            "numero"      => $cliente["numero"] ?? "-",
 
-            "complemento" =>
-                $cliente["complemento"],
+            "complemento" => $cliente["complemento"] ?? "-",
 
-            "bairro" =>
-                $cliente["bairro"],
+            "bairro"      => $cliente["bairro"] ?? "-",
 
-            "cidade" =>
-                $cliente["cidade"],
+            "cidade"      => $cliente["cidade"] ?? "-",
 
-            "estado" =>
-                $cliente["estado"]
+            "estado"      => $cliente["estado"] ?? "-"
 
         ]
 
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $erro) {
 
@@ -147,10 +166,9 @@ try {
 
     echo json_encode([
 
-        "sucesso" => false,
+        "sucesso"  => false,
 
-        "mensagem" =>
-            $erro->getMessage()
+        "mensagem" => "Erro de servidor: " . $erro->getMessage()
 
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
 }
