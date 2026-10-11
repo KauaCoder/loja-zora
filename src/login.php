@@ -12,8 +12,9 @@ session_set_cookie_params([
 session_start();
 
 header("Content-Type: application/json; charset=UTF-8");
+header("Cache-Control: no-cache, no-store, must-revalidate");
 
-// Inclui o conexao.php
+// Inclui o conexao.php (suporta /src ou raiz)
 $caminho_conexao = __DIR__ . '/src/conexao.php';
 if (!file_exists($caminho_conexao)) {
     $caminho_conexao = __DIR__ . '/conexao.php';
@@ -44,44 +45,50 @@ try {
         throw new Exception("E-mail e senha são obrigatórios.");
     }
 
-    // Busca cliente sem forçar a coluna is_admin na query principal
-    $sql = "
-        SELECT
-            id_cliente,
-            nome,
-            e_mail,
-            senha,
-            telefone
-        FROM cliente
-        WHERE e_mail = :email
-        LIMIT 1
-    ";
-
-    $stmt = $conexao->prepare($sql);
-    $stmt->execute([":email" => $email]);
-    $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Tenta buscar o cliente incluindo a coluna is_admin
+    try {
+        $sql = "
+            SELECT
+                id_cliente,
+                nome,
+                e_mail,
+                senha,
+                telefone,
+                COALESCE(is_admin, FALSE) AS is_admin
+            FROM cliente
+            WHERE e_mail = :email
+            LIMIT 1
+        ";
+        $stmt = $conexao->prepare($sql);
+        $stmt->execute([":email" => $email]);
+        $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $eSelect) {
+        // Fallback para tabelas antigas sem a coluna is_admin
+        $sqlFallback = "
+            SELECT id_cliente, nome, e_mail, senha, telefone
+            FROM cliente
+            WHERE e_mail = :email
+            LIMIT 1
+        ";
+        $stmtFallback = $conexao->prepare($sqlFallback);
+        $stmtFallback->execute([":email" => $email]);
+        $cliente = $stmtFallback->fetch(PDO::FETCH_ASSOC);
+        if ($cliente) {
+            $cliente["is_admin"] = false;
+        }
+    }
 
     if (!$cliente || !password_verify($senha, $cliente["senha"])) {
         throw new Exception("E-mail ou senha incorretos.");
     }
 
-    // Verifica se a coluna is_admin existe dinamicamente
-    $isAdmin = false;
-    try {
-        $stmtAdmin = $conexao->prepare("SELECT is_admin FROM cliente WHERE id_cliente = :id");
-        $stmtAdmin->execute([":id" => $cliente["id_cliente"]]);
-        $rowAdmin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
-        $isAdmin = !empty($rowAdmin["is_admin"]);
-    } catch (Throwable $e) {
-        // Se a coluna ainda não existir no banco, assume FALSE sem travar o login
-        $isAdmin = false;
-    }
+    $isAdmin = filter_var($cliente["is_admin"] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-    // Salva sessão
+    // Salva na sessão do PHP
     $_SESSION["id_cliente"] = (int) $cliente["id_cliente"];
     $_SESSION["nome"]       = $cliente["nome"];
     $_SESSION["email"]      = $cliente["e_mail"];
-    $_SESSION["telefone"]   = $cliente["telefone"];
+    $_SESSION["telefone"]   = $cliente["telefone"] ?? "";
     $_SESSION["is_admin"]   = $isAdmin;
 
     $redirecionar = $isAdmin ? "/TelaAdmin/admin.html" : "/Telainicial/index.html";
@@ -95,7 +102,7 @@ try {
             "id_cliente" => (int) $cliente["id_cliente"],
             "nome"       => $cliente["nome"],
             "email"      => $cliente["e_mail"],
-            "telefone"   => $cliente["telefone"],
+            "telefone"   => $cliente["telefone"] ?? "",
             "is_admin"   => $isAdmin
         ]
     ], JSON_UNESCAPED_UNICODE);
