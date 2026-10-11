@@ -13,7 +13,7 @@
 
 <body>
 
-    <!-- OVERLAY ESCURO DE FUNDO PARA MENU E CARRINHO -->
+    <!-- OVERLAY ESCURO DE FUNDO -->
     <div id="overlay" class="overlay" onclick="fecharTudo()"></div>
 
     <!-- =========================
@@ -55,7 +55,7 @@
         <ul class="sidebar" id="sidebar">
 
             <li class="sidebar-fechar">
-                <a href="#" onclick="hideSidebar(); return false;">✕</a>
+                <a href="javascript:void(0)" onclick="hideSidebar()">✕</a>
             </li>
 
             <li>
@@ -63,18 +63,18 @@
             </li>
 
             <li>
-                <a href="#" onclick="hideSidebar(); abrirPedidos(); return false;">
+                <a href="javascript:void(0)" onclick="hideSidebar(); abrirPedidos();">
                     Pedidos
                     <span class="badge-carrinho"></span>
                 </a>
             </li>
 
             <li>
-                <a href="#" onclick="hideSidebar();">Sobre</a>
+                <a href="javascript:void(0)" onclick="hideSidebar();">Sobre</a>
             </li>
 
             <li>
-                <a href="#" id="menuUsuarioMobile" onclick="hideSidebar(); abrirPerfil(); return false;">
+                <a href="javascript:void(0)" id="menuUsuarioMobile" onclick="hideSidebar(); abrirPerfil();">
                     Login
                 </a>
             </li>
@@ -100,7 +100,7 @@
 
             <!-- PEDIDOS -->
             <li class="hideOnMobile">
-                <a href="#" onclick="abrirPedidos(); return false;">
+                <a href="javascript:void(0)" onclick="abrirPedidos();">
                     Pedidos
                     <span class="badge-carrinho"></span>
                 </a>
@@ -108,19 +108,19 @@
 
             <!-- SOBRE -->
             <li class="hideOnMobile">
-                <a href="#">Sobre</a>
+                <a href="javascript:void(0)">Sobre</a>
             </li>
 
             <!-- LOGIN / PERFIL -->
             <li class="hideOnMobile">
-                <a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">
+                <a href="javascript:void(0)" id="menuUsuario" onclick="abrirPerfil();">
                     Login
                 </a>
             </li>
 
             <!-- MENU MOBILE BUTTON -->
             <li class="menu-button">
-                <a href="#" onclick="showSidebar(); return false;">☰</a>
+                <a href="javascript:void(0)" onclick="showSidebar();">☰</a>
             </li>
 
         </ul>
@@ -210,13 +210,13 @@
 
         <div class="produtos-wrapper">
             <!-- Botões auxiliares de navegação no mobile -->
-            <button class="nav-produtos-btn prev-produtos" onclick="scrollProdutos(-1)">❮</button>
+            <button type="button" class="nav-produtos-btn prev-produtos" onclick="scrollProdutos(-1)">❮</button>
 
             <div class="produtos" id="catalogoProdutos">
                 <p class="carregando">Carregando produtos...</p>
             </div>
 
-            <button class="nav-produtos-btn next-produtos" onclick="scrollProdutos(1)">❯</button>
+            <button type="button" class="nav-produtos-btn next-produtos" onclick="scrollProdutos(1)">❯</button>
         </div>
 
     </section>
@@ -230,24 +230,21 @@
 
         <div class="rodape-conteudo">
 
-            <!-- COLUNA 1: SOBRE A MARCA -->
             <div class="rodape-coluna">
                 <img src="/img/Logo 1.png" alt="ZORA" class="logo-rodape">
                 <p>ZORA - Moda feminina pensada para destacar a sua elegância e estilo no dia a dia.</p>
             </div>
 
-            <!-- COLUNA 2: NAVEGAÇÃO RÁPIDA -->
             <div class="rodape-coluna">
                 <h3>Navegação</h3>
                 <ul>
                     <li><a href="/Telainicial/index.html">Início</a></li>
                     <li><a href="#catalogoProdutos">Produtos</a></li>
-                    <li><a href="#" onclick="abrirPedidos(); return false;">Meus Pedidos</a></li>
-                    <li><a href="#">Sobre Nós</a></li>
+                    <li><a href="javascript:void(0)" onclick="abrirPedidos();">Meus Pedidos</a></li>
+                    <li><a href="javascript:void(0)">Sobre Nós</a></li>
                 </ul>
             </div>
 
-            <!-- COLUNA 3: ATENDIMENTO / CONTATO -->
             <div class="rodape-coluna">
                 <h3>Atendimento</h3>
                 <ul>
@@ -258,7 +255,6 @@
                 </ul>
             </div>
 
-            <!-- COLUNA 4: REDES SOCIAIS -->
             <div class="rodape-coluna">
                 <h3>Siga a ZORA</h3>
                 <div class="redes-sociais">
@@ -270,7 +266,6 @@
 
         </div>
 
-        <!-- DIREITOS AUTORAIS -->
         <div class="rodape-copyright">
             <p>&copy; 2026 ZORA. Todos os direitos reservados.</p>
         </div>
@@ -279,27 +274,59 @@
 
 
     <!-- =========================
-         JAVASCRIPT
+         JAVASCRIPT DE CONTROLE
     ========================== -->
 
-    <script src="/auth.js"></script>
-    <script src="script.js"></script>
-
-    <!-- Script auxiliar para as novas funções adicionadas -->
     <script>
-        function scrollProdutos(direcao) {
-            const container = document.getElementById('catalogoProdutos');
-            const scrollAmount = container.clientWidth * 0.6;
-            container.scrollBy({ left: direcao * scrollAmount, behavior: 'smooth' });
+        // Funções essenciais da interface caso os scripts externos demorem ou falhem
+        function showSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar) sidebar.style.display = 'flex';
+            if (overlay) overlay.classList.add('ativo');
+        }
+
+        function hideSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar) sidebar.style.display = 'none';
+            if (overlay) overlay.classList.remove('ativo');
+        }
+
+        function abrirPedidos() {
+            const pedidos = document.getElementById('Pedidos');
+            const overlay = document.getElementById('overlay');
+            if (pedidos) pedidos.classList.add('ativo');
+            if (overlay) overlay.classList.add('ativo');
+        }
+
+        function fecharPedidos() {
+            const pedidos = document.getElementById('Pedidos');
+            const overlay = document.getElementById('overlay');
+            if (pedidos) pedidos.classList.remove('ativo');
+            if (overlay) overlay.classList.remove('ativo');
         }
 
         function fecharTudo() {
-            if (typeof hideSidebar === 'function') hideSidebar();
-            if (typeof fecharPedidos === 'function') fecharPedidos();
-            const overlay = document.getElementById('overlay');
-            if (overlay) overlay.classList.remove('ativo');
+            hideSidebar();
+            fecharPedidos();
+        }
+
+        function abrirPerfil() {
+            window.location.href = "/TelaLogin/login.html";
+        }
+
+        function scrollProdutos(direcao) {
+            const container = document.getElementById('catalogoProdutos');
+            if (container) {
+                const scrollAmount = container.clientWidth * 0.6;
+                container.scrollBy({ left: direcao * scrollAmount, behavior: 'smooth' });
+            }
         }
     </script>
+
+    <script src="script.js"></script>
+    <script src="/auth.js"></script>
 
 </body>
 
