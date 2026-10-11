@@ -2,8 +2,12 @@
 
 header("Content-Type: application/json; charset=UTF-8");
 
-// Inclui o arquivo de conexão presente na mesma pasta
-require_once __DIR__ . "/conexao.php";
+// Localiza o conexao.php na pasta /src ou na raiz do projeto
+$caminho_conexao = __DIR__ . '/src/conexao.php';
+if (!file_exists($caminho_conexao)) {
+    $caminho_conexao = __DIR__ . '/conexao.php';
+}
+require_once $caminho_conexao;
 
 try {
 
@@ -16,7 +20,7 @@ try {
         echo json_encode([
             "sucesso" => false,
             "mensagem" => "Método não permitido. Utilize POST."
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -34,10 +38,10 @@ try {
     // DADOS DO CLIENTE
     // =========================
 
-    $nome = trim($dados["nome"] ?? "");
-    $email = strtolower(trim($dados["email"] ?? $dados["e_mail"] ?? ""));
+    $nome     = trim($dados["nome"] ?? "");
+    $email    = strtolower(trim($dados["email"] ?? $dados["e_mail"] ?? ""));
     $telefone = trim($dados["telefone"] ?? "");
-    $senha = $dados["senha"] ?? "";
+    $senha    = $dados["senha"] ?? "";
 
     // =========================
     // DADOS DO ENDEREÇO (SUPORTA ANINHADO OU RAIZ)
@@ -45,13 +49,13 @@ try {
 
     $endereco = $dados["endereco"] ?? [];
 
-    $cep = trim($endereco["cep"] ?? $dados["cep"] ?? "");
-    $rua = trim($endereco["rua"] ?? $endereco["endereco"] ?? $dados["rua"] ?? $dados["endereco"] ?? "");
-    $numero = trim($endereco["numero"] ?? $dados["numero"] ?? "");
+    $cep         = trim($endereco["cep"] ?? $dados["cep"] ?? "");
+    $rua         = trim($endereco["rua"] ?? $endereco["endereco"] ?? $dados["rua"] ?? $dados["endereco"] ?? "");
+    $numero      = trim($endereco["numero"] ?? $dados["numero"] ?? "");
     $complemento = trim($endereco["complemento"] ?? $dados["complemento"] ?? "");
-    $bairro = trim($endereco["bairro"] ?? $dados["bairro"] ?? "");
-    $cidade = trim($endereco["cidade"] ?? $dados["cidade"] ?? "");
-    $estado = strtoupper(trim($endereco["estado"] ?? $dados["estado"] ?? ""));
+    $bairro      = trim($endereco["bairro"] ?? $dados["bairro"] ?? "");
+    $cidade      = trim($endereco["cidade"] ?? $dados["cidade"] ?? "");
+    $estado      = strtoupper(trim($endereco["estado"] ?? $dados["estado"] ?? ""));
 
     // =========================
     // VALIDAÇÕES DOS DADOS
@@ -74,7 +78,7 @@ try {
     }
 
     if ($rua === "") {
-        throw new Exception(" O endereço/rua é obrigatório.");
+        throw new Exception("O endereço/rua é obrigatório.");
     }
 
     if ($numero === "") {
@@ -135,23 +139,25 @@ try {
             nome,
             e_mail,
             senha,
-            telefone
+            telefone,
+            is_admin
         )
         VALUES
         (
             :nome,
             :email,
             :senha,
-            :telefone
+            :telefone,
+            FALSE
         )
         RETURNING id_cliente
     ";
 
     $stmtCliente = $conexao->prepare($sqlCliente);
     $stmtCliente->execute([
-        ":nome" => $nome,
-        ":email" => $email,
-        ":senha" => $senhaHash,
+        ":nome"     => $nome,
+        ":email"    => $email,
+        ":senha"    => $senhaHash,
         ":telefone" => $telefone
     ]);
 
@@ -192,14 +198,14 @@ try {
 
     $stmtEndereco = $conexao->prepare($sqlEndereco);
     $stmtEndereco->execute([
-        ":id_cliente" => $idCliente,
-        ":cep" => $cep,
-        ":endereco" => $rua,
-        ":numero" => $numero,
+        ":id_cliente"  => $idCliente,
+        ":cep"         => $cep,
+        ":endereco"    => $rua,
+        ":numero"      => $numero,
         ":complemento" => $complemento,
-        ":bairro" => $bairro,
-        ":cidade" => $cidade,
-        ":estado" => $estado
+        ":bairro"      => $bairro,
+        ":cidade"      => $cidade,
+        ":estado"      => $estado
     ]);
 
     // =========================
@@ -209,10 +215,10 @@ try {
     $conexao->commit();
 
     echo json_encode([
-        "sucesso" => true,
-        "mensagem" => "Cadastro realizado com sucesso!",
+        "sucesso"    => true,
+        "mensagem"   => "Cadastro realizado com sucesso!",
         "id_cliente" => $idCliente
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $e) {
 
@@ -223,8 +229,15 @@ try {
 
     http_response_code(400);
 
+    $mensagem = $e->getMessage();
+
+    // Trata erro de chave duplicada no PostgreSQL
+    if (strpos($mensagem, "cliente_e_mail_key") !== false || strpos($mensagem, "23505") !== false) {
+        $mensagem = "Este e-mail já está cadastrado no sistema.";
+    }
+
     echo json_encode([
-        "sucesso" => false,
-        "mensagem" => $e->getMessage()
-    ]);
+        "sucesso"  => false,
+        "mensagem" => $mensagem
+    ], JSON_UNESCAPED_UNICODE);
 }
