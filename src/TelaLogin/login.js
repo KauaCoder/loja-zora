@@ -191,7 +191,6 @@ async function buscarCEPCadastro() {
         const numeroCadastro = document.getElementById("numeroCadastro");
         if (numeroCadastro) numeroCadastro.focus();
 
-        // Atualiza a prévia com a nova rua consultada no CEP
         atualizarPreviaEmTempoReal();
 
     } catch (erro) {
@@ -276,7 +275,8 @@ if (formCadastro) {
 
             const resultado = await resposta.json();
 
-            if (!resposta.ok || !resultado.sucesso) {
+            // Lê a resposta do backend
+            if (!resultado.sucesso) {
                 alert(resultado.mensagem || "Não foi possível realizar o cadastro.");
                 return;
             }
@@ -289,7 +289,7 @@ if (formCadastro) {
 
         } catch (erro) {
             console.error("Erro no cadastro:", erro);
-            alert("Não foi possível conectar ao servidor.");
+            alert("Não foi possível conectar ao servidor. Tente novamente.");
         }
     });
 }
@@ -321,7 +321,7 @@ if (formLogin) {
 
             const resultado = await resposta.json();
 
-            if (!resposta.ok || !resultado.sucesso) {
+            if (!resultado.sucesso) {
                 alert(resultado.mensagem || "E-mail ou senha incorretos.");
                 return;
             }
