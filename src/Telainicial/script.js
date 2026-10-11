@@ -4,27 +4,48 @@
 // =====================================================
 
 // =====================================================
-// MENU LATERAL & OVERLAY
+// MENU LATERAL & OVERLAY (MOBILE)
 // =====================================================
 
-const sidebar = document.querySelector(".sidebar");
-
 function showSidebar() {
+    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
+    const overlay = document.getElementById("overlay");
+    
     if (sidebar) {
+        sidebar.style.display = "flex";
+        sidebar.classList.add("ativo");
         sidebar.classList.add("active");
     }
-    const overlay = document.getElementById("overlay");
-    if (overlay) overlay.classList.add("ativo");
+    if (overlay) {
+        overlay.classList.add("ativo");
+    }
 }
 
 function hideSidebar() {
+    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
+    const overlay = document.getElementById("overlay");
+
     if (sidebar) {
+        sidebar.style.display = "none";
+        sidebar.classList.remove("ativo");
         sidebar.classList.remove("active");
     }
-    const overlay = document.getElementById("overlay");
-    if (overlay && !document.getElementById("Pedidos")?.classList.contains("ativo")) {
+
+    const pedidos = document.getElementById("Pedidos");
+    if (overlay && (!pedidos || !pedidos.classList.contains("ativo"))) {
         overlay.classList.remove("ativo");
     }
+}
+
+function fecharTudo() {
+    hideSidebar();
+    fecharPedidos();
+    const overlay = document.getElementById("overlay");
+    if (overlay) overlay.classList.remove("ativo");
+}
+
+function abrirPerfil() {
+    window.location.href = "/TelaLogin/login.html";
 }
 
 // =====================================================
@@ -197,7 +218,6 @@ function renderizarPedidos() {
         const item = document.createElement("li");
         item.className = "item-carrinho";
 
-        // Link da Foto do Produto
         const linkFoto = document.createElement("a");
         linkFoto.href = `/TelaProdutos/produtos.html?id=${id}`;
         linkFoto.className = "carrinho-foto-link";
@@ -208,7 +228,6 @@ function renderizarPedidos() {
         foto.className = "carrinho-foto";
         linkFoto.appendChild(foto);
 
-        // Detalhes do Produto
         const detalhes = document.createElement("div");
         detalhes.className = "carrinho-detalhes";
 
@@ -221,7 +240,6 @@ function renderizarPedidos() {
         precoUnitario.className = "carrinho-preco-unitario";
         precoUnitario.textContent = `R$ ${preco.toFixed(2).replace(".", ",")}`;
 
-        // Controles (+ / -)
         const qtdContainer = document.createElement("div");
         qtdContainer.className = "qtd-controle";
 
@@ -249,7 +267,6 @@ function renderizarPedidos() {
         detalhes.appendChild(precoUnitario);
         detalhes.appendChild(qtdContainer);
 
-        // Ações (Subtotal + Lixeira)
         const acoes = document.createElement("div");
         acoes.className = "carrinho-acoes";
 
@@ -293,7 +310,6 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
     const produtoExistente = pedidosArray.find(p => Number(p.id_produto) === id);
     const qtdAtual = produtoExistente ? Number(produtoExistente.quantidade) : 0;
 
-    // Consulta estoque atual no Banco de Dados
     const estoqueDisponivel = await obterEstoqueBD(id);
 
     if (estoqueDisponivel !== null && (qtdAtual + 1) > estoqueDisponivel) {
@@ -320,7 +336,7 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
 }
 
 // =====================================================
-// ALTERAR QUANTIDADE COM CHECAGEM DE ESTOQUE NO BD
+// ALTERAR QUANTIDADE
 // =====================================================
 
 async function alterarQuantidade(indice, delta) {
@@ -329,7 +345,6 @@ async function alterarQuantidade(indice, delta) {
 
     const novaQuantidade = (Number(produto.quantidade) || 1) + delta;
 
-    // Se estiver AUMENTANDO a quantidade, verifica o estoque
     if (delta > 0) {
         const estoqueDisponivel = await obterEstoqueBD(produto.id_produto);
 
@@ -410,8 +425,17 @@ function fecharPedidos() {
         pedidos.classList.remove("ativo");
     }
     const overlay = document.getElementById("overlay");
-    if (overlay && !sidebar?.classList.contains("active")) {
+    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
+    if (overlay && (!sidebar || sidebar.style.display !== "flex")) {
         overlay.classList.remove("ativo");
+    }
+}
+
+function scrollProdutos(direcao) {
+    const container = document.getElementById("catalogoProdutos");
+    if (container) {
+        const scrollAmount = container.clientWidth * 0.6;
+        container.scrollBy({ left: direcao * scrollAmount, behavior: "smooth" });
     }
 }
 
@@ -425,7 +449,6 @@ async function pagarPedido() {
         return;
     }
 
-    // 1. Revalida o estoque de TODOS os produtos do carrinho de uma só vez
     let estoqueInvalido = false;
 
     for (let i = 0; i < pedidosArray.length; i++) {
@@ -443,7 +466,6 @@ async function pagarPedido() {
         }
     }
 
-    // Se houve ajuste no carrinho por falha de estoque, atualiza a tela e não prossegue
     if (estoqueInvalido) {
         salvarCarrinho();
         renderizarPedidos();
@@ -451,7 +473,6 @@ async function pagarPedido() {
         return;
     }
 
-    // 2. Verifica se o usuário está logado
     if (typeof estaLogado === "function") {
         const logado = await estaLogado();
         if (!logado) {
@@ -461,7 +482,6 @@ async function pagarPedido() {
         }
     }
 
-    // 3. Tudo ok: salva os dados e redireciona para a tela de pagamento/entrega
     const total = calcularTotal();
     localStorage.setItem("totalPedido", total.toFixed(2));
     localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
@@ -512,9 +532,11 @@ function irParaSlide(numero) {
 // INICIALIZAÇÃO
 // =====================================================
 
-carregarCarrinho();
-carregarCatalogo();
+document.addEventListener("DOMContentLoaded", function () {
+    carregarCarrinho();
+    carregarCatalogo();
 
-if (slides.length > 0) {
-    setInterval(proximoSlide, 5000);
-}
+    if (slides.length > 0) {
+        setInterval(proximoSlide, 5000);
+    }
+});
