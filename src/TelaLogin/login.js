@@ -165,7 +165,7 @@ function limparEnderecos() {
 }
 
 /* =========================================================
-   CADASTRO (COM LEITURA DE TEXTO BRUTO)
+   CADASTRO
    ========================================================= */
 
 const formCadastro = document.getElementById("formCadastro");
@@ -210,14 +210,14 @@ if (formCadastro) {
                 estado: document.getElementById("estadoCadastro").value.trim()
             };
 
-            const resposta = await fetch("../cadastro.php", {
+            // Aponta diretamente para a raiz do servidor (/cadastro.php)
+            const resposta = await fetch("/cadastro.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
                 body: JSON.stringify({ nome, email, telefone, senha, endereco })
             });
 
-            // Lê a resposta do PHP como texto
             const textoBruto = await resposta.text();
             let resultado;
 
@@ -225,7 +225,7 @@ if (formCadastro) {
                 resultado = JSON.parse(textoBruto);
             } catch (e) {
                 console.error("Resposta do servidor não é JSON:", textoBruto);
-                alert("Resposta do servidor PHP:\n" + textoBruto.substring(0, 200));
+                alert("Erro retornado pelo servidor:\n" + textoBruto.substring(0, 200));
                 return;
             }
 
@@ -265,7 +265,7 @@ if (formLogin) {
         }
 
         try {
-            const resposta = await fetch("../login.php", {
+            const resposta = await fetch("/login.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -289,7 +289,7 @@ if (formLogin) {
             }
 
             alert("Login realizado com sucesso!");
-            window.location.replace(resultado.redirecionar || "../TelaInicial/index.html");
+            window.location.replace(resultado.redirecionar || "/Telainicial/index.html");
 
         } catch (erro) {
             console.error("Erro no login:", erro);
