@@ -53,23 +53,19 @@ try {
     if ($estado === "")   throw new Exception("Estado é obrigatório.");
 
     // =========================
-    // VERIFICAR E-MAIL
-    // Tabela: cliente (sem aspas)
-    // Coluna: "e-mail" (com aspas por conta do hífen)
+    // VERIFICAR E-MAIL DUPLICADO
+    // Coluna correta no banco: e_mail (com underline)
     // =========================
 
-    $sqlEmail = '
+    $sqlEmail = "
         SELECT id_cliente
         FROM cliente
-        WHERE "e-mail" = :email
+        WHERE e_mail = :email
         LIMIT 1
-    ';
+    ";
 
     $stmtEmail = $conexao->prepare($sqlEmail);
-
-    $stmtEmail->execute([
-        ":email" => $email
-    ]);
+    $stmtEmail->execute([":email" => $email]);
 
     if ($stmtEmail->fetch()) {
         throw new Exception("Este e-mail já está cadastrado.");
@@ -79,10 +75,7 @@ try {
     // HASH DA SENHA
     // =========================
 
-    $senhaHash = password_hash(
-        $senha,
-        PASSWORD_DEFAULT
-    );
+    $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
 
     // =========================
     // INICIAR TRANSAÇÃO
@@ -94,26 +87,13 @@ try {
     // CADASTRAR CLIENTE
     // =========================
 
-    $sqlCliente = '
-        INSERT INTO cliente
-        (
-            nome,
-            "e-mail",
-            senha,
-            telefone
-        )
-        VALUES
-        (
-            :nome,
-            :email,
-            :senha,
-            :telefone
-        )
+    $sqlCliente = "
+        INSERT INTO cliente (nome, e_mail, senha, telefone)
+        VALUES (:nome, :email, :senha, :telefone)
         RETURNING id_cliente
-    ';
+    ";
 
     $stmtCliente = $conexao->prepare($sqlCliente);
-
     $stmtCliente->execute([
         ":nome"     => $nome,
         ":email"    => $email,
@@ -131,33 +111,12 @@ try {
     // CADASTRAR ENDEREÇO
     // =========================
 
-    $sqlEndereco = '
-        INSERT INTO endereco
-        (
-            id_cliente,
-            cep,
-            endereco,
-            numero,
-            complemento,
-            bairro,
-            cidade,
-            estado
-        )
-        VALUES
-        (
-            :id_cliente,
-            :cep,
-            :endereco,
-            :numero,
-            :complemento,
-            :bairro,
-            :cidade,
-            :estado
-        )
-    ';
+    $sqlEndereco = "
+        INSERT INTO endereco (id_cliente, cep, endereco, numero, complemento, bairro, cidade, estado)
+        VALUES (:id_cliente, :cep, :endereco, :numero, :complemento, :bairro, :cidade, :estado)
+    ";
 
     $stmtEndereco = $conexao->prepare($sqlEndereco);
-
     $stmtEndereco->execute([
         ":id_cliente"  => $idCliente,
         ":cep"         => $cep,
@@ -183,13 +142,12 @@ try {
 
 } catch (Exception $e) {
 
-    // Se alguma coisa falhar, desfaz tudo
     if (isset($conexao) && $conexao->inTransaction()) {
         $conexao->rollBack();
     }
 
     $msg = $e->getMessage();
-    if (strpos($msg, "23505") !== false) {
+    if (strpos($msg, "23505") !== false || strpos($msg, "e_mail") !== false) {
         $msg = "Este e-mail já está cadastrado.";
     }
 
