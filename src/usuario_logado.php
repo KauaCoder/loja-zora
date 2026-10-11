@@ -1,16 +1,29 @@
 <?php
 
-// Configura os parâmetros do cookie de sessão ANTES de iniciar a sessão
-// Necessário para funcionar no HTTPS do Render e manter a persistência
-session_set_cookie_params([
-    'lifetime' => 86400, // 24 horas
-    'path'     => '/',
-    'secure'   => true,   // Exigido para HTTPS no Render
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
+// =========================================================
+// ZORA - VERIFICAÇÃO DE SESSÃO ATIVA
+// Suporte a HTTPS + Proxy Reverso (Render & Local)
+// =========================================================
 
-session_start();
+// 1. Detecta HTTPS vindo do Proxy Reverso do Render
+$isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
+           (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+if ($isHttps) {
+    $_SERVER['HTTPS'] = 'on';
+}
+
+// 2. Configura os cookies da sessão dinamicamente
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 86400,   // 24 horas
+        'path'     => '/',
+        'secure'   => $isHttps, // True no Render (HTTPS), False no Localhost
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
 
 header("Content-Type: application/json; charset=UTF-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
@@ -18,9 +31,17 @@ header("Pragma: no-cache");
 
 // Localiza o conexao.php na pasta /src ou na raiz
 $caminho_conexao = __DIR__ . '/src/conexao.php';
-
 if (!file_exists($caminho_conexao)) {
     $caminho_conexao = __DIR__ . '/conexao.php';
+}
+
+if (!file_exists($caminho_conexao)) {
+    echo json_encode([
+        "sucesso"  => false,
+        "logado"   => false,
+        "mensagem" => "Não foi possível encontrar conexao.php"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 require_once $caminho_conexao;
@@ -31,12 +52,13 @@ try {
     // VERIFICAR SESSÃO ATIVA
     // =============================================
 
-    if (!isset($_SESSION["id_cliente"])) {
+    if (!isset($_SESSION["id_cliente"]) || empty($_SESSION["id_cliente"])) {
 
         echo json_encode([
             "sucesso"  => true,
             "logado"   => false,
-            "is_admin" => false
+            "is_admin" => false,
+            "cliente"  => null
         ], JSON_UNESCAPED_UNICODE);
 
         exit;
@@ -45,7 +67,8 @@ try {
     $idCliente = (int) $_SESSION["id_cliente"];
 
     // =============================================
-    // BUSCAR DADOS DO CLIENTE (SEM FORÇAR IS_ADMIN)
+    // BUSCAR DADOS DO CLIENTE
+    // Tabela: cliente | Coluna email: e_mail
     // =============================================
 
     $sql = "
@@ -60,11 +83,7 @@ try {
     ";
 
     $stmt = $conexao->prepare($sql);
-
-    $stmt->execute([
-        ":id_cliente" => $idCliente
-    ]);
-
+    $stmt->execute([":id_cliente" => $idCliente]);
     $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Se o cliente foi removido do banco, destrói a sessão
@@ -90,7 +109,8 @@ try {
         echo json_encode([
             "sucesso"  => true,
             "logado"   => false,
-            "is_admin" => false
+            "is_admin" => false,
+            "cliente"  => null
         ], JSON_UNESCAPED_UNICODE);
 
         exit;
@@ -106,13 +126,13 @@ try {
         $stmtAdmin = $conexao->prepare("SELECT is_admin FROM cliente WHERE id_cliente = :id_cliente LIMIT 1");
         $stmtAdmin->execute([":id_cliente" => $idCliente]);
         $rowAdmin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
-        $isAdmin = !empty($rowAdmin["is_admin"]);
+        $isAdmin = filter_var($rowAdmin["is_admin"] ?? false, FILTER_VALIDATE_BOOLEAN);
     } catch (Throwable $eAdmin) {
-        // Se a coluna is_admin ainda não existir no banco, assume false e não interrompe a sessão
+        // Se a coluna is_admin ainda não existir, assume false sem quebrar
         $isAdmin = false;
     }
 
-    // Mantém a permissão atualizada na sessão
+    // Mantém atualizado na sessão
     $_SESSION["is_admin"] = $isAdmin;
 
     // =============================================
@@ -120,43 +140,25 @@ try {
     // =============================================
 
     echo json_encode([
-
         "sucesso"  => true,
-
         "logado"   => true,
-
         "is_admin" => $isAdmin,
-
         "cliente"  => [
-
             "id_cliente" => (int) $cliente["id_cliente"],
-
             "nome"       => $cliente["nome"],
-
             "email"      => $cliente["e_mail"],
-
-            "telefone"   => $cliente["telefone"],
-
+            "telefone"   => $cliente["telefone"] ?? "",
             "is_admin"   => $isAdmin
-
         ]
-
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $erro) {
 
-    http_response_code(500);
-
     echo json_encode([
-
         "sucesso"  => false,
-
         "logado"   => false,
-
         "is_admin" => false,
-
         "mensagem" => "Erro de verificação: " . $erro->getMessage()
-
     ], JSON_UNESCAPED_UNICODE);
 
 }
