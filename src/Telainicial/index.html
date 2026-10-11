@@ -277,56 +277,8 @@
          JAVASCRIPT DE CONTROLE
     ========================== -->
 
-    <script>
-        // Funções essenciais da interface caso os scripts externos demorem ou falhem
-        function showSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            if (sidebar) sidebar.style.display = 'flex';
-            if (overlay) overlay.classList.add('ativo');
-        }
-
-        function hideSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            if (sidebar) sidebar.style.display = 'none';
-            if (overlay) overlay.classList.remove('ativo');
-        }
-
-        function abrirPedidos() {
-            const pedidos = document.getElementById('Pedidos');
-            const overlay = document.getElementById('overlay');
-            if (pedidos) pedidos.classList.add('ativo');
-            if (overlay) overlay.classList.add('ativo');
-        }
-
-        function fecharPedidos() {
-            const pedidos = document.getElementById('Pedidos');
-            const overlay = document.getElementById('overlay');
-            if (pedidos) pedidos.classList.remove('ativo');
-            if (overlay) overlay.classList.remove('ativo');
-        }
-
-        function fecharTudo() {
-            hideSidebar();
-            fecharPedidos();
-        }
-
-        function abrirPerfil() {
-            window.location.href = "/TelaLogin/login.html";
-        }
-
-        function scrollProdutos(direcao) {
-            const container = document.getElementById('catalogoProdutos');
-            if (container) {
-                const scrollAmount = container.clientWidth * 0.6;
-                container.scrollBy({ left: direcao * scrollAmount, behavior: 'smooth' });
-            }
-        }
-    </script>
-
-    <script src="script.js"></script>
     <script src="/auth.js"></script>
+    <script src="script.js"></script>
 
 </body>
 
