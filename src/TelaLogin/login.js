@@ -1,3 +1,229 @@
+/* =========================================================
+   ZORA - LOGIN / CADASTRO
+   PostgreSQL + Sessão PHP + Prévia em Tempo Real
+   ========================================================= */
+
+/* =========================================================
+   1. ABAS & GERENCIAMENTO DA PRÉVIA
+   ========================================================= */
+
+function mudarAba(aba) {
+    document.querySelectorAll(".tab-button").forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    document.querySelectorAll(".form-section").forEach(form => {
+        form.classList.remove("active");
+    });
+
+    const botao = document.querySelector(`.tab-button[onclick="mudarAba('${aba}')"]`);
+    const formulario = document.getElementById("form" + aba.charAt(0).toUpperCase() + aba.slice(1));
+
+    if (botao) {
+        botao.classList.add("active");
+    }
+
+    if (formulario) {
+        formulario.classList.add("active");
+    }
+
+    // Alterna a visualização do card de prévia do perfil
+    const previewBox = document.getElementById("previewPerfilBox");
+    if (previewBox) {
+        if (aba === "cadastro") {
+            previewBox.style.display = "flex";
+            atualizarPreviaEmTempoReal();
+        } else {
+            // Na aba de login exibe mensagem de boas-vindas na prévia
+            const previewNome = document.getElementById("previewNome");
+            const previewEmail = document.getElementById("previewEmail");
+            const previewTelefone = document.getElementById("previewTelefone");
+            const previewEndereco = document.getElementById("previewEndereco");
+
+            if (previewNome) previewNome.textContent = "Bem-vindo de volta!";
+            if (previewEmail) previewEmail.textContent = "Faça login para acessar suas compras.";
+            if (previewTelefone) previewTelefone.textContent = "-";
+            if (previewEndereco) previewEndereco.textContent = "Seus dados estarão disponíveis no perfil.";
+        }
+    }
+}
+
+/* =========================================================
+   2. NORMALIZAR E-MAIL
+   ========================================================= */
+
+function normalizarEmail(email) {
+    return String(email || "").trim().toLowerCase();
+}
+
+/* =========================================================
+   3. PRÉVIA DO PERFIL EM TEMPO REAL
+   ========================================================= */
+
+function atualizarPreviaEmTempoReal() {
+    const inputNome = document.getElementById("nomeCadastro");
+    const inputEmail = document.getElementById("emailCadastro");
+    const inputTelefone = document.getElementById("telefoneCadastro");
+    const inputRua = document.getElementById("ruaCadastro");
+    const inputNumero = document.getElementById("numeroCadastro");
+
+    const previewNome = document.getElementById("previewNome");
+    const previewEmail = document.getElementById("previewEmail");
+    const previewTelefone = document.getElementById("previewTelefone");
+    const previewEndereco = document.getElementById("previewEndereco");
+
+    if (previewNome) previewNome.textContent = inputNome && inputNome.value.trim() ? inputNome.value.trim() : "Seu Nome Aqui";
+    if (previewEmail) previewEmail.textContent = inputEmail && inputEmail.value.trim() ? inputEmail.value.trim() : "seu.email@exemplo.com";
+    if (previewTelefone) previewTelefone.textContent = inputTelefone && inputTelefone.value.trim() ? inputTelefone.value.trim() : "(21) 99999-9999";
+
+    if (previewEndereco) {
+        const rua = inputRua ? inputRua.value.trim() : "";
+        const num = inputNumero ? inputNumero.value.trim() : "";
+        previewEndereco.textContent = rua ? `${rua}${num ? ', ' + num : ''}` : "Seu endereço aparecerá aqui após o CEP";
+    }
+}
+
+// Associa os eventos de input nos campos do cadastro
+document.addEventListener("DOMContentLoaded", function () {
+    const camposCadastro = [
+        "nomeCadastro",
+        "emailCadastro",
+        "telefoneCadastro",
+        "ruaCadastro",
+        "numeroCadastro"
+    ];
+
+    camposCadastro.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener("input", atualizarPreviaEmTempoReal);
+        }
+    });
+});
+
+/* =========================================================
+   4. MÁSCARAS (TELEFONE & CEP)
+   ========================================================= */
+
+const telefoneCadastro = document.getElementById("telefoneCadastro");
+if (telefoneCadastro) {
+    telefoneCadastro.addEventListener("input", () => {
+        let valor = telefoneCadastro.value.replace(/\D/g, "").substring(0, 11);
+
+        if (valor.length > 2) {
+            valor = valor.replace(/^(\d{2})(\d)/, "($1) $2");
+        }
+
+        if (valor.length > 10) {
+            valor = valor.replace(/^(\(\d{2}\) \d{5})(\d)/, "$1-$2");
+        } else {
+            valor = valor.replace(/^(\(\d{2}\) \d{4})(\d)/, "$1-$2");
+        }
+
+        telefoneCadastro.value = valor;
+        atualizarPreviaEmTempoReal();
+    });
+}
+
+const cepCadastro = document.getElementById("cepCadastro");
+if (cepCadastro) {
+    cepCadastro.addEventListener("input", () => {
+        let valor = cepCadastro.value.replace(/\D/g, "").substring(0, 8);
+
+        if (valor.length > 5) {
+            valor = valor.replace(/^(\d{5})(\d)/, "$1-$2");
+        }
+
+        cepCadastro.value = valor;
+    });
+
+    cepCadastro.addEventListener("blur", buscarCEPCadastro);
+}
+
+/* =========================================================
+   5. CONSULTA VIACEP
+   ========================================================= */
+
+async function buscarCEPCadastro() {
+    if (!cepCadastro) return;
+
+    const valor = cepCadastro.value.replace(/\D/g, "");
+
+    if (valor.length !== 8) {
+        const info = document.getElementById("enderecoInfo");
+        if (info) info.classList.remove("show");
+        limparEnderecos();
+        return;
+    }
+
+    try {
+        const resposta = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
+
+        if (!resposta.ok) {
+            throw new Error("Falha na consulta do CEP.");
+        }
+
+        const dados = await resposta.json();
+
+        if (dados.erro) {
+            alert("CEP não encontrado.");
+            limparEnderecos();
+            return;
+        }
+
+        document.getElementById("ruaCadastro").value = dados.logradouro || "";
+        document.getElementById("bairroCadastro").value = dados.bairro || "";
+        document.getElementById("cidadeCadastro").value = dados.localidade || "";
+        document.getElementById("estadoCadastro").value = dados.uf || "";
+        document.getElementById("complementoCadastro").value = dados.complemento || "";
+
+        const enderecoTexto = document.getElementById("enderecoTexto");
+        const enderecoInfo = document.getElementById("enderecoInfo");
+
+        if (enderecoTexto) {
+            enderecoTexto.textContent = `✓ Endereço encontrado: ${dados.logradouro || ""}, ${dados.bairro || ""} - ${dados.localidade || ""}, ${dados.uf || ""}`;
+        }
+
+        if (enderecoInfo) {
+            enderecoInfo.classList.add("show");
+        }
+
+        const numeroCadastro = document.getElementById("numeroCadastro");
+        if (numeroCadastro) numeroCadastro.focus();
+
+        atualizarPreviaEmTempoReal();
+
+    } catch (erro) {
+        console.error("Erro no ViaCEP:", erro);
+        alert("Não foi possível consultar o CEP. Verifique sua conexão.");
+        limparEnderecos();
+    }
+}
+
+function limparEnderecos() {
+    const campos = [
+        "ruaCadastro",
+        "bairroCadastro",
+        "cidadeCadastro",
+        "estadoCadastro",
+        "complementoCadastro"
+    ];
+
+    campos.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+
+    const info = document.getElementById("enderecoInfo");
+    if (info) info.classList.remove("show");
+
+    atualizarPreviaEmTempoReal();
+}
+
+/* =========================================================
+   6. SUBMIT: CADASTRO
+   ========================================================= */
+
 const formCadastro = document.getElementById("formCadastro");
 if (formCadastro) {
     formCadastro.addEventListener("submit", async function (event) {
@@ -10,8 +236,13 @@ if (formCadastro) {
             const senha = document.getElementById("senhaCadastro").value;
             const confirmarSenha = document.getElementById("confirmarSenhaCadastro").value;
 
-            if (!nome || !email) {
-                alert("Preencha seu nome e e-mail.");
+            if (!nome) {
+                alert("Digite seu nome.");
+                return;
+            }
+
+            if (!email) {
+                alert("Digite um e-mail válido.");
                 return;
             }
 
@@ -48,8 +279,8 @@ if (formCadastro) {
             try {
                 resultado = JSON.parse(textoResposta);
             } catch (e) {
-                console.error("Resposta do servidor não é JSON:", textoResposta);
-                alert("Erro interno no servidor PHP. Detalhes salvos no console.");
+                console.error("Resposta não é um JSON válido:", textoResposta);
+                alert("Ocorreu um erro no servidor ao processar o cadastro.");
                 return;
             }
 
@@ -66,7 +297,58 @@ if (formCadastro) {
 
         } catch (erro) {
             console.error("Erro no cadastro:", erro);
-            alert("Não foi possível conectar ao servidor: " + erro.message);
+            alert("Não foi possível conectar ao servidor. Tente novamente.");
+        }
+    });
+}
+
+/* =========================================================
+   7. SUBMIT: LOGIN
+   ========================================================= */
+
+const formLogin = document.getElementById("formLogin");
+if (formLogin) {
+    formLogin.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const email = normalizarEmail(document.getElementById("emailLogin").value);
+        const senha = document.getElementById("senhaLogin").value;
+
+        if (!email || !senha) {
+            alert("Digite seu e-mail e sua senha.");
+            return;
+        }
+
+        try {
+            const resposta = await fetch("/login.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ email, senha })
+            });
+
+            const textoResposta = await resposta.text();
+            let resultado;
+
+            try {
+                resultado = JSON.parse(textoResposta);
+            } catch (e) {
+                console.error("Resposta não é um JSON válido:", textoResposta);
+                alert("Ocorreu um erro ao processar o login no servidor.");
+                return;
+            }
+
+            if (!resultado.sucesso) {
+                alert(resultado.mensagem || "E-mail ou senha incorretos.");
+                return;
+            }
+
+            alert("Login realizado com sucesso!");
+            window.location.replace(resultado.redirecionar || "/Telainicial/index.html");
+
+        } catch (erro) {
+            console.error("Erro no login:", erro);
+            alert("Não foi possível conectar ao servidor.");
         }
     });
 }
