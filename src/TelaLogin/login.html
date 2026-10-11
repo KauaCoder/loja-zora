@@ -4,202 +4,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Login - ZORA</title>
+    <title>Login / Cadastro - ZORA</title>
 
     <link rel="stylesheet" href="style_login.css">
     <link rel="stylesheet" href="/EstiloBase.css">
-
 </head>
 
 <body>
 
-<div class="login-box">
+    <div class="login-container">
 
-    <h2>ZORA</h2>
+        <!-- LADO ESQUERDO: CARTÃO DE AUTENTICAÇÃO -->
+        <div class="login-box">
 
-    <!-- TABS -->
-    <div class="tab-buttons">
-        <button class="tab-button active" onclick="mudarAba('login')">Login</button>
-        <button class="tab-button" onclick="mudarAba('cadastro')">Cadastro</button>
+            <div class="brand-header">
+                <h2>ZORA</h2>
+                <p>Moda e Estilo</p>
+            </div>
+
+            <!-- TABS -->
+            <div class="tab-buttons">
+                <button type="button" class="tab-button active" onclick="mudarAba('login')">Login</button>
+                <button type="button" class="tab-button" onclick="mudarAba('cadastro')">Cadastro</button>
+            </div>
+
+            <!-- ABA LOGIN -->
+            <form id="formLogin" class="form-section active">
+
+                <div class="form-group">
+                    <label for="emailLogin">E-mail</label>
+                    <input 
+                        type="email" 
+                        id="emailLogin" 
+                        placeholder="seu@email.com" 
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="senhaLogin">Senha</label>
+                    <input 
+                        type="password" 
+                        id="senhaLogin" 
+                        placeholder="Sua senha" 
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn-submit">Entrar</button>
+
+                <a href="/Telainicial/index.html" class="voltar">
+                    ← Voltar para a loja
+                </a>
+
+            </form>
+
+            <!-- ABA CADASTRO (LAYOUT COMPACTO EM GRID) -->
+            <form id="formCadastro" class="form-section">
+
+                <!-- GRUPO: DADOS PESSOAIS -->
+                <div class="form-grid">
+                    <div class="form-group span-2">
+                        <label for="nomeCadastro">Nome Completo</label>
+                        <input 
+                            type="text" 
+                            id="nomeCadastro" 
+                            placeholder="Seu nome como aparecerá no perfil" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailCadastro">E-mail</label>
+                        <input 
+                            type="email" 
+                            id="emailCadastro" 
+                            placeholder="seu@email.com" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telefoneCadastro">Telefone (opcional)</label>
+                        <input 
+                            type="tel" 
+                            id="telefoneCadastro" 
+                            placeholder="(21) 99999-9999"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="senhaCadastro">Senha</label>
+                        <input 
+                            type="password" 
+                            id="senhaCadastro" 
+                            placeholder="Mínimo 6 caracteres" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmarSenhaCadastro">Confirmar Senha</label>
+                        <input 
+                            type="password" 
+                            id="confirmarSenhaCadastro" 
+                            placeholder="Confirme a senha" 
+                            required
+                        >
+                    </div>
+                </div>
+
+                <hr class="divisor-form">
+
+                <!-- GRUPO: ENDEREÇO -->
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="cepCadastro">CEP</label>
+                        <input 
+                            type="text" 
+                            id="cepCadastro" 
+                            placeholder="00000-000" 
+                            maxlength="9"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ruaCadastro">Rua</label>
+                        <input 
+                            type="text" 
+                            id="ruaCadastro" 
+                            placeholder="Rua / Avenida"
+                            readonly
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numeroCadastro">Número</label>
+                        <input 
+                            type="text" 
+                            id="numeroCadastro" 
+                            placeholder="Ex: 123" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="complementoCadastro">Complemento</label>
+                        <input 
+                            type="text" 
+                            id="complementoCadastro" 
+                            placeholder="Apto, Bloco, etc."
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bairroCadastro">Bairro</label>
+                        <input 
+                            type="text" 
+                            id="bairroCadastro" 
+                            readonly
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cidadeCadastro">Cidade / UF</label>
+                        <div class="cidade-uf-group">
+                            <input type="text" id="cidadeCadastro" placeholder="Cidade" readonly required>
+                            <input type="text" id="estadoCadastro" placeholder="UF" maxlength="2" readonly required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endereco-info" id="enderecoInfo" style="display: none;">
+                    <p id="enderecoTexto"></p>
+                </div>
+
+                <button type="submit" class="btn-submit">Finalizar Cadastro</button>
+
+                <a href="/Telainicial/index.html" class="voltar">
+                    ← Voltar para a loja
+                </a>
+
+            </form>
+
+        </div>
+
+        <!-- LADO DIREITO: PRÉVIA DO PERFIL EM TEMPO REAL -->
+        <div class="preview-box" id="previewPerfilBox">
+            <div class="preview-card">
+                <span class="preview-badge">Prévia do Seu Perfil</span>
+                
+                <div class="preview-avatar">👤</div>
+                
+                <h3 id="previewNome">Seu Nome Aqui</h3>
+                <p id="previewEmail" class="preview-email">seu.email@exemplo.com</p>
+
+                <div class="preview-dados">
+                    <p><strong>Telefone:</strong> <span id="previewTelefone">(21) 99999-9999</span></p>
+                    <p><strong>Endereço:</strong> <span id="previewEndereco">Seu endereço aparecerá aqui após o CEP</span></p>
+                </div>
+
+                <div class="preview-dica">
+                    💡 À medida que você preenche o formulário, é assim que o seu perfil será visto no sistema.
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- ABA LOGIN -->
-    <form id="formLogin" class="form-section active">
+    <!-- SCRIPTS -->
+    <script src="/auth.js"></script>
+    <script src="login.js"></script>
 
-        <div class="form-group">
-            <label for="emailLogin">E-mail</label>
-            <input 
-                type="email" 
-                id="emailLogin" 
-                placeholder="seu@email.com" 
-                required
-            >
-        </div>
+    <!-- SCRIPT DA PRÉVIA EM TEMPO REAL -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const inputNome = document.getElementById("nomeCadastro");
+            const inputEmail = document.getElementById("emailCadastro");
+            const inputTelefone = document.getElementById("telefoneCadastro");
+            const inputRua = document.getElementById("ruaCadastro");
+            const inputNumero = document.getElementById("numeroCadastro");
 
-        <div class="form-group">
-            <label for="senhaLogin">Senha</label>
-            <input 
-                type="password" 
-                id="senhaLogin" 
-                placeholder="Sua senha" 
-                required
-            >
-        </div>
+            const previewNome = document.getElementById("previewNome");
+            const previewEmail = document.getElementById("previewEmail");
+            const previewTelefone = document.getElementById("previewTelefone");
+            const previewEndereco = document.getElementById("previewEndereco");
 
-        <button type="submit">Entrar</button>
+            function atualizarPrevia() {
+                if (previewNome) previewNome.textContent = inputNome.value.trim() || "Seu Nome Aqui";
+                if (previewEmail) previewEmail.textContent = inputEmail.value.trim() || "seu.email@exemplo.com";
+                if (previewTelefone) previewTelefone.textContent = inputTelefone.value.trim() || "(21) 99999-9999";
 
-        <a 
-            href="/Telainicial/index.html" 
-            class="voltar"
-        >
-            ← Voltar para a loja
-        </a>
+                const rua = inputRua.value.trim();
+                const num = inputNumero.value.trim();
+                if (previewEndereco) {
+                    previewEndereco.textContent = (rua ? `${rua}${num ? ', ' + num : ''}` : "Seu endereço aparecerá aqui após o CEP");
+                }
+            }
 
-    </form>
-
-    <!-- ABA CADASTRO -->
-    <form id="formCadastro" class="form-section">
-
-        <div class="form-group">
-            <label for="nomeCadastro">Nome Completo</label>
-            <input 
-                type="text" 
-                id="nomeCadastro" 
-                placeholder="Seu nome" 
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="emailCadastro">E-mail</label>
-            <input 
-                type="email" 
-                id="emailCadastro" 
-                placeholder="seu@email.com" 
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="telefoneCadastro">Telefone (opcional)</label>
-            <input 
-                type="tel" 
-                id="telefoneCadastro" 
-                placeholder="(11) 99999-9999"
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="senhaCadastro">Senha</label>
-            <input 
-                type="password" 
-                id="senhaCadastro" 
-                placeholder="Mínimo 6 caracteres" 
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="confirmarSenhaCadastro">Confirmar Senha</label>
-            <input 
-                type="password" 
-                id="confirmarSenhaCadastro" 
-                placeholder="Confirme a senha" 
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="cepCadastro">CEP</label>
-            <input 
-                type="text" 
-                id="cepCadastro" 
-                placeholder="00000-000" 
-                maxlength="9"
-                required
-            >
-        </div>
-
-        <div class="endereco-info" id="enderecoInfo">
-            <p id="enderecoTexto"></p>
-        </div>
-
-        <div class="form-group">
-            <label for="ruaCadastro">Rua</label>
-            <input 
-                type="text" 
-                id="ruaCadastro" 
-                readonly
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="numeroCadastro">Número</label>
-            <input 
-                type="text" 
-                id="numeroCadastro" 
-                placeholder="Número" 
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="complementoCadastro">Complemento (opcional)</label>
-            <input 
-                type="text" 
-                id="complementoCadastro" 
-                placeholder="Apto, sala, etc"
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="bairroCadastro">Bairro</label>
-            <input 
-                type="text" 
-                id="bairroCadastro" 
-                readonly
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="cidadeCadastro">Cidade</label>
-            <input 
-                type="text" 
-                id="cidadeCadastro" 
-                readonly
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="estadoCadastro">Estado</label>
-            <input 
-                type="text" 
-                id="estadoCadastro" 
-                readonly
-                required
-            >
-        </div>
-
-        <button type="submit">Cadastrar</button>
-
-        <a 
-            href="/Telainicial/index.html" 
-            class="voltar"
-        >
-            ← Voltar para a loja
-        </a>
-
-    </form>
-
-</div>
-
-  <!-- SCRIPTS -->
-  <script src="/auth.js"></script>
-  <script src="login.js"></script>
+            if (inputNome) inputNome.addEventListener("input", atualizarPrevia);
+            if (inputEmail) inputEmail.addEventListener("input", atualizarPrevia);
+            if (inputTelefone) inputTelefone.addEventListener("input", atualizarPrevia);
+            if (inputRua) inputRua.addEventListener("input", atualizarPrevia);
+            if (inputNumero) inputNumero.addEventListener("input", atualizarPrevia);
+        });
+    </script>
 
 </body>
 </html>
