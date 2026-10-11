@@ -72,8 +72,24 @@
 
                 <div class="perfil-dados">
                     <h4>Informações Pessoais</h4>
-                    <p><strong>Nome:</strong> <span id="nomePerfil">-</span></p>
-                    <p><strong>Email:</strong> <span id="emailPerfil">-</span></p>
+                    
+                    <!-- EXIBIÇÃO DO NOME -->
+                    <div id="nomeDisplayGroup">
+                        <p><strong>Nome:</strong> <span id="nomePerfil">-</span></p>
+                        <button type="button" class="btn-editar-nome" onclick="mostrarEdicaoNome()">Editar Nome</button>
+                    </div>
+
+                    <!-- EDIÇÃO DO NOME -->
+                    <div id="nomeEdicaoGroup" style="display: none; margin-top: 10px;">
+                        <label for="novoNomeInput"><strong>Novo Nome:</strong></label>
+                        <input type="text" id="novoNomeInput" placeholder="Digite seu novo nome">
+                        <div style="margin-top: 8px;">
+                            <button type="button" onclick="salvarNovoNome()">Salvar Nome</button>
+                            <button type="button" onclick="cancelarEdicaoNome()" class="btn-cancelar">Cancelar</button>
+                        </div>
+                    </div>
+
+                    <p style="margin-top: 12px;"><strong>Email:</strong> <span id="emailPerfil">-</span></p>
                     <p><strong>Telefone:</strong> <span id="telefonePerfil">-</span></p>
                 </div>
 
@@ -130,7 +146,7 @@
             </div>
 
             <div id="compras-lista" class="compras-lista" style="display: none;">
-                <!-- As compras serão adicionadas aqui via JavaScript -->
+                <!-- As compras e o histórico serão adicionados via cliente.js -->
             </div>
         </section>
 
@@ -139,6 +155,38 @@
             <button onclick="logout()" class="btn-logout">Sair da Conta</button>
         </div>
 
+    </div>
+
+    <!-- MODAL DE SOLICITAÇÃO DE DEVOLUÇÃO -->
+    <div id="modalDevolucao" class="modal-overlay" style="display: none;">
+        <div class="modal-reposicao">
+            <button type="button" class="modal-fechar" onclick="fecharModalDevolucao()">✕</button>
+            <span class="mini-titulo">SOLICITAR DEVOLUÇÃO</span>
+            <h2 id="devolucaoNomeProduto">Produto</h2>
+            <p class="modal-descricao">Informe o motivo da devolução para darmos andamento ao pedido.</p>
+
+            <form id="formDevolucao" onsubmit="confirmarDevolucao(event)">
+                <input type="hidden" id="devolucaoIdPedido">
+                <input type="hidden" id="devolucaoIdProduto">
+
+                <label for="motivoDevolucao">Motivo da devolução</label>
+
+                <select id="motivoDevolucao" required style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px;">
+                    <option value="">Selecione um motivo...</option>
+                    <option value="Tamanho incorreto">Tamanho incorreto</option>
+                    <option value="Defeito de fabricação">Defeito de fabricação</option>
+                    <option value="Produto diferente do anunciado">Produto diferente do anunciado</option>
+                    <option value="Arrependimento da compra">Arrependimento da compra</option>
+                </select>
+
+                <div id="mensagemDevolucao" class="mensagem-modal" style="margin-top: 10px;"></div>
+
+                <div class="modal-acoes" style="margin-top: 15px;">
+                    <button type="button" class="btn-cancelar" onclick="fecharModalDevolucao()">Cancelar</button>
+                    <button type="submit" class="btn-devolucao-confirmar">Confirmar Devolução</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- SCRIPTS -->
