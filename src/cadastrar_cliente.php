@@ -1,39 +1,18 @@
 <?php
 header("Content-Type: application/json; charset=UTF-8");
 
-// =========================================================
-// LOCALIZAR E INCLUIR A CONEXÃO (INCLUI A PASTA PAI /..)
-// =========================================================
-$caminho_conexao = __DIR__ . '/../conexao.php'; // Busca na pasta pai
-
-if (!file_exists($caminho_conexao)) {
-    $caminho_conexao = __DIR__ . '/conexao.php'; // Busca na mesma pasta
-}
-
-if (!file_exists($caminho_conexao)) {
-    $caminho_conexao = __DIR__ . '/src/conexao.php'; // Busca na pasta src
-}
-
-if (!file_exists($caminho_conexao)) {
-    http_response_code(500);
-    echo json_encode([
-        "sucesso" => false,
-        "mensagem" => "Arquivo de conexão com o banco de dados não foi encontrado."
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-require_once $caminho_conexao;
+/* =========================================================
+   INCLUI A CONEXÃO (NA MESMA PASTA)
+   ========================================================= */
+require_once __DIR__ . '/conexao.php';
 
 try {
-    // Verifica se a conexão com PDO foi estabelecida com sucesso
+    // 1. Verifica se a variável $conexao do conexao.php foi instanciada
     if (!isset($conexao) || !($conexao instanceof PDO)) {
         throw new Exception("Falha na conexão com o banco de dados.");
     }
 
-    // =========================
-    // VERIFICAR MÉTODO HTTP
-    // =========================
+    // 2. Verificar Método HTTP
     if ($_SERVER["REQUEST_METHOD"] !== "POST") {
         http_response_code(405);
         echo json_encode([
@@ -43,9 +22,7 @@ try {
         exit;
     }
 
-    // =========================
-    // RECEBER JSON
-    // =========================
+    // 3. Receber dados JSON
     $conteudo = file_get_contents("php://input");
     $dados = json_decode($conteudo, true);
 
@@ -53,17 +30,13 @@ try {
         throw new Exception("Dados de requisição inválidos.");
     }
 
-    // =========================
-    // DADOS DO CLIENTE
-    // =========================
+    // 4. Extração dos Dados do Cliente
     $nome     = trim($dados["nome"] ?? "");
     $email    = strtolower(trim($dados["email"] ?? $dados["e_mail"] ?? ""));
     $telefone = trim($dados["telefone"] ?? "");
     $senha    = $dados["senha"] ?? "";
 
-    // =========================
-    // DADOS DO ENDEREÇO
-    // =========================
+    // 5. Extração dos Dados do Endereço (suporta raiz ou aninhado)
     $endereco = $dados["endereco"] ?? [];
 
     $cep         = trim($endereco["cep"] ?? $dados["cep"] ?? "");
@@ -74,9 +47,7 @@ try {
     $cidade      = trim($endereco["cidade"] ?? $dados["cidade"] ?? "");
     $estado      = strtoupper(trim($endereco["estado"] ?? $dados["estado"] ?? ""));
 
-    // =========================
-    // VALIDAÇÕES DOS DADOS
-    // =========================
+    // 6. Validações
     if ($nome === "") throw new Exception("O nome é obrigatório.");
     if ($email === "" || !filter_var($email, FILTER_VALIDATE_EMAIL)) throw new Exception("Forneça um e-mail válido.");
     if ($senha === "" || strlen($senha) < 6) throw new Exception("A senha deve ter no mínimo 6 caracteres.");
@@ -87,20 +58,18 @@ try {
     if ($cidade === "") throw new Exception("A cidade é obrigatória.");
     if ($estado === "") throw new Exception("O estado (UF) é obrigatório.");
 
-    // =========================
-    // DESCOBRIR NOME DA TABELA (cliente OU clientes)
-    // =========================
+    // 7. Descobrir dinamicamente o nome da tabela (cliente ou clientes)
     $tabelaCliente = "cliente";
     try {
         $teste = $conexao->query("SELECT 1 FROM clientes LIMIT 1");
-        if ($teste !== false) $tabelaCliente = "clientes";
+        if ($teste !== false) {
+            $tabelaCliente = "clientes";
+        }
     } catch (Exception $e) {
-        // Mantém 'cliente' caso 'clientes' não exista
+        // Mantém 'cliente' se a tabela 'clientes' não existir
     }
 
-    // =========================
-    // VERIFICAR E-MAIL DUPLICADO
-    // =========================
+    // 8. Verificar E-mail Duplicado
     $sqlEmail = "SELECT id_cliente FROM {$tabelaCliente} WHERE e_mail = :email OR email = :email LIMIT 1";
     $stmtEmail = $conexao->prepare($sqlEmail);
     $stmtEmail->execute([":email" => $email]);
@@ -109,19 +78,13 @@ try {
         throw new Exception("Este e-mail já está cadastrado.");
     }
 
-    // =========================
-    // HASH DA SENHA
-    // =========================
+    // 9. Hash da Senha
     $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
 
-    // =========================
-    // INICIAR TRANSAÇÃO
-    // =========================
+    // 10. Iniciar Transação
     $conexao->beginTransaction();
 
-    // =========================
-    // CADASTRAR CLIENTE
-    // =========================
+    // 11. Inserir Cliente
     $sqlCliente = "
         INSERT INTO {$tabelaCliente}
         (nome, e_mail, senha, telefone, is_admin)
@@ -141,12 +104,10 @@ try {
     $idCliente = (int) $stmtCliente->fetchColumn();
 
     if (!$idCliente) {
-        throw new Exception("Erro ao registrar o cliente no banco de dados.");
+        throw new Exception("Não foi possível gerar o ID do cliente.");
     }
 
-    // =========================
-    // CADASTRAR ENDEREÇO
-    // =========================
+    // 12. Inserir Endereço
     $sqlEndereco = "
         INSERT INTO endereco
         (id_cliente, cep, endereco, numero, complemento, bairro, cidade, estado)
@@ -166,9 +127,7 @@ try {
         ":estado"      => $estado
     ]);
 
-    // =========================
-    // CONFIRMAR TRANSAÇÃO
-    // =========================
+    // 13. Confirmar Transação
     $conexao->commit();
 
     echo json_encode([
@@ -186,6 +145,7 @@ try {
 
     $mensagem = $e->getMessage();
 
+    // Trata erro de chave única duplicada no PostgreSQL
     if (strpos($mensagem, "cliente_e_mail_key") !== false || strpos($mensagem, "23505") !== false) {
         $mensagem = "Este e-mail já está cadastrado no sistema.";
     }
@@ -195,3 +155,4 @@ try {
         "mensagem" => $mensagem
     ], JSON_UNESCAPED_UNICODE);
 }
+?>
