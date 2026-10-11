@@ -1,12 +1,38 @@
 // =====================================================
-// ZORA - PAINEL ADMINISTRATIVO
+// ZORA - PAINEL ADMINISTRATIVO INTEGRADO
 // =====================================================
 
 let produtosAdmin = [];
-const TELEFONE_ADMIN_WHATSAPP = "5521976442535"; // Insira aqui o número do ADM com DDD
+const TELEFONE_ADMIN_WHATSAPP = "5521976442535"; // Substitua pelo seu número do WhatsApp com DDD
 
 // =====================================================
-// CARREGAR DADOS
+// INICIALIZAÇÃO
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", function () {
+    carregarDadosAdmin();
+    carregarDashboard();
+
+    // Eventos dos Formulários
+    const formReposicao = document.getElementById("formReposicao");
+    if (formReposicao) formReposicao.addEventListener("submit", salvarReposicao);
+
+    const formEditar = document.getElementById("formEditarProduto");
+    if (formEditar) formEditar.addEventListener("submit", salvarEdicaoProduto);
+
+    const formFornecedor = document.getElementById("formFornecedor");
+    if (formFornecedor) formFornecedor.addEventListener("submit", salvarFornecedor);
+
+    // Eventos dos Filtros
+    const pesquisa = document.getElementById("pesquisaProduto");
+    if (pesquisa) pesquisa.addEventListener("input", aplicarFiltros);
+
+    const categoria = document.getElementById("filtroCategoria");
+    if (categoria) categoria.addEventListener("change", aplicarFiltros);
+});
+
+// =====================================================
+// 1. CARREGAR PRODUTOS E INVENTÁRIO
 // =====================================================
 
 async function carregarDadosAdmin() {
@@ -32,8 +58,7 @@ async function carregarDadosAdmin() {
         aplicarFiltros();
 
     } catch (erro) {
-        console.error("Erro no painel administrativo:", erro);
-
+        console.error("Erro ao carregar inventário:", erro);
         if (tabela) {
             tabela.innerHTML = `
                 <tr>
@@ -47,7 +72,78 @@ async function carregarDadosAdmin() {
 }
 
 // =====================================================
-// CATEGORIAS
+// 2. DASHBOARD DE VENDAS
+// =====================================================
+
+async function carregarDashboard() {
+    try {
+        const resposta = await fetch("/dashboard.php", {
+            method: "GET",
+            cache: "no-store",
+            credentials: "include"
+        });
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok || !resultado.sucesso) {
+            throw new Error(resultado.mensagem || "Erro ao carregar o dashboard.");
+        }
+
+        // Preenche os Cards do Dashboard
+        definirTexto("dashboardFaturamento", formatarMoeda(resultado.resumo.faturamento));
+        definirTexto("dashboardPedidos", resultado.resumo.total_pedidos);
+        definirTexto("dashboardVendidos", resultado.resumo.produtos_vendidos);
+        definirTexto("dashboardTicket", formatarMoeda(resultado.resumo.ticket_medio));
+
+        // Preenche o Produto Mais Vendido
+        if (resultado.mais_vendido) {
+            definirTexto(
+                "dashboardMaisVendido",
+                `${resultado.mais_vendido.nome} (${resultado.mais_vendido.quantidade} un. vendidas)`
+            );
+        } else {
+            definirTexto("dashboardMaisVendido", "Nenhuma venda registrada");
+        }
+
+        // Renderiza a Tabela de Pedidos Recentes
+        renderizarPedidosRecentes(resultado.pedidos || []);
+
+    } catch (erro) {
+        console.error("Erro no Dashboard:", erro);
+        const lista = document.getElementById("dashboardListaPedidos");
+        if (lista) {
+            lista.innerHTML = `<tr><td colspan="6">Erro ao carregar os pedidos recentes.</td></tr>`;
+        }
+    }
+}
+
+function renderizarPedidosRecentes(pedidos) {
+    const lista = document.getElementById("dashboardListaPedidos");
+    if (!lista) return;
+
+    if (pedidos.length === 0) {
+        lista.innerHTML = `<tr><td colspan="6">Nenhum pedido recente.</td></tr>`;
+        return;
+    }
+
+    let html = "";
+    pedidos.forEach(p => {
+        html += `
+            <tr>
+                <td>#${p.id_pedido}</td>
+                <td>${p.cliente}</td>
+                <td>${p.data_pedido}</td>
+                <td>${p.quantidade_itens} item(ns)</td>
+                <td><strong>${formatarMoeda(p.valor_total)}</strong></td>
+                <td><span class="status status-disponivel">${p.status}</span></td>
+            </tr>
+        `;
+    });
+    lista.innerHTML = html;
+}
+
+// =====================================================
+// 3. CATEGORIAS, RESUMO E FILTROS
 // =====================================================
 
 function carregarCategorias() {
@@ -55,7 +151,6 @@ function carregarCategorias() {
     if (!select) return;
 
     const valorAtual = select.value;
-
     select.innerHTML = `<option value="">Todas as categorias</option>`;
 
     const categorias = [
@@ -74,56 +169,25 @@ function carregarCategorias() {
     }
 }
 
-// =====================================================
-// RESUMO (REGRA DOS 40%)
-// =====================================================
-
 function atualizarResumo() {
     const totalProdutos = produtosAdmin.length;
+    const totalUnidades = produtosAdmin.reduce((total, p) => total + (Number(p.qtd_item) || 0), 0);
 
-    const totalUnidades = produtosAdmin.reduce(
-        (total, p) => total + (Number(p.qtd_item) || 0),
-        0
-    );
-
-    // Considera estoque baixo quando for <= 40% do estoque máximo
+    // Regra dos 40%: Considera estoque baixo quando for <= 40% do limite máximo
     const estoqueBaixo = produtosAdmin.filter(p => {
         const quantidade = Number(p.qtd_item) || 0;
         const maximo = Number(p.qtd_max_produto) || 100;
-
         if (quantidade <= 0) return false;
-
-        const percentual = (quantidade / maximo) * 100;
-        return percentual <= 40;
+        return (quantidade / maximo) * 100 <= 40;
     }).length;
 
-    const esgotados = produtosAdmin.filter(
-        p => Number(p.qtd_item) <= 0
-    ).length;
+    const esgotados = produtosAdmin.filter(p => (Number(p.qtd_item) || 0) <= 0).length;
 
     definirTexto("totalProdutos", totalProdutos);
     definirTexto("totalUnidades", totalUnidades);
     definirTexto("totalEstoqueBaixo", estoqueBaixo);
     definirTexto("totalEsgotados", esgotados);
 }
-
-function definirTexto(id, valor) {
-    const elemento = document.getElementById(id);
-    if (elemento) {
-        elemento.textContent = valor;
-    }
-}
-
-function formatarMoeda(valor) {
-    return Number(valor || 0).toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-    });
-}
-
-// =====================================================
-// FILTROS
-// =====================================================
 
 function aplicarFiltros() {
     const pesquisa = document.getElementById("pesquisaProduto");
@@ -135,9 +199,7 @@ function aplicarFiltros() {
     const produtosFiltrados = produtosAdmin.filter(produto => {
         const nome = String(produto.nome || "").toLowerCase();
         const correspondeNome = nome.includes(texto);
-        const correspondeCategoria =
-            categoriaSelecionada === "" || produto.categoria === categoriaSelecionada;
-
+        const correspondeCategoria = categoriaSelecionada === "" || produto.categoria === categoriaSelecionada;
         return correspondeNome && correspondeCategoria;
     });
 
@@ -145,7 +207,7 @@ function aplicarFiltros() {
 }
 
 // =====================================================
-// RENDERIZAR PRODUTOS
+// 4. RENDERIZAR TABELA DE INVENTÁRIO
 // =====================================================
 
 function renderizarProdutos(produtos) {
@@ -153,20 +215,10 @@ function renderizarProdutos(produtos) {
     if (!tabela) return;
 
     tabela.innerHTML = "";
-
-    definirTexto(
-        "quantidadeResultados",
-        `${produtos.length} ${produtos.length === 1 ? "produto" : "produtos"}`
-    );
+    definirTexto("quantidadeResultados", `${produtos.length} ${produtos.length === 1 ? "produto" : "produtos"}`);
 
     if (produtos.length === 0) {
-        tabela.innerHTML = `
-            <tr>
-                <td colspan="8" class="sem-resultados">
-                    Nenhum produto encontrado.
-                </td>
-            </tr>
-        `;
+        tabela.innerHTML = `<tr><td colspan="8" class="sem-resultados">Nenhum produto encontrado.</td></tr>`;
         return;
     }
 
@@ -174,138 +226,116 @@ function renderizarProdutos(produtos) {
         const linha = document.createElement("tr");
 
         // PRODUTO
-        const colunaProduto = document.createElement("td");
-        const produtoInfo = document.createElement("div");
-        produtoInfo.className = "produto-info";
-
-        const imagem = document.createElement("img");
-        if (produto.imagem) {
-            imagem.src = `/img/${produto.imagem}`;
-        }
-        imagem.alt = produto.nome || "Produto";
-
-        const textoProduto = document.createElement("div");
-        const nome = document.createElement("strong");
-        nome.textContent = produto.nome;
-
-        const codigo = document.createElement("small");
-        codigo.textContent = `Código #${produto.id_produto}`;
-
-        textoProduto.appendChild(nome);
-        textoProduto.appendChild(codigo);
-        produtoInfo.appendChild(imagem);
-        produtoInfo.appendChild(textoProduto);
-        colunaProduto.appendChild(produtoInfo);
+        const colProduto = document.createElement("td");
+        colProduto.innerHTML = `
+            <div class="produto-info">
+                <img src="/img/${produto.imagem || 'default.jpg'}" alt="${produto.nome}">
+                <div>
+                    <strong>${produto.nome}</strong>
+                    <small>Código #${produto.id_produto}</small>
+                </div>
+            </div>
+        `;
 
         // CATEGORIA
-        const colunaCategoria = document.createElement("td");
-        colunaCategoria.textContent = produto.categoria || "-";
+        const colCategoria = document.createElement("td");
+        colCategoria.textContent = produto.categoria || "-";
 
         // PREÇO
-        const colunaPreco = document.createElement("td");
-        colunaPreco.textContent = formatarMoeda(produto.preco);
+        const colPreco = document.createElement("td");
+        colPreco.textContent = formatarMoeda(produto.preco);
 
         // ESTOQUE
         const quantidade = Number(produto.qtd_item) || 0;
         const maximo = Number(produto.qtd_max_produto) || 100;
+        const colEstoque = document.createElement("td");
+        colEstoque.innerHTML = `<strong>${maximo > 0 ? `${quantidade} /${maximo}` : quantidade}</strong>`;
 
-        const colunaEstoque = document.createElement("td");
-        const estoqueTexto = document.createElement("strong");
-        estoqueTexto.textContent = maximo > 0 ? `${quantidade} / ${maximo}` : quantidade;
-        colunaEstoque.appendChild(estoqueTexto);
+        // FORNECEDOR E CONTATO
+        const colFornecedor = document.createElement("td");
+        colFornecedor.textContent = produto.fornecedor || "Não cadastrado";
 
-        // FORNECEDOR
-        const colunaFornecedor = document.createElement("td");
-        colunaFornecedor.textContent = produto.fornecedor || "Não cadastrado";
-
-        // CONTATO
-        const colunaContato = document.createElement("td");
-        colunaContato.textContent = produto.contato || "-";
+        const colContato = document.createElement("td");
+        colContato.textContent = produto.contato || "-";
 
         // STATUS
-        const colunaStatus = document.createElement("td");
-        colunaStatus.appendChild(criarStatus(quantidade, maximo));
+        const colStatus = document.createElement("td");
+        colStatus.appendChild(criarStatus(quantidade, maximo));
 
         // AÇÕES
-        const colunaAcoes = document.createElement("td");
+        const colAcoes = document.createElement("td");
         const grupoAcoes = document.createElement("div");
         grupoAcoes.className = "grupo-acoes";
 
-        // Botão Repor
-        const botaoRepor = document.createElement("button");
-        botaoRepor.type = "button";
-        botaoRepor.className = "botao-repor";
-
-        if (maximo > 0 && quantidade >= maximo) {
-            botaoRepor.textContent = "Estoque cheio";
-            botaoRepor.disabled = true;
-        } else {
-            botaoRepor.textContent = "Repor";
-            botaoRepor.addEventListener("click", () => abrirModalReposicao(produto));
-        }
-
         // Botão Editar
-        const botaoEditar = document.createElement("button");
-        botaoEditar.type = "button";
-        botaoEditar.className = "botao-editar";
-        botaoEditar.textContent = "Editar";
-        botaoEditar.addEventListener("click", () => abrirModalEdicao(produto));
+        const btnEditar = document.createElement("button");
+        btnEditar.type = "button";
+        btnEditar.className = "botao-editar";
+        btnEditar.textContent = "Editar";
+        btnEditar.onclick = () => abrirModalEdicao(produto);
+
+        // Botão Repor
+        const btnRepor = document.createElement("button");
+        btnRepor.type = "button";
+        btnRepor.className = "botao-repor";
+        if (maximo > 0 && quantidade >= maximo) {
+            btnRepor.textContent = "Cheio";
+            btnRepor.disabled = true;
+        } else {
+            btnRepor.textContent = "Repor";
+            btnRepor.onclick = () => abrirModalReposicao(produto);
+        }
 
         // Botão Fornecedor
-        const botaoFornecedor = document.createElement("button");
-        botaoFornecedor.type = "button";
-        botaoFornecedor.className = "botao-fornecedor";
-        botaoFornecedor.textContent = "Fornecedor";
-
+        const btnFornecedor = document.createElement("button");
+        btnFornecedor.type = "button";
+        btnFornecedor.className = "botao-fornecedor";
+        btnFornecedor.textContent = "Fornecedor";
         if (produto.id_fornecedor && produto.id_item_estoque) {
-            botaoFornecedor.addEventListener("click", () => abrirModalFornecedor(produto));
+            btnFornecedor.onclick = () => abrirModalFornecedor(produto);
         } else {
-            botaoFornecedor.disabled = true;
-            botaoFornecedor.textContent = "Sem fornecedor";
+            btnFornecedor.disabled = true;
+            btnFornecedor.textContent = "Sem fornecedor";
         }
 
-        grupoAcoes.appendChild(botaoEditar);
-        grupoAcoes.appendChild(botaoRepor);
-        grupoAcoes.appendChild(botaoFornecedor);
+        grupoAcoes.appendChild(btnEditar);
+        grupoAcoes.appendChild(btnRepor);
+        grupoAcoes.appendChild(btnFornecedor);
 
-        // BOTÃO WHATSAPP ADM (Aparece se o estoque for <= 40%)
+        // BOTÃO WHATSAPP ADM (Dispara quando o estoque estiver em <= 40%)
         const percentualAtual = (quantidade / maximo) * 100;
         if (percentualAtual <= 40) {
-            const botaoNotificarAdmin = document.createElement("a");
-            botaoNotificarAdmin.className = "botao-whatsapp-admin";
-            botaoNotificarAdmin.target = "_blank";
-            botaoNotificarAdmin.textContent = "📱 Notificar ADM";
+            const btnWhatsapp = document.createElement("a");
+            btnWhatsapp.className = "botao-whatsapp-admin";
+            btnWhatsapp.target = "_blank";
+            btnWhatsapp.style.cssText = "display:inline-block; padding:4px 8px; background:#25D366; color:#fff; border-radius:4px; font-size:12px; font-weight:bold; text-decoration:none;";
+            btnWhatsapp.textContent = "📱 WPP ADM";
 
-            const textoMensagem = `⚠️ *ALERTA DE ESTOQUE BAIXO - ZORA*\n\n` +
-                `📦 *Produto:* ${produto.nome} (Código #${produto.id_produto})\n` +
-                `📊 *Estoque Restante:* ${quantidade} de ${maximo} unidades (${percentualAtual.toFixed(1)}% do limite)\n\n` +
+            const msg = `⚠️ *ALERTA DE ESTOQUE BAIXO - ZORA*\n\n` +
+                `📦 *Produto:* ${produto.nome} (ID: ${produto.id_produto})\n` +
+                `📊 *Estoque Restante:* ${quantidade} de ${maximo} unidades (${percentualAtual.toFixed(1)}%)\n\n` +
                 `🏭 *Fornecedor:* ${produto.fornecedor || 'Não cadastrado'}\n` +
                 `📞 *Contato Fornecedor:* ${produto.contato || 'Sem contato'}\n\n` +
-                `💡 *Ação:* Entrar em contato com o fornecedor para realizar reabastecimento.`;
+                `💡 *Ação:* Favor solicitar reabastecimento junto ao fornecedor.`;
 
-            botaoNotificarAdmin.href = `https://wa.me/${TELEFONE_ADMIN_WHATSAPP}?text=${encodeURIComponent(textoMensagem)}`;
-            grupoAcoes.appendChild(botaoNotificarAdmin);
+            btnWhatsapp.href = `https://wa.me/${TELEFONE_ADMIN_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+            grupoAcoes.appendChild(btnWhatsapp);
         }
 
-        colunaAcoes.appendChild(grupoAcoes);
+        colAcoes.appendChild(grupoAcoes);
 
-        // MONTAR LINHA
-        linha.appendChild(colunaProduto);
-        linha.appendChild(colunaCategoria);
-        linha.appendChild(colunaPreco);
-        linha.appendChild(colunaEstoque);
-        linha.appendChild(colunaFornecedor);
-        linha.appendChild(colunaContato);
-        linha.appendChild(colunaStatus);
-        linha.appendChild(colunaAcoes);
+        linha.appendChild(colProduto);
+        linha.appendChild(colCategoria);
+        linha.appendChild(colPreco);
+        linha.appendChild(colEstoque);
+        linha.appendChild(colFornecedor);
+        linha.appendChild(colContato);
+        linha.appendChild(colStatus);
+        linha.appendChild(colAcoes);
 
         tabela.appendChild(linha);
     });
 }
-
-// =====================================================
-// STATUS
-// =====================================================
 
 function criarStatus(quantidade, maximo) {
     const status = document.createElement("span");
@@ -318,7 +348,6 @@ function criarStatus(quantidade, maximo) {
     }
 
     const percentual = (quantidade / (maximo || 100)) * 100;
-
     if (percentual <= 40) {
         status.textContent = `Estoque baixo (${percentual.toFixed(0)}%)`;
         status.classList.add("status-baixo");
@@ -331,12 +360,126 @@ function criarStatus(quantidade, maximo) {
 }
 
 // =====================================================
-// MODAL FORNECEDOR
+// 5. MODAL REPOSIÇÃO DE ESTOQUE
+// =====================================================
+
+function abrirModalReposicao(produto) {
+    const modal = document.getElementById("modalReposicao");
+    if (!modal) return;
+
+    definirTexto("modalNomeProduto", produto.nome);
+    definirTexto("modalEstoqueAtual", produto.qtd_item);
+
+    const maximo = Number(produto.qtd_max_produto) || 100;
+    const atual = Number(produto.qtd_item) || 0;
+    const disponivel = Math.max(0, maximo - atual);
+
+    definirTexto("modalEstoqueMaximo", maximo);
+    definirTexto("modalDisponivel", disponivel);
+
+    document.getElementById("modalIdProduto").value = produto.id_produto;
+    const campoQtd = document.getElementById("quantidadeReposicao");
+    campoQtd.value = "";
+    campoQtd.max = disponivel;
+
+    limparMensagemModal("mensagemReposicao");
+    modal.classList.add("ativo");
+}
+
+function fecharModalReposicao() {
+    const modal = document.getElementById("modalReposicao");
+    if (modal) modal.classList.remove("ativo");
+}
+
+async function salvarReposicao(evento) {
+    evento.preventDefault();
+
+    const idProduto = Number(document.getElementById("modalIdProduto").value);
+    const quantidade = Number(document.getElementById("quantidadeReposicao").value);
+
+    try {
+        const resposta = await fetch("/adicionar_estoque.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ id_produto: idProduto, quantidade: quantidade })
+        });
+
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.sucesso) throw new Error(resultado.mensagem);
+
+        exibirMensagemModal("mensagemReposicao", "Estoque atualizado com sucesso!", "sucesso");
+        setTimeout(() => {
+            fecharModalReposicao();
+            carregarDadosAdmin();
+        }, 1000);
+
+    } catch (erro) {
+        exibirMensagemModal("mensagemReposicao", erro.message, "erro");
+    }
+}
+
+// =====================================================
+// 6. MODAL EDITAR PRODUTO
+// =====================================================
+
+function abrirModalEdicao(produto) {
+    const modal = document.getElementById("modalEditarProduto");
+    if (!modal) return;
+
+    document.getElementById("editarIdProduto").value = produto.id_produto;
+    document.getElementById("editarNome").value = produto.nome;
+    document.getElementById("editarPreco").value = produto.preco;
+    document.getElementById("editarDescricao").value = produto.descricao || "";
+
+    limparMensagemModal("mensagemEdicao");
+    modal.classList.add("ativo");
+}
+
+function fecharModalEdicao() {
+    const modal = document.getElementById("modalEditarProduto");
+    if (modal) modal.classList.remove("ativo");
+}
+
+async function salvarEdicaoProduto(evento) {
+    evento.preventDefault();
+
+    const dados = {
+        id_produto: Number(document.getElementById("editarIdProduto").value),
+        nome: document.getElementById("editarNome").value.trim(),
+        preco: Number(document.getElementById("editarPreco").value),
+        descricao: document.getElementById("editarDescricao").value.trim()
+    };
+
+    try {
+        const resposta = await fetch("/editar_produto.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(dados)
+        });
+
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.sucesso) throw new Error(resultado.mensagem);
+
+        exibirMensagemModal("mensagemEdicao", "Produto atualizado com sucesso!", "sucesso");
+        setTimeout(() => {
+            fecharModalEdicao();
+            carregarDadosAdmin();
+        }, 1000);
+
+    } catch (erro) {
+        exibirMensagemModal("mensagemEdicao", erro.message, "erro");
+    }
+}
+
+// =====================================================
+// 7. MODAL EDITAR FORNECEDOR
 // =====================================================
 
 function abrirModalFornecedor(produto) {
     const modal = document.getElementById("modalFornecedor");
-    if (!modal || !produto.id_fornecedor || !produto.id_item_estoque) return;
+    if (!modal) return;
 
     definirTexto("fornecedorCategoria", produto.categoria || "-");
     definirTexto("fornecedorEstoque", `#${produto.id_item_estoque}`);
@@ -346,81 +489,72 @@ function abrirModalFornecedor(produto) {
     document.getElementById("fornecedorNome").value = produto.fornecedor || "";
     document.getElementById("fornecedorContato").value = produto.contato || "";
 
-    const mensagem = document.getElementById("mensagemFornecedor");
-    if (mensagem) {
-        mensagem.textContent = "";
-        mensagem.className = "mensagem-modal";
-    }
-
+    limparMensagemModal("mensagemFornecedor");
     modal.classList.add("ativo");
-    document.body.classList.add("modal-aberto");
 }
 
 function fecharModalFornecedor() {
     const modal = document.getElementById("modalFornecedor");
-    if (modal) {
-        modal.classList.remove("ativo");
-    }
-    document.body.classList.remove("modal-aberto");
+    if (modal) modal.classList.remove("ativo");
 }
-
-// =====================================================
-// SALVAR FORNECEDOR
-// =====================================================
 
 async function salvarFornecedor(evento) {
     evento.preventDefault();
 
-    const idFornecedor = Number(document.getElementById("fornecedorId").value);
-    const idItemEstoque = Number(document.getElementById("fornecedorIdEstoque").value);
-    const nome = document.getElementById("fornecedorNome").value.trim();
-    const contato = document.getElementById("fornecedorContato").value.trim();
-    const mensagem = document.getElementById("mensagemFornecedor");
-
-    if (!nome || !contato) {
-        if (mensagem) {
-            mensagem.textContent = "Preencha o nome e o contato do fornecedor.";
-            mensagem.className = "mensagem-modal erro";
-        }
-        return;
-    }
+    const dados = {
+        id_fornecedor: Number(document.getElementById("fornecedorId").value),
+        id_item_estoque: Number(document.getElementById("fornecedorIdEstoque").value),
+        nome: document.getElementById("fornecedorNome").value.trim(),
+        contato: document.getElementById("fornecedorContato").value.trim()
+    };
 
     try {
         const resposta = await fetch("/atualizar_fornecedor.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({
-                id_fornecedor: idFornecedor,
-                id_item_estoque: idItemEstoque,
-                nome: nome,
-                contato: contato
-            })
+            body: JSON.stringify(dados)
         });
 
         const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.sucesso) throw new Error(resultado.mensagem);
 
-        if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(resultado.mensagem || "Erro ao salvar o fornecedor.");
-        }
-
-        if (mensagem) {
-            mensagem.textContent = "Fornecedor atualizado com sucesso!";
-            mensagem.className = "mensagem-modal sucesso";
-        }
-
+        exibirMensagemModal("mensagemFornecedor", "Fornecedor salvo com sucesso!", "sucesso");
         setTimeout(() => {
             fecharModalFornecedor();
             carregarDadosAdmin();
         }, 1000);
 
     } catch (erro) {
-        if (mensagem) {
-            mensagem.textContent = erro.message;
-            mensagem.className = "mensagem-modal erro";
-        }
+        exibirMensagemModal("mensagemFornecedor", erro.message, "erro");
     }
 }
 
-// Inicializa o evento de carregamento da página
-document.addEventListener("DOMContentLoaded", carregarDadosAdmin);
+// =====================================================
+// FUNÇÕES AUXILIARES
+// =====================================================
+
+function definirTexto(id, valor) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = valor;
+}
+
+function formatarMoeda(valor) {
+    return Number(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function exibirMensagemModal(idElemento, texto, tipo) {
+    const el = document.getElementById(idElemento);
+    if (el) {
+        el.textContent = texto;
+        el.className = `mensagem-modal ${tipo}`;
+    }
+}
+
+function limparMensagemModal(idElemento) {
+    const el = document.getElementById(idElemento);
+    if (el) {
+        el.textContent = "";
+        el.className = "mensagem-modal";
+    }
+}
