@@ -549,34 +549,63 @@ nav a:hover{
     }
 }
 
-/* 2 produtos */
+/* Modo Carrossel Horizontal para Dispositivos Móveis (até 700px) */
 @media (max-width: 700px) {
     .catalogo {
-        width: 94%;
+        width: 100%;
+        padding: 0 15px;
     }
-    .produtos {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 18px;
-    }
-    .produto img {
-        height: 280px;
-    }
-    .produto h3 {
-        font-size: 16px;
-        min-height: auto;
-    }
-    .produto p {
-        font-size: 18px;
-    }
-}
 
-/* 1 produto */
-@media (max-width: 450px) {
     .produtos {
-        grid-template-columns: 1fr;
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 15px;
+        padding-bottom: 15px; /* Espaço para a barra de rolagem embaixo */
+        -webkit-overflow-scrolling: touch;
     }
+
+    /* Estilo do Traço/Barra de Rolagem abaixo dos produtos */
+    .produtos::-webkit-scrollbar {
+        height: 5px;
+    }
+
+    .produtos::-webkit-scrollbar-track {
+        background: #e0e0e0;
+        border-radius: 10px;
+    }
+
+    .produtos::-webkit-scrollbar-thumb {
+        background: #000000; /* Cor do traço indicador */
+        border-radius: 10px;
+    }
+
+    /* Reduz o card para metade do tamanho (mostrando o início do próximo item ao lado) */
+    .produto {
+        flex: 0 0 55%;
+        scroll-snap-align: start;
+    }
+
+    /* Reduz proporcionalmente a imagem do produto */
     .produto img {
-        height: 380px;
+        height: 200px;
+    }
+
+    .produto h3 {
+        font-size: 14px;
+        min-height: 38px;
+        margin: 10px 8px 5px;
+    }
+
+    .produto p {
+        font-size: 16px;
+        margin: 5px 0 10px;
+    }
+
+    .produto button {
+        margin: auto 10px 12px;
+        padding: 8px 6px;
+        font-size: 13px;
     }
 }
 
