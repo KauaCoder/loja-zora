@@ -2,10 +2,23 @@
 
 // =========================================================
 // ZORA - LOGIN DO CLIENTE
-// Suporte a HTTPS + Proxy Reverso (Render & Local)
+// Suporte a CORS + Cookies Mobile + Proxy Reverso Render
 // =========================================================
 
-// 1. Reconhece o HTTPS vindo do Proxy Reverso do Render
+// 1. TRATAMENTO COMPLETO DE CORS E PREFLIGHT (OPTIONS)
+$origem = $_SERVER['HTTP_ORIGIN'] ?? 'https://loja-zora.onrender.com';
+header("Access-Control-Allow-Origin: $origem");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
+// Responde 200 OK imediatamente para a requisição de teste (OPTIONS) do celular
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// 2. RECONHECIMENTO DE HTTPS NO PROXY REVERSO DO RENDER
 $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
@@ -13,14 +26,23 @@ if ($isHttps) {
     $_SERVER['HTTPS'] = 'on';
 }
 
-// 2. Configura os cookies da sessão dinamicamente
+// 3. DIRETÓRIO DE SESSÃO SEGURO NO RENDER
+$sessionPath = sys_get_temp_dir();
+if (is_writable($sessionPath)) {
+    session_save_path($sessionPath);
+}
+
+// 4. CONFIGURAÇÃO DOS COOKIES COMPATÍVEL COM CELULARES
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.use_strict_mode', 1);
+
     session_set_cookie_params([
-        'lifetime' => 86400,   // 24 horas
+        'lifetime' => 86400,                   // 24 horas
         'path'     => '/',
-        'secure'   => $isHttps, // True em HTTPS (Render), False em HTTP (local)
-        'httponly' => true,
-        'samesite' => 'Lax'
+        'secure'   => $isHttps,               // Exige HTTPS no Render
+        'httponly' => true,                   // Protege contra XSS
+        'samesite' => $isHttps ? 'None' : 'Lax' // 'None' permite credenciais no mobile sob HTTPS
     ]);
     session_start();
 }
@@ -66,7 +88,7 @@ try {
         throw new Exception("E-mail e senha são obrigatórios.");
     }
 
-    // Busca o cliente na tabela cliente (coluna e_mail)
+    // Consulta no banco de dados
     try {
         $sql = "
             SELECT
@@ -84,7 +106,6 @@ try {
         $stmt->execute([":email" => $email]);
         $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Throwable $eSelect) {
-        // Fallback se a coluna is_admin ainda não existir
         $sqlFallback = "
             SELECT id_cliente, nome, e_mail, senha, telefone
             FROM cliente
@@ -105,10 +126,9 @@ try {
 
     $isAdmin = filter_var($cliente["is_admin"] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-    // Regenera o ID da sessão por segurança e para forçar o envio do cookie atualizado
+    // Regenera a sessão e força a emissão do novo cookie autenticado
     session_regenerate_id(true);
 
-    // Salva na sessão do PHP
     $_SESSION["id_cliente"] = (int) $cliente["id_cliente"];
     $_SESSION["nome"]       = $cliente["nome"];
     $_SESSION["email"]      = $cliente["e_mail"];
