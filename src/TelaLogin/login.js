@@ -413,6 +413,11 @@ if (formLogin) {
                 return;
             }
 
+            // SALVA OS DADOS DO CLIENTE NO LOCALSTORAGE COMO GARANTIA PARA NAVEGADORES MOBILE
+            if (respostaServidor.cliente) {
+                localStorage.setItem("usuarioLogado", JSON.stringify(respostaServidor.cliente));
+            }
+
             alert("Login realizado com sucesso!");
 
             // Redireciona de acordo com o retorno do backend ou vai para a Tela Inicial
