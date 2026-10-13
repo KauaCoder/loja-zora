@@ -1,29 +1,17 @@
 /* =========================================================
-   ZORA - LOGIN & CADASTRO (DIAGNÓSTICO & TRATAMENTO DE ERROS)
-   PostgreSQL + Sessão PHP + ViaCEP + Prévia em Tempo Real
+   ZORA - LOGIN & CADASTRO
    ========================================================= */
 
-/* =========================================================
-   1. GERENCIAMENTO DE ABAS & PRÉVIA DO PERFIL
-   ========================================================= */
-
-/**
- * Alterna entre a aba de Login e Cadastro com verificação segura de DOM
- * @param {string} aba - 'login' ou 'cadastro'
- */
 function mudarAba(aba) {
     try {
-        // Remove a classe 'active' de todos os botões de abas
         document.querySelectorAll(".tab-button").forEach(btn => {
             if (btn) btn.classList.remove("active");
         });
 
-        // Remove a classe 'active' de todas as seções de formulário
         document.querySelectorAll(".form-section").forEach(form => {
             if (form) form.classList.remove("active");
         });
 
-        // Localiza os elementos da aba selecionada
         const botao = document.querySelector(`.tab-button[onclick*="${aba}"]`);
         const idForm = "form" + aba.charAt(0).toUpperCase() + aba.slice(1);
         const formulario = document.getElementById(idForm);
@@ -31,14 +19,12 @@ function mudarAba(aba) {
         if (botao) botao.classList.add("active");
         if (formulario) formulario.classList.add("active");
 
-        // Gerencia a caixa de prévia do perfil em tempo real
         const previewBox = document.getElementById("previewPerfilBox");
         if (previewBox) {
             if (aba === "cadastro") {
                 previewBox.style.display = "flex";
                 atualizarPreviaEmTempoReal();
             } else {
-                // Na aba login exibe mensagem padrão de boas-vindas
                 const previewNome = document.getElementById("previewNome");
                 const previewEmail = document.getElementById("previewEmail");
                 const previewTelefone = document.getElementById("previewTelefone");
@@ -55,22 +41,12 @@ function mudarAba(aba) {
     }
 }
 
-/* =========================================================
-   2. NORMALIZAÇÃO E MÁSCARAS DE INPUT
-   ========================================================= */
-
-/**
- * Remove espaços e converte o e-mail para letras minúsculas
- */
 function normalizarEmail(email) {
     if (!email) return "";
     return String(email).trim().toLowerCase();
 }
 
-// Inicialização segura das máscaras após o carregamento da árvore DOM
 document.addEventListener("DOMContentLoaded", function () {
-
-    // Máscara de Telefone: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
     const telefoneInput = document.getElementById("telefoneCadastro");
     if (telefoneInput) {
         telefoneInput.addEventListener("input", function () {
@@ -88,7 +64,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Máscara de CEP: XXXXX-XXX e escutador para o evento Blur
     const cepInput = document.getElementById("cepCadastro");
     if (cepInput) {
         cepInput.addEventListener("input", function () {
@@ -102,15 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
         cepInput.addEventListener("blur", buscarCEPCadastro);
     }
 
-    // Associa eventos de escuta em tempo real para a prévia do perfil
-    const camposMonitorados = [
-        "nomeCadastro",
-        "emailCadastro",
-        "telefoneCadastro",
-        "ruaCadastro",
-        "numeroCadastro"
-    ];
-
+    const camposMonitorados = ["nomeCadastro", "emailCadastro", "telefoneCadastro", "ruaCadastro", "numeroCadastro"];
     camposMonitorados.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -118,10 +85,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
-
-/* =========================================================
-   3. PRÉVIA EM TEMPO REAL & CONSULTA VIACEP
-   ========================================================= */
 
 function atualizarPreviaEmTempoReal() {
     const inputNome = document.getElementById("nomeCadastro");
@@ -151,15 +114,11 @@ function atualizarPreviaEmTempoReal() {
     }
 }
 
-/**
- * Consulta o endereço através da API externa ViaCEP
- */
 async function buscarCEPCadastro() {
     const cepInput = document.getElementById("cepCadastro");
     if (!cepInput) return;
 
     const valorCep = cepInput.value.replace(/\D/g, "");
-
     if (valorCep.length !== 8) {
         limparCamposEndereco();
         return;
@@ -167,18 +126,15 @@ async function buscarCEPCadastro() {
 
     try {
         const resposta = await fetch(`https://viacep.com.br/ws/${valorCep}/json/`);
-        if (!resposta.ok) {
-            throw new Error(`Erro na requisição ViaCEP (Status ${resposta.status})`);
-        }
+        if (!resposta.ok) throw new Error(`Status ${resposta.status}`);
 
         const dados = await resposta.json();
         if (dados.erro) {
-            alert("CEP não encontrado no ViaCEP.");
+            alert("CEP não encontrado.");
             limparCamposEndereco();
             return;
         }
 
-        // Atribui os dados retornados aos inputs caso existam
         setValorElemento("ruaCadastro", dados.logradouro || "");
         setValorElemento("bairroCadastro", dados.bairro || "");
         setValorElemento("cidadeCadastro", dados.localidade || "");
@@ -191,9 +147,7 @@ async function buscarCEPCadastro() {
         if (enderecoTexto) {
             enderecoTexto.textContent = `✓ Endereço encontrado: ${dados.logradouro || ""}, ${dados.bairro || ""} - ${dados.localidade || ""}, ${dados.uf || ""}`;
         }
-        if (enderecoInfo) {
-            enderecoInfo.classList.add("show");
-        }
+        if (enderecoInfo) enderecoInfo.classList.add("show");
 
         const numInput = document.getElementById("numeroCadastro");
         if (numInput) numInput.focus();
@@ -202,7 +156,7 @@ async function buscarCEPCadastro() {
 
     } catch (erro) {
         console.error("Erro ao buscar CEP:", erro);
-        alert("Não foi possível consultar o CEP. Verifique sua conexão.");
+        alert("Não foi possível consultar o CEP.");
         limparCamposEndereco();
     }
 }
@@ -223,15 +177,6 @@ function setValorElemento(id, valor) {
     if (el) el.value = valor;
 }
 
-/* =========================================================
-   4. FUNÇÃO AUXILIAR PARA CONSUMIR ENDPOINTS PHP (RESILIENTE)
-   ========================================================= */
-
-/**
- * Tenta realizar a requisição em rotas alternativas para prevenir 404
- * @param {Array<string>} rotas - Lista de rotas para tentar
- * @param {Object} dados - Objeto JSON enviado no body
- */
 async function enviarRequisicaoPHP(rotas, dados) {
     let ultimoErro = "";
 
@@ -245,36 +190,29 @@ async function enviarRequisicaoPHP(rotas, dados) {
                 body: JSON.stringify(dados)
             });
 
-            // Captura a resposta bruta como texto para diagnóstico
             const textoResposta = await resposta.text();
 
             if (resposta.status === 404) {
-                console.warn(`Rota não encontrada (404): ${rotaAtual}`);
                 ultimoErro = `404 Not Found em ${rotaAtual}`;
-                continue; // Tenta a próxima rota da lista
+                continue;
             }
 
             let jsonResultado;
             try {
                 jsonResultado = JSON.parse(textoResposta);
             } catch (e) {
-                throw new Error(`O servidor retornou resposta inválida (Status ${resposta.status}):\n${textoResposta.substring(0, 150)}`);
+                throw new Error(`Resposta inválida: ${textoResposta.substring(0, 150)}`);
             }
 
             return { ok: true, dados: jsonResultado, rotaSucesso: rotaAtual };
 
         } catch (erro) {
-            console.error(`Falha ao conectar na rota ${rotaAtual}:`, erro);
             ultimoErro = erro.message;
         }
     }
 
-    return { ok: false, mensagem: ultimoErro || "Nenhuma rota do servidor respondeu corretamente." };
+    return { ok: false, mensagem: ultimoErro || "Nenhuma rota respondeu." };
 }
-
-/* =========================================================
-   5. SUBMIT DO FORMULÁRIO DE CADASTRO
-   ========================================================= */
 
 const formCadastro = document.getElementById("formCadastro");
 if (formCadastro) {
@@ -294,27 +232,13 @@ if (formCadastro) {
             const senha = elSenha ? elSenha.value : "";
             const confirmarSenha = elConfirmarSenha ? elConfirmarSenha.value : "";
 
-            if (!nome) {
-                alert("Por favor, digite seu nome completo.");
-                if (elNome) elNome.focus();
+            if (!nome || !email) {
+                alert("Preencha nome e e-mail.");
                 return;
             }
 
-            if (!email) {
-                alert("Por favor, digite um e-mail válido.");
-                if (elEmail) elEmail.focus();
-                return;
-            }
-
-            if (senha.length < 6) {
-                alert("A senha deve conter no mínimo 6 caracteres!");
-                if (elSenha) elSenha.focus();
-                return;
-            }
-
-            if (senha !== confirmarSenha) {
-                alert("A confirmação de senha não confere!");
-                if (elConfirmarSenha) elConfirmarSenha.focus();
+            if (senha.length < 6 || senha !== confirmarSenha) {
+                alert("Verifique a senha informada.");
                 return;
             }
 
@@ -328,30 +252,11 @@ if (formCadastro) {
                 estado: getValorOuVazio("estadoCadastro")
             };
 
-            const rotasCadastro = [
-                "/cadastro.php",
-                "/cadastrar_cliente.php",
-                "../cadastro.php",
-                "../cadastrar_cliente.php"
-            ];
+            const rotasCadastro = ["/cadastro.php", "/cadastrar_cliente.php", "../cadastro.php", "../cadastrar_cliente.php"];
+            const resultadoReq = await enviarRequisicaoPHP(rotasCadastro, { nome, email, telefone, senha, endereco });
 
-            const resultadoReq = await enviarRequisicaoPHP(rotasCadastro, {
-                nome,
-                email,
-                telefone,
-                senha,
-                endereco
-            });
-
-            if (!resultadoReq.ok) {
-                alert("Erro de Conexão com o Servidor:\n" + resultadoReq.mensagem);
-                return;
-            }
-
-            const respostaServidor = resultadoReq.dados;
-
-            if (!respostaServidor.sucesso) {
-                alert(respostaServidor.mensagem || "Não foi possível concluir o cadastro.");
+            if (!resultadoReq.ok || !resultadoReq.dados.sucesso) {
+                alert(resultadoReq.dados?.mensagem || resultadoReq.mensagem || "Erro ao cadastrar.");
                 return;
             }
 
@@ -362,15 +267,10 @@ if (formCadastro) {
             limparCamposEndereco();
 
         } catch (erroFatal) {
-            console.error("Erro interno ao submeter cadastro:", erroFatal);
-            alert("Ocorreu um erro no aplicativo: " + erroFatal.message);
+            alert("Erro: " + erroFatal.message);
         }
     });
 }
-
-/* =========================================================
-   6. SUBMIT DO FORMULÁRIO DE LOGIN (REDIRECIONAMENTO CLIENTE / ADM)
-   ========================================================= */
 
 const formLogin = document.getElementById("formLogin");
 if (formLogin) {
@@ -385,48 +285,32 @@ if (formLogin) {
             const senha = elSenha ? elSenha.value : "";
 
             if (!email || !senha) {
-                alert("Digite seu e-mail e sua senha para entrar.");
+                alert("Digite e-mail e senha.");
                 return;
             }
 
-            const rotasLogin = [
-                "/login.php",
-                "../login.php"
-            ];
-
+            const rotasLogin = ["/login.php", "../login.php"];
             const resultadoReq = await enviarRequisicaoPHP(rotasLogin, { email, senha });
 
-            if (!resultadoReq.ok) {
-                alert("Erro de Conexão com o Servidor:\n" + resultadoReq.mensagem);
+            if (!resultadoReq.ok || !resultadoReq.dados.sucesso) {
+                alert(resultadoReq.dados?.mensagem || resultadoReq.mensagem || "E-mail ou senha incorretos.");
                 return;
             }
 
             const respostaServidor = resultadoReq.dados;
-
-            if (!respostaServidor.sucesso) {
-                alert(respostaServidor.mensagem || "E-mail ou senha incorretos.");
-                return;
-            }
-
-            // Captura os dados do usuário retornado
             const dadosUsuario = respostaServidor.cliente || respostaServidor.usuario || respostaServidor;
 
-            // Salva no localStorage garantindo a correta detecção do perfil
+            const ehAdmin = dadosUsuario.is_admin === true || dadosUsuario.is_admin === 1 || dadosUsuario.is_admin === "1" || dadosUsuario.nivel === "admin";
+
             localStorage.setItem("usuarioLogado", JSON.stringify({
                 id_cliente: dadosUsuario.id_cliente || dadosUsuario.id,
                 nome: dadosUsuario.nome || "Usuário",
                 email: dadosUsuario.email || email,
-                is_admin: dadosUsuario.is_admin === true || dadosUsuario.is_admin === 1 || dadosUsuario.is_admin === "1" || dadosUsuario.nivel === "admin"
+                is_admin: ehAdmin
             }));
 
             alert("Login realizado com sucesso!");
 
-            // Verifica se é administrador
-            const ehAdmin = dadosUsuario.is_admin === true || dadosUsuario.is_admin === 1 || dadosUsuario.is_admin === "1" || dadosUsuario.nivel === "admin";
-
-            // Se o servidor enviou rota de redirecionamento, usa ela; caso contrário:
-            // Admin -> /src/TelaAdmin/admin.html
-            // Cliente -> /src/TelaCliente/cliente.html
             let destino = respostaServidor.redirecionar;
             if (!destino) {
                 destino = ehAdmin ? "/src/TelaAdmin/admin.html" : "/src/TelaCliente/cliente.html";
@@ -435,8 +319,7 @@ if (formLogin) {
             window.location.replace(destino);
 
         } catch (erroFatal) {
-            console.error("Erro interno ao submeter login:", erroFatal);
-            alert("Ocorreu um erro no aplicativo: " + erroFatal.message);
+            alert("Erro no login: " + erroFatal.message);
         }
     });
 }
