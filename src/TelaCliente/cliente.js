@@ -23,16 +23,46 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // =====================================================
+// FUNÇÃO AUXILIAR DE ROTA RESILIENTE (PREVINE 404)
+// =====================================================
+
+async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
+    const rotasPossiveis = [
+        `/src/TelaCliente/${nomeArquivo}`,
+        `/TelaCliente/${nomeArquivo}`,
+        `/${nomeArquivo}`,
+        `../${nomeArquivo}`
+    ];
+
+    let ultimoErro = null;
+
+    for (const rota of rotasPossiveis) {
+        try {
+            const resposta = await fetch(rota, {
+                credentials: "include",
+                ...opcoes
+            });
+
+            if (resposta.status === 404) {
+                continue; // Tenta a próxima rota da lista
+            }
+
+            return resposta;
+        } catch (erro) {
+            ultimoErro = erro;
+        }
+    }
+
+    throw ultimoErro || new Error(`Não foi possível conectar ao endpoint ${nomeArquivo}`);
+}
+
+// =====================================================
 // VERIFICAR LOGIN
 // =====================================================
 
 async function verificarLogin() {
     try {
-        const resposta = await fetch("/usuario_logado.php", {
-            method: "GET",
-            credentials: "include"
-        });
-
+        const resposta = await fazerFetchResiliente("usuario_logado.php", { method: "GET" });
         const resultado = await resposta.json();
 
         if (!resultado.sucesso || !resultado.logado) {
@@ -57,11 +87,7 @@ async function carregarDadosPerfil() {
     if (!logado) return;
 
     try {
-        const resposta = await fetch("/cliente.php", {
-            method: "GET",
-            credentials: "include"
-        });
-
+        const resposta = await fazerFetchResiliente("cliente.php", { method: "GET" });
         const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.sucesso) {
@@ -70,11 +96,11 @@ async function carregarDadosPerfil() {
 
         const cliente = resultado.cliente;
 
-        document.getElementById("nomeUsuario").textContent = cliente.nome || "Usuário";
-        document.getElementById("emailUsuario").textContent = cliente.email || "-";
-        document.getElementById("nomePerfil").textContent = cliente.nome || "-";
-        document.getElementById("emailPerfil").textContent = cliente.email || "-";
-        document.getElementById("telefonePerfil").textContent = cliente.telefone || "-";
+        if (document.getElementById("nomeUsuario")) document.getElementById("nomeUsuario").textContent = cliente.nome || "Usuário";
+        if (document.getElementById("emailUsuario")) document.getElementById("emailUsuario").textContent = cliente.email || "-";
+        if (document.getElementById("nomePerfil")) document.getElementById("nomePerfil").textContent = cliente.nome || "-";
+        if (document.getElementById("emailPerfil")) document.getElementById("emailPerfil").textContent = cliente.email || "-";
+        if (document.getElementById("telefonePerfil")) document.getElementById("telefonePerfil").textContent = cliente.telefone || "-";
 
         carregarEndereco(resultado.endereco);
 
@@ -95,7 +121,10 @@ function mostrarEdicaoNome() {
     if (displayGroup && edicaoGroup) {
         displayGroup.style.display = "none";
         edicaoGroup.style.display = "block";
-        document.getElementById("novoNomeInput").value = document.getElementById("nomePerfil").textContent;
+        const nomePerfil = document.getElementById("nomePerfil");
+        if (nomePerfil) {
+            document.getElementById("novoNomeInput").value = nomePerfil.textContent;
+        }
     }
 }
 
@@ -121,10 +150,9 @@ async function salvarNovoNome() {
     }
 
     try {
-        const resposta = await fetch("/atualizar_perfil.php", {
+        const resposta = await fazerFetchResiliente("atualizar_perfil.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({ nome: novoNome })
         });
 
@@ -151,23 +179,20 @@ async function salvarNovoNome() {
 
 function carregarEndereco(endereco) {
     if (!endereco || !endereco.id_endereco) {
-        document.getElementById("cepPerfil").textContent = "-";
-        document.getElementById("ruaPerfil").textContent = "-";
-        document.getElementById("numeroPerfil").textContent = "-";
-        document.getElementById("complementoPerfil").textContent = "-";
-        document.getElementById("bairroPerfil").textContent = "-";
-        document.getElementById("cidadePerfil").textContent = "-";
-        document.getElementById("estadoPerfil").textContent = "-";
+        ["cepPerfil", "ruaPerfil", "numeroPerfil", "complementoPerfil", "bairroPerfil", "cidadePerfil", "estadoPerfil"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = "-";
+        });
         return;
     }
 
-    document.getElementById("cepPerfil").textContent = endereco.cep || "-";
-    document.getElementById("ruaPerfil").textContent = endereco.rua || "-";
-    document.getElementById("numeroPerfil").textContent = endereco.numero || "-";
-    document.getElementById("complementoPerfil").textContent = endereco.complemento || "-";
-    document.getElementById("bairroPerfil").textContent = endereco.bairro || "-";
-    document.getElementById("cidadePerfil").textContent = endereco.cidade || "-";
-    document.getElementById("estadoPerfil").textContent = endereco.estado || "-";
+    if (document.getElementById("cepPerfil")) document.getElementById("cepPerfil").textContent = endereco.cep || "-";
+    if (document.getElementById("ruaPerfil")) document.getElementById("ruaPerfil").textContent = endereco.rua || "-";
+    if (document.getElementById("numeroPerfil")) document.getElementById("numeroPerfil").textContent = endereco.numero || "-";
+    if (document.getElementById("complementoPerfil")) document.getElementById("complementoPerfil").textContent = endereco.complemento || "-";
+    if (document.getElementById("bairroPerfil")) document.getElementById("bairroPerfil").textContent = endereco.bairro || "-";
+    if (document.getElementById("cidadePerfil")) document.getElementById("cidadePerfil").textContent = endereco.cidade || "-";
+    if (document.getElementById("estadoPerfil")) document.getElementById("estadoPerfil").textContent = endereco.estado || "-";
 }
 
 // =====================================================
@@ -179,11 +204,7 @@ async function mostrarEdicaoEndereco() {
     if (!logado) return;
 
     try {
-        const resposta = await fetch("/cliente.php", {
-            method: "GET",
-            credentials: "include"
-        });
-
+        const resposta = await fazerFetchResiliente("cliente.php", { method: "GET" });
         const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.sucesso) {
@@ -192,16 +213,19 @@ async function mostrarEdicaoEndereco() {
 
         const endereco = resultado.endereco || {};
 
-        document.getElementById("endereco-existente").style.display = "none";
-        document.getElementById("endereco-edicao").style.display = "block";
+        const existente = document.getElementById("endereco-existente");
+        const edicao = document.getElementById("endereco-edicao");
 
-        document.getElementById("cepEdicao").value = endereco.cep || "";
-        document.getElementById("ruaEdicao").value = endereco.rua || "";
-        document.getElementById("numeroEdicao").value = endereco.numero || "";
-        document.getElementById("complementoEdicao").value = endereco.complemento || "";
-        document.getElementById("bairroEdicao").value = endereco.bairro || "";
-        document.getElementById("cidadeEdicao").value = endereco.cidade || "";
-        document.getElementById("estadoEdicao").value = endereco.estado || "";
+        if (existente) existente.style.display = "none";
+        if (edicao) edicao.style.display = "block";
+
+        if (document.getElementById("cepEdicao")) document.getElementById("cepEdicao").value = endereco.cep || "";
+        if (document.getElementById("ruaEdicao")) document.getElementById("ruaEdicao").value = endereco.rua || "";
+        if (document.getElementById("numeroEdicao")) document.getElementById("numeroEdicao").value = endereco.numero || "";
+        if (document.getElementById("complementoEdicao")) document.getElementById("complementoEdicao").value = endereco.complemento || "";
+        if (document.getElementById("bairroEdicao")) document.getElementById("bairroEdicao").value = endereco.bairro || "";
+        if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = endereco.cidade || "";
+        if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = endereco.estado || "";
 
     } catch (erro) {
         console.error("Erro ao carregar endereço:", erro);
@@ -210,8 +234,11 @@ async function mostrarEdicaoEndereco() {
 }
 
 function cancelarEdicao() {
-    document.getElementById("endereco-edicao").style.display = "none";
-    document.getElementById("endereco-existente").style.display = "block";
+    const existente = document.getElementById("endereco-existente");
+    const edicao = document.getElementById("endereco-edicao");
+
+    if (edicao) edicao.style.display = "none";
+    if (existente) existente.style.display = "block";
 }
 
 async function salvarEndereco() {
@@ -232,18 +259,11 @@ async function salvarEndereco() {
     }
 
     try {
-        const resposta = await fetch("/atualizar_endereco.php", {
+        const resposta = await fazerFetchResiliente("atualizar_endereco.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({
-                cep: cep,
-                rua: rua,
-                numero: numero,
-                complemento: complemento,
-                bairro: bairro,
-                cidade: cidade,
-                estado: estado
+                cep, rua, numero, complemento, bairro, cidade, estado
             })
         });
 
@@ -288,12 +308,14 @@ async function buscarCEPEdicao() {
             return;
         }
 
-        document.getElementById("ruaEdicao").value = dados.logradouro || "";
-        document.getElementById("bairroEdicao").value = dados.bairro || "";
-        document.getElementById("cidadeEdicao").value = dados.localidade || "";
-        document.getElementById("estadoEdicao").value = dados.uf || "";
-        document.getElementById("complementoEdicao").value = dados.complemento || "";
-        document.getElementById("numeroEdicao").focus();
+        if (document.getElementById("ruaEdicao")) document.getElementById("ruaEdicao").value = dados.logradouro || "";
+        if (document.getElementById("bairroEdicao")) document.getElementById("bairroEdicao").value = dados.bairro || "";
+        if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = dados.localidade || "";
+        if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = dados.uf || "";
+        if (document.getElementById("complementoEdicao")) document.getElementById("complementoEdicao").value = dados.complemento || "";
+        
+        const numInput = document.getElementById("numeroEdicao");
+        if (numInput) numInput.focus();
 
     } catch (erro) {
         console.error("Erro ao consultar CEP:", erro);
@@ -312,11 +334,7 @@ async function carregarCompras() {
     if (!comprasVazio || !comprasLista) return;
 
     try {
-        const resposta = await fetch("/historico_pedidos.php", {
-            method: "GET",
-            credentials: "include"
-        });
-
+        const resposta = await fazerFetchResiliente("historico_pedidos.php", { method: "GET" });
         const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.sucesso) {
@@ -342,7 +360,6 @@ async function carregarCompras() {
             const data = new Date(compra.data || compra.data_pedido);
             const dataFormatada = data.toLocaleDateString("pt-BR");
 
-            // Lista de produtos com botão de Devolução por item
             const produtosHTML = (compra.produtos || compra.itens || []).map(produto => {
                 const preco = Number(produto.preco || produto.preco_unitario).toFixed(2).replace(".", ",");
                 const subtotal = Number(produto.subtotal || (produto.quantidade * produto.preco)).toFixed(2).replace(".", ",");
@@ -438,10 +455,9 @@ async function confirmarDevolucao(evento) {
     }
 
     try {
-        const resposta = await fetch("/solicitar_devolucao.php", {
+        const resposta = await fazerFetchResiliente("solicitar_devolucao.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({
                 id_pedido: Number(idPedido),
                 id_produto: Number(idProduto),
@@ -476,11 +492,7 @@ async function sairDoPerfil() {
     }
 
     try {
-        await fetch("/logout.php", {
-            method: "POST",
-            credentials: "include"
-        });
-
+        await fazerFetchResiliente("logout.php", { method: "POST" });
         window.location.replace("/TelaLogin/login.html");
     } catch (erro) {
         console.error("Erro ao realizar logout:", erro);
