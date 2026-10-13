@@ -3,25 +3,21 @@
    ZORA - CONEXÃO COM BANCO DE DADOS (SUPABASE + RENDER)
    ========================================================= */
 
-header("Content-Type: application/json; charset=UTF-8");
-
-// 1. Lê a URL do banco configurada nas variáveis de ambiente do Render
 $db_url = getenv('DATABASE_URL');
 
 if (!$db_url) {
     http_response_code(500);
     error_log("Erro Crítico: A variável DATABASE_URL não foi configurada no Render.");
+    header("Content-Type: application/json; charset=UTF-8");
     die(json_encode([
         "sucesso" => false,
         "mensagem" => "Erro de configuração no servidor de banco de dados."
     ], JSON_UNESCAPED_UNICODE));
 }
 
-// 2. Extração segura dos parâmetros da URL
 $dbopts = parse_url($db_url);
 
 if ($dbopts === false || !isset($dbopts["host"])) {
-    // Fallback usando expressões regulares caso a senha possua caracteres especiais
     preg_match('/postgres:\/\/(.*?):(.*?)@(.*?):(\d+)\/(.*)/', $db_url, $matches);
     $user     = $matches[1] ?? '';
     $password = urldecode($matches[2] ?? '');
@@ -36,12 +32,10 @@ if ($dbopts === false || !isset($dbopts["host"])) {
     $dbname   = isset($dbopts["path"]) ? ltrim($dbopts["path"], '/') : 'postgres';
 }
 
-// Corrige inconsistências de parsing no host
 if (empty($host) || str_contains($host, 'port=')) {
     $host = 'aws-0-us-east-1.pooler.supabase.com';
 }
 
-// 3. Conexão PDO com Supabase PostgreSQL
 try {
     $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require";
 
@@ -52,12 +46,12 @@ try {
     ]);
 
 } catch (PDOException $e) {
-    // Registra o erro detalhado nos logs do Render sem expor na resposta HTTP
     error_log("Erro de Conexão Supabase: " . $e->getMessage());
 
     http_response_code(500);
+    header("Content-Type: application/json; charset=UTF-8");
     echo json_encode([
-        "sucesso" => false,
+        "sucesso"  => false,
         "mensagem" => "Não foi possível conectar ao banco de dados."
     ], JSON_UNESCAPED_UNICODE);
     exit;
