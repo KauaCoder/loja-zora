@@ -1,19 +1,34 @@
 // =====================================================
-// ZORA - TELA INICIAL & CARRINHO DE PEDIDOS
+// ZORA - TELA INICIAL & CARRINHO DE PEDIDOS (COMPLETO)
 // =====================================================
 
+// MENU LATERAL & OVERLAY (MOBILE)
 function showSidebar() {
     const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
     const overlay = document.getElementById("overlay");
-    if (sidebar) sidebar.style.display = "flex";
-    if (overlay) overlay.classList.add("ativo");
+
+    if (sidebar) {
+        sidebar.style.display = "flex";
+        sidebar.classList.add("ativo", "active");
+    }
+    if (overlay) {
+        overlay.classList.add("ativo");
+    }
 }
 
 function hideSidebar() {
     const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
     const overlay = document.getElementById("overlay");
-    if (sidebar) sidebar.style.display = "none";
-    if (overlay) overlay.classList.remove("ativo");
+
+    if (sidebar) {
+        sidebar.style.display = "none";
+        sidebar.classList.remove("ativo", "active");
+    }
+
+    const pedidos = document.getElementById("Pedidos");
+    if (overlay && (!pedidos || !pedidos.classList.contains("ativo"))) {
+        overlay.classList.remove("ativo");
+    }
 }
 
 function fecharTudo() {
@@ -23,15 +38,78 @@ function fecharTudo() {
     if (overlay) overlay.classList.remove("ativo");
 }
 
-async function checarEAtualizarMenu() {
-    if (typeof atualizarMenuUsuario === "function") {
-        await atualizarMenuUsuario();
+async function abrirPerfil() {
+    let usuario = null;
+
+    if (typeof obterUsuarioLogado === "function") {
+        usuario = await obterUsuarioLogado();
+    } else {
+        const dadosLocais = localStorage.getItem("usuarioLogado");
+        if (dadosLocais) {
+            try {
+                usuario = JSON.parse(dadosLocais);
+            } catch (e) {
+                usuario = null;
+            }
+        }
+    }
+
+    if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
+        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+
+        if (ehAdmin) {
+            window.location.href = "/src/TelaAdmin/admin.html";
+        } else {
+            window.location.href = "/src/TelaCliente/cliente.html";
+        }
+    } else {
+        window.location.href = "/TelaLogin/login.html";
     }
 }
 
+// ATUALIZAÇÃO DO MENU
+async function checarEAtualizarMenu() {
+    let usuario = null;
+
+    if (typeof obterUsuarioLogado === "function") {
+        usuario = await obterUsuarioLogado();
+    } else {
+        const dadosLocais = localStorage.getItem("usuarioLogado");
+        if (dadosLocais) {
+            try {
+                usuario = JSON.parse(dadosLocais);
+            } catch (e) {
+                usuario = null;
+            }
+        }
+    }
+
+    const menuDesktop = document.getElementById("menuUsuario");
+    const menuMobile = document.getElementById("menuUsuarioMobile");
+
+    if (usuario && (usuario.nome || usuario.email)) {
+        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+
+        if (ehAdmin) {
+            if (menuDesktop) menuDesktop.textContent = "📊 Dashboard Adm";
+            if (menuMobile) menuMobile.textContent = "📊 Dashboard Adm";
+        } else {
+            const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+            if (menuDesktop) menuDesktop.textContent = `Olá, ${primeiroNome}`;
+            if (menuMobile) menuMobile.textContent = `Olá, ${primeiroNome}`;
+        }
+    } else {
+        if (menuDesktop) menuDesktop.textContent = "Login";
+        if (menuMobile) menuMobile.textContent = "Login";
+    }
+}
+
+// CATÁLOGO DO POSTGRESQL
 async function carregarCatalogo() {
     const container = document.getElementById("catalogoProdutos");
     if (!container) return;
+
+    container.innerHTML = "<p class='carregando'>Carregando produtos...</p>";
 
     try {
         const resposta = await fetch("/produtos_catalogo.php");
@@ -95,6 +173,7 @@ function renderizarCatalogo(produtos) {
             botao.textContent = "Esgotado";
             botao.disabled = true;
             botao.style.opacity = "0.6";
+            botao.style.cursor = "not-allowed";
         } else {
             botao.textContent = "Comprar";
             botao.addEventListener("click", function () {
@@ -124,6 +203,7 @@ async function obterEstoqueBD(idProduto) {
     return null;
 }
 
+// CARRINHO DE PEDIDOS
 let pedidosArray = [];
 
 function carregarCarrinho() {
@@ -140,6 +220,7 @@ function carregarCarrinho() {
         pedidosArray = JSON.parse(carrinhoSalvo);
         if (!Array.isArray(pedidosArray)) pedidosArray = [];
     } catch (erro) {
+        console.error("Erro ao carregar carrinho:", erro);
         pedidosArray = [];
     }
 
@@ -263,7 +344,10 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
     const id = Number(idProduto);
     const valor = Number(preco);
 
-    if (!Number.isInteger(id) || id <= 0) return;
+    if (!Number.isInteger(id) || id <= 0) {
+        alert("Não foi possível adicionar este produto.");
+        return;
+    }
 
     const produtoExistente = pedidosArray.find(p => Number(p.id_produto) === id);
     const qtdAtual = produtoExistente ? Number(produtoExistente.quantidade) : 0;
@@ -271,7 +355,7 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
     const estoqueDisponivel = await obterEstoqueBD(id);
 
     if (estoqueDisponivel !== null && (qtdAtual + 1) > estoqueDisponivel) {
-        alert(`Apenas ${estoqueDisponivel} unidade(s) disponível(is).`);
+        alert(`Desculpe, apenas ${estoqueDisponivel} unidade(s) disponível(is) em estoque.`);
         return;
     }
 
@@ -301,13 +385,15 @@ async function alterarQuantidade(indice, delta) {
 
     if (delta > 0) {
         const estoqueDisponivel = await obterEstoqueBD(produto.id_produto);
+
         if (estoqueDisponivel !== null && novaQuantidade > estoqueDisponivel) {
-            alert(`Estoque máximo atingido (${estoqueDisponivel} unidades).`);
+            alert(`Quantidade máxima em estoque atingida (${estoqueDisponivel} unidades disponíveis).`);
             return;
         }
     }
 
     produto.quantidade = novaQuantidade;
+
     if (produto.quantidade <= 0) {
         pedidosArray.splice(indice, 1);
     }
@@ -319,6 +405,7 @@ async function alterarQuantidade(indice, delta) {
 
 function removerPedido(indice) {
     if (indice < 0 || indice >= pedidosArray.length) return;
+
     pedidosArray.splice(indice, 1);
     salvarCarrinho();
     renderizarPedidos();
@@ -334,7 +421,9 @@ function atualizarTotal() {
 }
 
 function atualizarBadge() {
-    const quantidadeTotal = pedidosArray.reduce((soma, p) => soma + (Number(p.quantidade) || 0), 0);
+    const quantidadeTotal = pedidosArray.reduce(
+        (soma, p) => soma + (Number(p.quantidade) || 0), 0
+    );
 
     document.querySelectorAll(".badge-carrinho").forEach(badge => {
         if (quantidadeTotal > 0) {
@@ -349,16 +438,23 @@ function atualizarBadge() {
 
 function abrirPedidos() {
     const pedidos = document.getElementById("Pedidos");
-    if (pedidos) pedidos.classList.add("ativo");
+    if (pedidos) {
+        pedidos.classList.add("ativo");
+    }
     const overlay = document.getElementById("overlay");
     if (overlay) overlay.classList.add("ativo");
 }
 
 function fecharPedidos() {
     const pedidos = document.getElementById("Pedidos");
-    if (pedidos) pedidos.classList.remove("ativo");
+    if (pedidos) {
+        pedidos.classList.remove("ativo");
+    }
     const overlay = document.getElementById("overlay");
-    if (overlay) overlay.classList.remove("ativo");
+    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
+    if (overlay && (!sidebar || sidebar.style.display !== "flex")) {
+        overlay.classList.remove("ativo");
+    }
 }
 
 function scrollProdutos(direcao) {
@@ -372,6 +468,30 @@ function scrollProdutos(direcao) {
 async function pagarPedido() {
     if (!pedidosArray || pedidosArray.length === 0) {
         alert("Seu carrinho está vazio.");
+        return;
+    }
+
+    let estoqueInvalido = false;
+
+    for (let i = 0; i < pedidosArray.length; i++) {
+        const item = pedidosArray[i];
+        const estoqueBD = await obterEstoqueBD(item.id_produto);
+
+        if (estoqueBD !== null && item.quantidade > estoqueBD) {
+            if (estoqueBD === 0) {
+                alert(`O produto "${item.nome}" esgotou no estoque.`);
+            } else {
+                alert(`A quantidade solicitada para "${item.nome}" (${item.quantidade}) excede o estoque disponível (${estoqueBD}). A quantidade foi adjusted.`);
+                item.quantidade = estoqueBD;
+            }
+            estoqueInvalido = true;
+        }
+    }
+
+    if (estoqueInvalido) {
+        salvarCarrinho();
+        renderizarPedidos();
+        atualizarBadge();
         return;
     }
 
@@ -391,6 +511,7 @@ async function pagarPedido() {
     window.location.href = "/TelaEntrega/entrega.html";
 }
 
+// CARROSSEL DE PROMOÇÕES
 const slides = document.querySelectorAll(".promocao-slide");
 const indicadores = document.querySelectorAll(".indicador");
 let slideAtual = 0;
@@ -398,11 +519,13 @@ let carrosselTimer = null;
 
 function mostrarSlide(numero) {
     if (!slides.length) return;
+
     slides.forEach(slide => slide.classList.remove("ativo"));
     indicadores.forEach(indicador => indicador.classList.remove("ativo"));
 
     if (slides[numero]) slides[numero].classList.add("ativo");
     if (indicadores[numero]) indicadores[numero].classList.add("ativo");
+
     slideAtual = numero;
 }
 
@@ -413,12 +536,43 @@ function proximoSlide() {
     mostrarSlide(proximo);
 }
 
+function slideAnterior() {
+    if (!slides.length) return;
+    let anterior = slideAtual - 1;
+    if (anterior < 0) anterior = slides.length - 1;
+    mostrarSlide(anterior);
+}
+
+function irParaSlide(numero) {
+    if (numero < 0 || numero >= slides.length) return;
+    mostrarSlide(numero);
+}
+
+function iniciarCarrosselAuto() {
+    if (slides.length > 0 && !carrosselTimer) {
+        carrosselTimer = setInterval(proximoSlide, 5000);
+    }
+}
+
+function pausarCarrosselAuto() {
+    if (carrosselTimer) {
+        clearInterval(carrosselTimer);
+        carrosselTimer = null;
+    }
+}
+
+// INICIALIZAÇÃO
 document.addEventListener("DOMContentLoaded", async function () {
     await checarEAtualizarMenu();
     carregarCarrinho();
     carregarCatalogo();
 
     if (slides.length > 0) {
-        carrosselTimer = setInterval(proximoSlide, 5000);
+        iniciarCarrosselAuto();
+        const containerCarrossel = document.querySelector(".carousel-promocoes");
+        if (containerCarrossel) {
+            containerCarrossel.addEventListener("mouseenter", pausarCarrosselAuto);
+            containerCarrossel.addEventListener("mouseleave", iniciarCarrosselAuto);
+        }
     }
 });
