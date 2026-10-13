@@ -24,7 +24,7 @@ function mudarAba(aba) {
         });
 
         // Localiza os elementos da aba selecionada
-        const botao = document.querySelector(`.tab-button[onclick="mudarAba('${aba}')"]`);
+        const botao = document.querySelector(`.tab-button[onclick*="${aba}"]`);
         const idForm = "form" + aba.charAt(0).toUpperCase() + aba.slice(1);
         const formulario = document.getElementById(idForm);
 
@@ -282,7 +282,6 @@ if (formCadastro) {
         event.preventDefault();
 
         try {
-            // Obtenção e verificação defensiva dos dados digitados
             const elNome = document.getElementById("nomeCadastro");
             const elEmail = document.getElementById("emailCadastro");
             const elTelefone = document.getElementById("telefoneCadastro");
@@ -295,7 +294,6 @@ if (formCadastro) {
             const senha = elSenha ? elSenha.value : "";
             const confirmarSenha = elConfirmarSenha ? elConfirmarSenha.value : "";
 
-            // Validações no cliente
             if (!nome) {
                 alert("Por favor, digite seu nome completo.");
                 if (elNome) elNome.focus();
@@ -320,7 +318,6 @@ if (formCadastro) {
                 return;
             }
 
-            // Mapeamento dos dados do endereço
             const endereco = {
                 cep: getValorOuVazio("cepCadastro"),
                 rua: getValorOuVazio("ruaCadastro"),
@@ -331,7 +328,6 @@ if (formCadastro) {
                 estado: getValorOuVazio("estadoCadastro")
             };
 
-            // Lista de rotas possíveis para evitar erros de local/Render (404 Not Found)
             const rotasCadastro = [
                 "/cadastro.php",
                 "/cadastrar_cliente.php",
@@ -393,7 +389,6 @@ if (formLogin) {
                 return;
             }
 
-            // Rotas possíveis para o login
             const rotasLogin = [
                 "/login.php",
                 "../login.php"
@@ -413,14 +408,13 @@ if (formLogin) {
                 return;
             }
 
-            // SALVA OS DADOS DO CLIENTE NO LOCALSTORAGE COMO GARANTIA PARA NAVEGADORES MOBILE
+            // Garante salvamento no localStorage para contornar bloqueio de cookies no celular
             if (respostaServidor.cliente) {
                 localStorage.setItem("usuarioLogado", JSON.stringify(respostaServidor.cliente));
             }
 
             alert("Login realizado com sucesso!");
 
-            // Redireciona de acordo com o retorno do backend ou vai para a Tela Inicial
             const destino = respostaServidor.redirecionar || "/Telainicial/index.html";
             window.location.replace(destino);
 
