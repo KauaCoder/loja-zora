@@ -1,38 +1,19 @@
 // =====================================================
 // ZORA - TELA INICIAL & CARRINHO DE PEDIDOS
-// Otimizado: PostgreSQL + Resiliência + Animações UI
-// =====================================================
-
-// =====================================================
-// MENU LATERAL & OVERLAY (MOBILE)
 // =====================================================
 
 function showSidebar() {
     const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
     const overlay = document.getElementById("overlay");
-    
-    if (sidebar) {
-        sidebar.style.display = "flex";
-        sidebar.classList.add("ativo", "active");
-    }
-    if (overlay) {
-        overlay.classList.add("ativo");
-    }
+    if (sidebar) sidebar.style.display = "flex";
+    if (overlay) overlay.classList.add("ativo");
 }
 
 function hideSidebar() {
     const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
     const overlay = document.getElementById("overlay");
-
-    if (sidebar) {
-        sidebar.style.display = "none";
-        sidebar.classList.remove("ativo", "active");
-    }
-
-    const pedidos = document.getElementById("Pedidos");
-    if (overlay && (!pedidos || !pedidos.classList.contains("ativo"))) {
-        overlay.classList.remove("ativo");
-    }
+    if (sidebar) sidebar.style.display = "none";
+    if (overlay) overlay.classList.remove("ativo");
 }
 
 function fecharTudo() {
@@ -42,78 +23,11 @@ function fecharTudo() {
     if (overlay) overlay.classList.remove("ativo");
 }
 
-async function abrirPerfil() {
-    let usuario = null;
-
-    if (typeof obterUsuarioLogado === "function") {
-        usuario = await obterUsuarioLogado();
-    } else {
-        const dadosLocais = localStorage.getItem("usuarioLogado");
-        if (dadosLocais) {
-            try {
-                usuario = JSON.parse(dadosLocais);
-            } catch (e) {
-                usuario = null;
-            }
-        }
-    }
-
-    if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
-        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
-
-        if (ehAdmin) {
-            window.location.href = "/src/TelaAdmin/admin.html";
-        } else {
-            window.location.href = "/src/TelaCliente/cliente.html";
-        }
-    } else {
-        window.location.href = "/TelaLogin/login.html";
-    }
-}
-
-// =====================================================
-// VERIFICAÇÃO DE LOGIN E ATUALIZAÇÃO DO MENU
-// =====================================================
-
 async function checarEAtualizarMenu() {
-    let usuario = null;
-
-    if (typeof obterUsuarioLogado === "function") {
-        usuario = await obterUsuarioLogado();
-    } else {
-        const dadosLocais = localStorage.getItem("usuarioLogado");
-        if (dadosLocais) {
-            try {
-                usuario = JSON.parse(dadosLocais);
-            } catch (e) {
-                usuario = null;
-            }
-        }
-    }
-
-    const menuDesktop = document.getElementById("menuUsuario");
-    const menuMobile = document.getElementById("menuUsuarioMobile");
-
-    if (usuario && (usuario.nome || usuario.email)) {
-        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
-
-        if (ehAdmin) {
-            if (menuDesktop) menuDesktop.textContent = "📊 Dashboard Adm";
-            if (menuMobile) menuMobile.textContent = "📊 Dashboard Adm";
-        } else {
-            const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
-            if (menuDesktop) menuDesktop.textContent = `Olá, ${primeiroNome}`;
-            if (menuMobile) menuMobile.textContent = `Olá, ${primeiroNome}`;
-        }
-    } else {
-        if (menuDesktop) menuDesktop.textContent = "Login";
-        if (menuMobile) menuMobile.textContent = "Login";
+    if (typeof atualizarMenuUsuario === "function") {
+        await atualizarMenuUsuario();
     }
 }
-
-// =====================================================
-// CATÁLOGO DO POSTGRESQL
-// =====================================================
 
 async function carregarCatalogo() {
     const container = document.getElementById("catalogoProdutos");
@@ -163,7 +77,7 @@ function renderizarCatalogo(produtos) {
         imagem.alt = nome;
         imagem.onerror = function () {
             this.onerror = null;
-            this.src = "/img/Logo 1.png"; // Fallback caso a imagem não exista
+            this.src = "/img/Logo 1.png";
         };
 
         link.appendChild(imagem);
@@ -181,7 +95,6 @@ function renderizarCatalogo(produtos) {
             botao.textContent = "Esgotado";
             botao.disabled = true;
             botao.style.opacity = "0.6";
-            botao.style.cursor = "not-allowed";
         } else {
             botao.textContent = "Comprar";
             botao.addEventListener("click", function () {
@@ -198,10 +111,6 @@ function renderizarCatalogo(produtos) {
     });
 }
 
-// =====================================================
-// CONSULTAR ESTOQUE NO BD (POSTGRESQL)
-// =====================================================
-
 async function obterEstoqueBD(idProduto) {
     try {
         const resposta = await fetch(`/consultar_estoque.php?id=${idProduto}`);
@@ -214,10 +123,6 @@ async function obterEstoqueBD(idProduto) {
     }
     return null;
 }
-
-// =====================================================
-// CARRINHO DE PEDIDOS
-// =====================================================
 
 let pedidosArray = [];
 
@@ -235,7 +140,6 @@ function carregarCarrinho() {
         pedidosArray = JSON.parse(carrinhoSalvo);
         if (!Array.isArray(pedidosArray)) pedidosArray = [];
     } catch (erro) {
-        console.error("Erro ao carregar carrinho:", erro);
         pedidosArray = [];
     }
 
@@ -254,10 +158,6 @@ function calcularTotal() {
         return total + (preco * quantidade);
     }, 0);
 }
-
-// =====================================================
-// RENDERIZAR PEDIDOS
-// =====================================================
 
 function renderizarPedidos() {
     const lista = document.getElementById("listaPedidos");
@@ -359,18 +259,11 @@ function renderizarPedidos() {
     atualizarTotal();
 }
 
-// =====================================================
-// ADICIONAR PRODUTO (COM CHECAGEM DE ESTOQUE)
-// =====================================================
-
 async function adicionarPedidos(idProduto, nome, preco, imagem) {
     const id = Number(idProduto);
     const valor = Number(preco);
 
-    if (!Number.isInteger(id) || id <= 0) {
-        alert("Não foi possível adicionar este produto.");
-        return;
-    }
+    if (!Number.isInteger(id) || id <= 0) return;
 
     const produtoExistente = pedidosArray.find(p => Number(p.id_produto) === id);
     const qtdAtual = produtoExistente ? Number(produtoExistente.quantidade) : 0;
@@ -378,7 +271,7 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
     const estoqueDisponivel = await obterEstoqueBD(id);
 
     if (estoqueDisponivel !== null && (qtdAtual + 1) > estoqueDisponivel) {
-        alert(`Desculpe, apenas ${estoqueDisponivel} unidade(s) disponível(is) em estoque.`);
+        alert(`Apenas ${estoqueDisponivel} unidade(s) disponível(is).`);
         return;
     }
 
@@ -400,10 +293,6 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
     abrirPedidos();
 }
 
-// =====================================================
-// ALTERAR QUANTIDADE
-// =====================================================
-
 async function alterarQuantidade(indice, delta) {
     const produto = pedidosArray[indice];
     if (!produto) return;
@@ -412,15 +301,13 @@ async function alterarQuantidade(indice, delta) {
 
     if (delta > 0) {
         const estoqueDisponivel = await obterEstoqueBD(produto.id_produto);
-
         if (estoqueDisponivel !== null && novaQuantidade > estoqueDisponivel) {
-            alert(`Quantidade máxima em estoque atingida (${estoqueDisponivel} unidades disponíveis).`);
+            alert(`Estoque máximo atingido (${estoqueDisponivel} unidades).`);
             return;
         }
     }
 
     produto.quantidade = novaQuantidade;
-
     if (produto.quantidade <= 0) {
         pedidosArray.splice(indice, 1);
     }
@@ -430,22 +317,13 @@ async function alterarQuantidade(indice, delta) {
     atualizarBadge();
 }
 
-// =====================================================
-// REMOVER PRODUTO
-// =====================================================
-
 function removerPedido(indice) {
     if (indice < 0 || indice >= pedidosArray.length) return;
-
     pedidosArray.splice(indice, 1);
     salvarCarrinho();
     renderizarPedidos();
     atualizarBadge();
 }
-
-// =====================================================
-// ATUALIZAR TOTAL E BADGE
-// =====================================================
 
 function atualizarTotal() {
     const total = calcularTotal();
@@ -456,9 +334,7 @@ function atualizarTotal() {
 }
 
 function atualizarBadge() {
-    const quantidadeTotal = pedidosArray.reduce(
-        (soma, p) => soma + (Number(p.quantidade) || 0), 0
-    );
+    const quantidadeTotal = pedidosArray.reduce((soma, p) => soma + (Number(p.quantidade) || 0), 0);
 
     document.querySelectorAll(".badge-carrinho").forEach(badge => {
         if (quantidadeTotal > 0) {
@@ -471,29 +347,18 @@ function atualizarBadge() {
     });
 }
 
-// =====================================================
-// ABRIR / FECHAR CARRINHO
-// =====================================================
-
 function abrirPedidos() {
     const pedidos = document.getElementById("Pedidos");
-    if (pedidos) {
-        pedidos.classList.add("ativo");
-    }
+    if (pedidos) pedidos.classList.add("ativo");
     const overlay = document.getElementById("overlay");
     if (overlay) overlay.classList.add("ativo");
 }
 
 function fecharPedidos() {
     const pedidos = document.getElementById("Pedidos");
-    if (pedidos) {
-        pedidos.classList.remove("ativo");
-    }
+    if (pedidos) pedidos.classList.remove("ativo");
     const overlay = document.getElementById("overlay");
-    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
-    if (overlay && (!sidebar || sidebar.style.display !== "flex")) {
-        overlay.classList.remove("ativo");
-    }
+    if (overlay) overlay.classList.remove("ativo");
 }
 
 function scrollProdutos(direcao) {
@@ -504,37 +369,9 @@ function scrollProdutos(direcao) {
     }
 }
 
-// =====================================================
-// PAGAR - REVALIDAÇÃO COMPLETA DE ESTOQUE ANTES DE FINALIZAR
-// =====================================================
-
 async function pagarPedido() {
     if (!pedidosArray || pedidosArray.length === 0) {
         alert("Seu carrinho está vazio.");
-        return;
-    }
-
-    let estoqueInvalido = false;
-
-    for (let i = 0; i < pedidosArray.length; i++) {
-        const item = pedidosArray[i];
-        const estoqueBD = await obterEstoqueBD(item.id_produto);
-
-        if (estoqueBD !== null && item.quantidade > estoqueBD) {
-            if (estoqueBD === 0) {
-                alert(`O produto "${item.nome}" esgotou no estoque.`);
-            } else {
-                alert(`A quantidade solicitada para "${item.nome}" (${item.quantidade}) excede o estoque disponível (${estoqueBD}). A quantidade foi ajustada.`);
-                item.quantidade = estoqueBD;
-            }
-            estoqueInvalido = true;
-        }
-    }
-
-    if (estoqueInvalido) {
-        salvarCarrinho();
-        renderizarPedidos();
-        atualizarBadge();
         return;
     }
 
@@ -554,10 +391,6 @@ async function pagarPedido() {
     window.location.href = "/TelaEntrega/entrega.html";
 }
 
-// =====================================================
-// CARROSSEL DE PROMOÇÕES (COM PAUSA NO HOVER)
-// =====================================================
-
 const slides = document.querySelectorAll(".promocao-slide");
 const indicadores = document.querySelectorAll(".indicador");
 let slideAtual = 0;
@@ -565,13 +398,11 @@ let carrosselTimer = null;
 
 function mostrarSlide(numero) {
     if (!slides.length) return;
-
     slides.forEach(slide => slide.classList.remove("ativo"));
     indicadores.forEach(indicador => indicador.classList.remove("ativo"));
 
     if (slides[numero]) slides[numero].classList.add("ativo");
     if (indicadores[numero]) indicadores[numero].classList.add("ativo");
-
     slideAtual = numero;
 }
 
@@ -582,50 +413,12 @@ function proximoSlide() {
     mostrarSlide(proximo);
 }
 
-function slideAnterior() {
-    if (!slides.length) return;
-    let anterior = slideAtual - 1;
-    if (anterior < 0) anterior = slides.length - 1;
-    mostrarSlide(anterior);
-}
-
-function irParaSlide(numero) {
-    if (numero < 0 || numero >= slides.length) return;
-    mostrarSlide(numero);
-}
-
-function iniciarCarrosselAuto() {
-    if (slides.length > 0 && !carrosselTimer) {
-        carrosselTimer = setInterval(proximoSlide, 5000);
-    }
-}
-
-function pausarCarrosselAuto() {
-    if (carrosselTimer) {
-        clearInterval(carrosselTimer);
-        carrosselTimer = null;
-    }
-}
-
-// =====================================================
-// INICIALIZAÇÃO
-// =====================================================
-
 document.addEventListener("DOMContentLoaded", async function () {
-    // 1. Atualiza o menu do usuário
     await checarEAtualizarMenu();
-
-    // 2. Carrega os pedidos e o catálogo
     carregarCarrinho();
     carregarCatalogo();
 
-    // 3. Inicializa o Carrossel com suporte a pausa no hover
     if (slides.length > 0) {
-        iniciarCarrosselAuto();
-        const containerCarrossel = document.querySelector(".carousel-promocoes");
-        if (containerCarrossel) {
-            containerCarrossel.addEventListener("mouseenter", pausarCarrosselAuto);
-            containerCarrossel.addEventListener("mouseleave", iniciarCarrosselAuto);
-        }
+        carrosselTimer = setInterval(proximoSlide, 5000);
     }
 });
