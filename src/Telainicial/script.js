@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - TELA INICIAL & CARRINHO DE PEDIDOS
-// Com Verificação de Estoque em Tempo Real no PostgreSQL
+// Otimizado: PostgreSQL + Resiliência + Animações UI
 // =====================================================
 
 // =====================================================
@@ -13,8 +13,7 @@ function showSidebar() {
     
     if (sidebar) {
         sidebar.style.display = "flex";
-        sidebar.classList.add("ativo");
-        sidebar.classList.add("active");
+        sidebar.classList.add("ativo", "active");
     }
     if (overlay) {
         overlay.classList.add("ativo");
@@ -27,8 +26,7 @@ function hideSidebar() {
 
     if (sidebar) {
         sidebar.style.display = "none";
-        sidebar.classList.remove("ativo");
-        sidebar.classList.remove("active");
+        sidebar.classList.remove("ativo", "active");
     }
 
     const pedidos = document.getElementById("Pedidos");
@@ -47,7 +45,6 @@ function fecharTudo() {
 async function abrirPerfil() {
     let usuario = null;
 
-    // 1. Tenta verificar se o usuário está logado via auth.js ou via localStorage
     if (typeof obterUsuarioLogado === "function") {
         usuario = await obterUsuarioLogado();
     } else {
@@ -61,7 +58,6 @@ async function abrirPerfil() {
         }
     }
 
-    // 2. Se o usuário estiver logado, verifica a permissão e redireciona
     if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
         const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
 
@@ -71,7 +67,6 @@ async function abrirPerfil() {
             window.location.href = "/src/TelaCliente/cliente.html";
         }
     } else {
-        // 3. Se não estiver logado, envia para a tela de login
         window.location.href = "/TelaLogin/login.html";
     }
 }
@@ -135,7 +130,7 @@ async function carregarCatalogo() {
         renderizarCatalogo(resultado.produtos);
     } catch (erro) {
         console.error("Erro ao carregar catálogo:", erro);
-        container.innerHTML = "<p class='carregando'>Não foi possível carregar os produtos.</p>";
+        container.innerHTML = "<p class='carregando'>Não foi possível carregar os produtos no momento.</p>";
     }
 }
 
@@ -146,13 +141,13 @@ function renderizarCatalogo(produtos) {
     container.innerHTML = "";
 
     if (!Array.isArray(produtos) || produtos.length === 0) {
-        container.innerHTML = "<p class='carregando'>Nenhum produto disponível.</p>";
+        container.innerHTML = "<p class='carregando'>Nenhum produto disponível no momento.</p>";
         return;
     }
 
     produtos.forEach(produto => {
         const id = Number(produto.id_produto);
-        const nome = produto.nome || "Produto";
+        const nome = produto.nome || "Produto ZORA";
         const preco = Number(produto.preco) || 0;
         const estoque = Number(produto.estoque) || 0;
         const imagemSrc = produto.imagem ? `/img/${produto.imagem}` : "/img/Logo 1.png";
@@ -166,6 +161,10 @@ function renderizarCatalogo(produtos) {
         const imagem = document.createElement("img");
         imagem.src = imagemSrc;
         imagem.alt = nome;
+        imagem.onerror = function () {
+            this.onerror = null;
+            this.src = "/img/Logo 1.png"; // Fallback caso a imagem não exista
+        };
 
         link.appendChild(imagem);
 
@@ -181,6 +180,8 @@ function renderizarCatalogo(produtos) {
         if (estoque <= 0) {
             botao.textContent = "Esgotado";
             botao.disabled = true;
+            botao.style.opacity = "0.6";
+            botao.style.cursor = "not-allowed";
         } else {
             botao.textContent = "Comprar";
             botao.addEventListener("click", function () {
@@ -286,6 +287,10 @@ function renderizarPedidos() {
         foto.src = imagemSrc;
         foto.alt = produto.nome;
         foto.className = "carrinho-foto";
+        foto.onerror = function () {
+            this.onerror = null;
+            this.src = "/img/Logo 1.png";
+        };
         linkFoto.appendChild(foto);
 
         const detalhes = document.createElement("div");
@@ -550,12 +555,13 @@ async function pagarPedido() {
 }
 
 // =====================================================
-// CARROSSEL DE PROMOÇÕES
+// CARROSSEL DE PROMOÇÕES (COM PAUSA NO HOVER)
 // =====================================================
 
 const slides = document.querySelectorAll(".promocao-slide");
 const indicadores = document.querySelectorAll(".indicador");
 let slideAtual = 0;
+let carrosselTimer = null;
 
 function mostrarSlide(numero) {
     if (!slides.length) return;
@@ -588,20 +594,38 @@ function irParaSlide(numero) {
     mostrarSlide(numero);
 }
 
+function iniciarCarrosselAuto() {
+    if (slides.length > 0 && !carrosselTimer) {
+        carrosselTimer = setInterval(proximoSlide, 5000);
+    }
+}
+
+function pausarCarrosselAuto() {
+    if (carrosselTimer) {
+        clearInterval(carrosselTimer);
+        carrosselTimer = null;
+    }
+}
+
 // =====================================================
 // INICIALIZAÇÃO
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", async function () {
-    // 1. Atualiza o menu do usuário (espera o DOM estar completamente pronto)
+    // 1. Atualiza o menu do usuário
     await checarEAtualizarMenu();
 
     // 2. Carrega os pedidos e o catálogo
     carregarCarrinho();
     carregarCatalogo();
 
-    // 3. Inicializa o Carrossel
+    // 3. Inicializa o Carrossel com suporte a pausa no hover
     if (slides.length > 0) {
-        setInterval(proximoSlide, 5000);
+        iniciarCarrosselAuto();
+        const containerCarrossel = document.querySelector(".carousel-promocoes");
+        if (containerCarrossel) {
+            containerCarrossel.addEventListener("mouseenter", pausarCarrosselAuto);
+            containerCarrossel.addEventListener("mouseleave", iniciarCarrosselAuto);
+        }
     }
 });
