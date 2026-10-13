@@ -3,7 +3,7 @@
 // =====================================================
 
 let produtosAdmin = [];
-const TELEFONE_ADMIN_WHATSAPP = "5521976442535"; // Substitua pelo seu número do WhatsApp com DDD
+const TELEFONE_ADMIN_WHATSAPP = "5521976442535"; // Número do WhatsApp com DDD
 
 // =====================================================
 // INICIALIZAÇÃO
@@ -11,7 +11,6 @@ const TELEFONE_ADMIN_WHATSAPP = "5521976442535"; // Substitua pelo seu número d
 
 document.addEventListener("DOMContentLoaded", function () {
     carregarDadosAdmin();
-    carregarDashboard();
 
     // Eventos dos Formulários
     const formReposicao = document.getElementById("formReposicao");
@@ -32,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // =====================================================
-// 1. CARREGAR PRODUTOS E INVENTÁRIO
+// 1. CARREGAR PRODUTOS E INVENTÁRIO (UNIFICADO)
 // =====================================================
 
 async function carregarDadosAdmin() {
@@ -45,13 +44,27 @@ async function carregarDadosAdmin() {
             credentials: "include"
         });
 
-        const resultado = await resposta.json();
+        const textoBruto = await resposta.text();
+        let resultado;
 
-        if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(resultado.mensagem || "Erro ao carregar os produtos.");
+        try {
+            resultado = JSON.parse(textoBruto);
+        } catch (e) {
+            console.error("Erro ao converter JSON do admin_dados.php:", textoBruto);
+            throw new Error("O servidor retornou uma resposta inválida.");
         }
 
+        if (!resposta.ok || !resultado.sucesso) {
+            throw new Error(resultado.mensagem || "Erro ao carregar os dados do painel.");
+        }
+
+        // Armazena lista de produtos
         produtosAdmin = Array.isArray(resultado.produtos) ? resultado.produtos : [];
+
+        // Preenche métricas do Dashboard se retornado
+        if (resultado.dashboard) {
+            preencherCardsDashboard(resultado.dashboard);
+        }
 
         carregarCategorias();
         atualizarResumo();
@@ -63,7 +76,7 @@ async function carregarDadosAdmin() {
             tabela.innerHTML = `
                 <tr>
                     <td colspan="8" class="erro-tabela">
-                        Não foi possível carregar os produtos.
+                        Não foi possível carregar os produtos: ${erro.message}
                     </td>
                 </tr>
             `;
@@ -72,74 +85,13 @@ async function carregarDadosAdmin() {
 }
 
 // =====================================================
-// 2. DASHBOARD DE VENDAS
+// 2. DASHBOARD DE VENDAS E RESUMO
 // =====================================================
 
-async function carregarDashboard() {
-    try {
-        const resposta = await fetch("/dashboard.php", {
-            method: "GET",
-            cache: "no-store",
-            credentials: "include"
-        });
-
-        const resultado = await resposta.json();
-
-        if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(resultado.mensagem || "Erro ao carregar o dashboard.");
-        }
-
-        // Preenche os Cards do Dashboard
-        definirTexto("dashboardFaturamento", formatarMoeda(resultado.resumo.faturamento));
-        definirTexto("dashboardPedidos", resultado.resumo.total_pedidos);
-        definirTexto("dashboardVendidos", resultado.resumo.produtos_vendidos);
-        definirTexto("dashboardTicket", formatarMoeda(resultado.resumo.ticket_medio));
-
-        // Preenche o Produto Mais Vendido
-        if (resultado.mais_vendido) {
-            definirTexto(
-                "dashboardMaisVendido",
-                `${resultado.mais_vendido.nome} (${resultado.mais_vendido.quantidade} un. vendidas)`
-            );
-        } else {
-            definirTexto("dashboardMaisVendido", "Nenhuma venda registrada");
-        }
-
-        // Renderiza a Tabela de Pedidos Recentes
-        renderizarPedidosRecentes(resultado.pedidos || []);
-
-    } catch (erro) {
-        console.error("Erro no Dashboard:", erro);
-        const lista = document.getElementById("dashboardListaPedidos");
-        if (lista) {
-            lista.innerHTML = `<tr><td colspan="6">Erro ao carregar os pedidos recentes.</td></tr>`;
-        }
-    }
-}
-
-function renderizarPedidosRecentes(pedidos) {
-    const lista = document.getElementById("dashboardListaPedidos");
-    if (!lista) return;
-
-    if (pedidos.length === 0) {
-        lista.innerHTML = `<tr><td colspan="6">Nenhum pedido recente.</td></tr>`;
-        return;
-    }
-
-    let html = "";
-    pedidos.forEach(p => {
-        html += `
-            <tr>
-                <td>#${p.id_pedido}</td>
-                <td>${p.cliente}</td>
-                <td>${p.data_pedido}</td>
-                <td>${p.quantidade_itens} item(ns)</td>
-                <td><strong>${formatarMoeda(p.valor_total)}</strong></td>
-                <td><span class="status status-disponivel">${p.status}</span></td>
-            </tr>
-        `;
-    });
-    lista.innerHTML = html;
+function preencherCardsDashboard(dashboard) {
+    definirTexto("totalProdutosCount", dashboard.total_produtos || 0);
+    definirTexto("totalEstoqueCount", dashboard.total_estoque || 0);
+    definirTexto("esgotadosCount", dashboard.esgotados || 0);
 }
 
 // =====================================================
@@ -303,7 +255,7 @@ function renderizarProdutos(produtos) {
         grupoAcoes.appendChild(btnFornecedor);
 
         // BOTÃO WHATSAPP ADM (Dispara quando o estoque estiver em <= 40%)
-        const percentualAtual = (quantidade / maximo) * 100;
+        const percentualAtual = maximo > 0 ? (quantidade / maximo) * 100 : 100;
         if (percentualAtual <= 40) {
             const btnWhatsapp = document.createElement("a");
             btnWhatsapp.className = "botao-whatsapp-admin";
