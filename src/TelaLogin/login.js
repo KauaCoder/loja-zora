@@ -369,7 +369,7 @@ if (formCadastro) {
 }
 
 /* =========================================================
-   6. SUBMIT DO FORMULÁRIO DE LOGIN
+   6. SUBMIT DO FORMULÁRIO DE LOGIN (REDIRECIONAMENTO CLIENTE / ADM)
    ========================================================= */
 
 const formLogin = document.getElementById("formLogin");
@@ -408,14 +408,30 @@ if (formLogin) {
                 return;
             }
 
-            // Garante salvamento no localStorage para contornar bloqueio de cookies no celular
-            if (respostaServidor.cliente) {
-                localStorage.setItem("usuarioLogado", JSON.stringify(respostaServidor.cliente));
-            }
+            // Captura os dados do usuário retornado
+            const dadosUsuario = respostaServidor.cliente || respostaServidor.usuario || respostaServidor;
+
+            // Salva no localStorage garantindo a correta detecção do perfil
+            localStorage.setItem("usuarioLogado", JSON.stringify({
+                id_cliente: dadosUsuario.id_cliente || dadosUsuario.id,
+                nome: dadosUsuario.nome || "Usuário",
+                email: dadosUsuario.email || email,
+                is_admin: dadosUsuario.is_admin === true || dadosUsuario.is_admin === 1 || dadosUsuario.is_admin === "1" || dadosUsuario.nivel === "admin"
+            }));
 
             alert("Login realizado com sucesso!");
 
-            const destino = respostaServidor.redirecionar || "/Telainicial/index.html";
+            // Verifica se é administrador
+            const ehAdmin = dadosUsuario.is_admin === true || dadosUsuario.is_admin === 1 || dadosUsuario.is_admin === "1" || dadosUsuario.nivel === "admin";
+
+            // Se o servidor enviou rota de redirecionamento, usa ela; caso contrário:
+            // Admin -> /src/TelaAdmin/admin.html
+            // Cliente -> /src/TelaCliente/cliente.html
+            let destino = respostaServidor.redirecionar;
+            if (!destino) {
+                destino = ehAdmin ? "/src/TelaAdmin/admin.html" : "/src/TelaCliente/cliente.html";
+            }
+
             window.location.replace(destino);
 
         } catch (erroFatal) {
