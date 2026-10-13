@@ -61,12 +61,13 @@ async function abrirPerfil() {
         }
     }
 
-    // 2. Se o usuário estiver logado, redireciona para a página do Perfil/Cliente
+    // 2. Se o usuário estiver logado, verifica a permissão e redireciona
     if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
-        if (usuario.is_admin) {
+        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+
+        if (ehAdmin) {
             window.location.href = "/src/TelaAdmin/admin.html";
         } else {
-            // Tenta o caminho completo da estrutura src/TelaCliente
             window.location.href = "/src/TelaCliente/cliente.html";
         }
     } else {
@@ -99,21 +100,19 @@ async function checarEAtualizarMenu() {
     const menuMobile = document.getElementById("menuUsuarioMobile");
 
     if (usuario && (usuario.nome || usuario.email)) {
-        const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
 
-        if (menuDesktop) {
-            menuDesktop.textContent = `Olá, ${primeiroNome}`;
-        }
-        if (menuMobile) {
-            menuMobile.textContent = `Olá, ${primeiroNome}`;
+        if (ehAdmin) {
+            if (menuDesktop) menuDesktop.textContent = "📊 Dashboard Adm";
+            if (menuMobile) menuMobile.textContent = "📊 Dashboard Adm";
+        } else {
+            const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+            if (menuDesktop) menuDesktop.textContent = `Olá, ${primeiroNome}`;
+            if (menuMobile) menuMobile.textContent = `Olá, ${primeiroNome}`;
         }
     } else {
-        if (menuDesktop) {
-            menuDesktop.textContent = "Login";
-        }
-        if (menuMobile) {
-            menuMobile.textContent = "Login";
-        }
+        if (menuDesktop) menuDesktop.textContent = "Login";
+        if (menuMobile) menuMobile.textContent = "Login";
     }
 }
 
