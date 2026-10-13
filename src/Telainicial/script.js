@@ -69,18 +69,18 @@ async function abrirPerfil() {
 
 // ATUALIZAÇÃO DO MENU
 async function checarEAtualizarMenu() {
-    let usuario = null;
+    if (typeof atualizarMenuUsuario === "function") {
+        await atualizarMenuUsuario();
+        return;
+    }
 
-    if (typeof obterUsuarioLogado === "function") {
-        usuario = await obterUsuarioLogado();
-    } else {
-        const dadosLocais = localStorage.getItem("usuarioLogado");
-        if (dadosLocais) {
-            try {
-                usuario = JSON.parse(dadosLocais);
-            } catch (e) {
-                usuario = null;
-            }
+    let usuario = null;
+    const dadosLocais = localStorage.getItem("usuarioLogado");
+    if (dadosLocais) {
+        try {
+            usuario = JSON.parse(dadosLocais);
+        } catch (e) {
+            usuario = null;
         }
     }
 
@@ -481,7 +481,7 @@ async function pagarPedido() {
             if (estoqueBD === 0) {
                 alert(`O produto "${item.nome}" esgotou no estoque.`);
             } else {
-                alert(`A quantidade solicitada para "${item.nome}" (${item.quantidade}) excede o estoque disponível (${estoqueBD}). A quantidade foi adjusted.`);
+                alert(`A quantidade solicitada para "${item.nome}" (${item.quantidade}) excede o estoque disponível (${estoqueBD}). A quantidade foi ajustada.`);
                 item.quantidade = estoqueBD;
             }
             estoqueInvalido = true;
