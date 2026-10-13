@@ -5,9 +5,14 @@
 // Suporte a HTTPS + Proxy Reverso (Render & Mobile)
 // =========================================================
 
-$origem = $_SERVER['HTTP_ORIGIN'] ?? 'https://loja-zora.onrender.com';
-header("Access-Control-Allow-Origin: $origem");
-header("Access-Control-Allow-Credentials: true");
+$origem = $_SERVER['HTTP_ORIGIN'] ?? '*';
+if ($origem !== '*') {
+    header("Access-Control-Allow-Origin: $origem");
+    header("Access-Control-Allow-Credentials: true");
+} else {
+    header("Access-Control-Allow-Origin: *");
+}
+
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 
