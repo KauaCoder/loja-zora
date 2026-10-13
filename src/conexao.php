@@ -3,6 +3,8 @@
    ZORA - CONEXÃO COM BANCO DE DADOS (SUPABASE + RENDER)
    ========================================================= */
 
+header("Content-Type: application/json; charset=UTF-8");
+
 // 1. Lê a URL do banco configurada nas variáveis de ambiente do Render
 $db_url = getenv('DATABASE_URL');
 
@@ -12,7 +14,7 @@ if (!$db_url) {
     die(json_encode([
         "sucesso" => false,
         "mensagem" => "Erro de configuração no servidor de banco de dados."
-    ]));
+    ], JSON_UNESCAPED_UNICODE));
 }
 
 // 2. Extração segura dos parâmetros da URL
@@ -57,6 +59,6 @@ try {
     echo json_encode([
         "sucesso" => false,
         "mensagem" => "Não foi possível conectar ao banco de dados."
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
