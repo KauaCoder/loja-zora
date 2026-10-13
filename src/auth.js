@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - AUTENTICAÇÃO CENTRAL
-// PostgreSQL + Sessão PHP
+// PostgreSQL + Sessão PHP + LocalStorage Fallback
 // =====================================================
 
 
@@ -9,49 +9,40 @@
 // =====================================================
 
 async function obterUsuarioLogado() {
-
     try {
+        const resposta = await fetch("/usuario_logado.php", {
+            method: "GET",
+            headers: {
+                "Cache-Control": "no-cache, no-store"
+            },
+            credentials: "include"
+        });
 
-        const resposta = await fetch(
-            "/usuario_logado.php",
-            {
-                method: "GET",
-                headers: {
-                    "Cache-Control": "no-cache, no-store"
-                },
-                credentials: "include"
+        if (resposta.ok) {
+            const resultado = await resposta.json();
+            if (resultado && resultado.sucesso === true && resultado.logado === true) {
+                // Atualiza o localStorage com os dados mais recentes
+                if (resultado.cliente) {
+                    localStorage.setItem("usuarioLogado", JSON.stringify(resultado.cliente));
+                }
+                return resultado.cliente;
             }
-        );
-
-        if (!resposta.ok) {
-            return null;
         }
-
-        const resultado = await resposta.json();
-
-        if (
-            resultado &&
-            resultado.sucesso === true &&
-            resultado.logado === true
-        ) {
-
-            return resultado.cliente;
-
-        }
-
-        return null;
-
     } catch (erro) {
-
-        console.error(
-            "Erro ao verificar sessão:",
-            erro
-        );
-
-        return null;
-
+        console.error("Erro ao verificar sessão no servidor:", erro);
     }
 
+    // FALLBACK: Tenta recuperar o usuário salvo no localStorage caso a requisição falhe/atrase
+    const dadosLocais = localStorage.getItem("usuarioLogado");
+    if (dadosLocais) {
+        try {
+            return JSON.parse(dadosLocais);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    return null;
 }
 
 
@@ -60,12 +51,8 @@ async function obterUsuarioLogado() {
 // =====================================================
 
 async function estaLogado() {
-
-    const usuario =
-        await obterUsuarioLogado();
-
+    const usuario = await obterUsuarioLogado();
     return usuario !== null;
-
 }
 
 
@@ -74,22 +61,14 @@ async function estaLogado() {
 // =====================================================
 
 async function protegerPagina() {
-
-    const usuario =
-        await obterUsuarioLogado();
+    const usuario = await obterUsuarioLogado();
 
     if (!usuario) {
-
-        window.location.replace(
-            "/TelaLogin/login.html"
-        );
-
+        window.location.replace("/TelaLogin/login.html");
         return false;
-
     }
 
     return true;
-
 }
 
 
@@ -97,31 +76,17 @@ async function protegerPagina() {
 // LOGOUT
 // =====================================================
 
-async function logout(
-    redirecionar = true
-) {
-
+async function logout(redirecionar = true) {
     try {
-
-        await fetch(
-            "/logout.php",
-            {
-                method: "POST",
-                credentials: "include"
-            }
-        );
-
+        await fetch("/logout.php", {
+            method: "POST",
+            credentials: "include"
+        });
     } catch (erro) {
-
-        console.error(
-            "Erro ao fazer logout:",
-            erro
-        );
-
+        console.error("Erro ao fazer logout:", erro);
     }
 
-
-    // Remove dados residuais do localStorage.
+    // Remove todos os dados residuais do localStorage
     localStorage.removeItem("usuarioLogado");
     localStorage.removeItem("idCliente");
     localStorage.removeItem("emailUsuario");
@@ -129,15 +94,9 @@ async function logout(
     localStorage.removeItem("telefoneUsuario");
     localStorage.removeItem("enderecoUsuario");
 
-
     if (redirecionar) {
-
-        window.location.replace(
-            "/Telainicial/index.html"
-        );
-
+        window.location.replace("/Telainicial/index.html");
     }
-
 }
 
 
@@ -146,57 +105,40 @@ async function logout(
 // =====================================================
 
 async function atualizarMenuUsuario() {
+    const usuario = await obterUsuarioLogado();
+    const logado = usuario !== null;
 
-    const usuario =
-        await obterUsuarioLogado();
-
-    const logado =
-        usuario !== null;
-
-
-    [
-        "menuUsuario",
-        "menuUsuarioMobile"
-    ].forEach(id => {
-
-        const elemento =
-            document.getElementById(id);
-
+    ["menuUsuario", "menuUsuarioMobile"].forEach(id => {
+        const elemento = document.getElementById(id);
         if (elemento) {
-
-            elemento.textContent =
-                logado
-                    ? "Perfil"
-                    : "Login";
-
+            if (logado) {
+                const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+                elemento.textContent = `Olá, ${primeiroNome}`;
+            } else {
+                elemento.textContent = "Login";
+            }
         }
-
     });
-
 }
 
 
 // =====================================================
-// ABRIR PERFIL
+// ABRIR PERFIL (CORRIGIDO PARA O CAMINHO REAL DO PROJETO)
 // =====================================================
 
 async function abrirPerfil() {
-
-    const usuario =
-        await obterUsuarioLogado();
+    const usuario = await obterUsuarioLogado();
 
     if (usuario) {
-
-        window.location.href =
-            "/TelaCliente/cliente.html";
-
+        if (usuario.is_admin) {
+            window.location.href = "/src/TelaAdmin/admin.html";
+        } else {
+            // Direciona para o caminho correto dentro de src/TelaCliente
+            window.location.href = "/src/TelaCliente/cliente.html";
+        }
     } else {
-
-        window.location.href =
-            "/TelaLogin/login.html";
-
+        window.location.href = "/TelaLogin/login.html";
     }
-
 }
 
 
@@ -204,20 +146,9 @@ async function abrirPerfil() {
 // DISPONIBILIZAR FUNÇÕES GLOBAIS
 // =====================================================
 
-window.estaLogado =
-    estaLogado;
-
-window.obterUsuarioLogado =
-    obterUsuarioLogado;
-
-window.protegerPagina =
-    protegerPagina;
-
-window.logout =
-    logout;
-
-window.abrirPerfil =
-    abrirPerfil;
-
-window.atualizarMenuUsuario =
-    atualizarMenuUsuario;
+window.estaLogado = estaLogado;
+window.obterUsuarioLogado = obterUsuarioLogado;
+window.protegerPagina = protegerPagina;
+window.logout = logout;
+window.abrirPerfil = abrirPerfil;
+window.atualizarMenuUsuario = atualizarMenuUsuario;
