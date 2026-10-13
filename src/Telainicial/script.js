@@ -44,10 +44,33 @@ function fecharTudo() {
     if (overlay) overlay.classList.remove("ativo");
 }
 
-function abrirPerfil() {
-    if (typeof window.abrirPerfil === "function") {
-        window.abrirPerfil();
+async function abrirPerfil() {
+    let usuario = null;
+
+    // 1. Tenta verificar se o usuário está logado via auth.js ou via localStorage
+    if (typeof obterUsuarioLogado === "function") {
+        usuario = await obterUsuarioLogado();
     } else {
+        const dadosLocais = localStorage.getItem("usuarioLogado");
+        if (dadosLocais) {
+            try {
+                usuario = JSON.parse(dadosLocais);
+            } catch (e) {
+                usuario = null;
+            }
+        }
+    }
+
+    // 2. Se o usuário estiver logado, redireciona para a página do Perfil/Cliente
+    if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
+        if (usuario.is_admin) {
+            window.location.href = "/src/TelaAdmin/admin.html";
+        } else {
+            // Tenta o caminho completo da estrutura src/TelaCliente
+            window.location.href = "/src/TelaCliente/cliente.html";
+        }
+    } else {
+        // 3. Se não estiver logado, envia para a tela de login
         window.location.href = "/TelaLogin/login.html";
     }
 }
