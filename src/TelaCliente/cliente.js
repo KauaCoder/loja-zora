@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", function () {
     carregarDadosPerfil();
     carregarCompras();
 
-    // Evento de máscara e busca do ViaCEP
     const cepEdicao = document.getElementById("cepEdicao");
     if (cepEdicao) {
         cepEdicao.addEventListener("input", () => {
@@ -21,10 +20,6 @@ document.addEventListener("DOMContentLoaded", function () {
         cepEdicao.addEventListener("blur", buscarCEPEdicao);
     }
 });
-
-// =====================================================
-// FUNÇÃO AUXILIAR DE ROTA RESILIENTE (PREVINE 404)
-// =====================================================
 
 async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
     const rotasPossiveis = [
@@ -44,7 +39,7 @@ async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
             });
 
             if (resposta.status === 404) {
-                continue; // Tenta a próxima rota da lista
+                continue;
             }
 
             return resposta;
@@ -56,14 +51,19 @@ async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
     throw ultimoErro || new Error(`Não foi possível conectar ao endpoint ${nomeArquivo}`);
 }
 
-// =====================================================
-// VERIFICAR LOGIN
-// =====================================================
-
 async function verificarLogin() {
     try {
         const resposta = await fazerFetchResiliente("usuario_logado.php", { method: "GET" });
-        const resultado = await resposta.json();
+        const texto = await resposta.text();
+        
+        let resultado;
+        try {
+            resultado = JSON.parse(texto);
+        } catch (e) {
+            console.error("Resposta inválida do servidor:", texto);
+            window.location.replace("/TelaLogin/login.html");
+            return false;
+        }
 
         if (!resultado.sucesso || !resultado.logado) {
             window.location.replace("/TelaLogin/login.html");
@@ -78,17 +78,20 @@ async function verificarLogin() {
     }
 }
 
-// =====================================================
-// CARREGAR DADOS DO PERFIL
-// =====================================================
-
 async function carregarDadosPerfil() {
     const logado = await verificarLogin();
     if (!logado) return;
 
     try {
         const resposta = await fazerFetchResiliente("cliente.php", { method: "GET" });
-        const resultado = await resposta.json();
+        const texto = await resposta.text();
+
+        let resultado;
+        try {
+            resultado = JSON.parse(texto);
+        } catch (e) {
+            throw new Error(`Resposta inválida do cliente.php: ${texto.substring(0, 100)}`);
+        }
 
         if (!resposta.ok || !resultado.sucesso) {
             throw new Error(resultado.mensagem || "Não foi possível carregar os dados.");
@@ -109,10 +112,6 @@ async function carregarDadosPerfil() {
         alert("Não foi possível carregar os dados do perfil.");
     }
 }
-
-// =====================================================
-// ATUALIZAR NOME DO CLIENTE
-// =====================================================
 
 function mostrarEdicaoNome() {
     const displayGroup = document.getElementById("nomeDisplayGroup");
@@ -173,10 +172,6 @@ async function salvarNovoNome() {
     }
 }
 
-// =====================================================
-// CARREGAR ENDEREÇO
-// =====================================================
-
 function carregarEndereco(endereco) {
     if (!endereco || !endereco.id_endereco) {
         ["cepPerfil", "ruaPerfil", "numeroPerfil", "complementoPerfil", "bairroPerfil", "cidadePerfil", "estadoPerfil"].forEach(id => {
@@ -194,10 +189,6 @@ function carregarEndereco(endereco) {
     if (document.getElementById("cidadePerfil")) document.getElementById("cidadePerfil").textContent = endereco.cidade || "-";
     if (document.getElementById("estadoPerfil")) document.getElementById("estadoPerfil").textContent = endereco.estado || "-";
 }
-
-// =====================================================
-// EDITAR ENDEREÇO
-// =====================================================
 
 async function mostrarEdicaoEndereco() {
     const logado = await verificarLogin();
@@ -284,10 +275,6 @@ async function salvarEndereco() {
     }
 }
 
-// =====================================================
-// VIA CEP - EDIÇÃO
-// =====================================================
-
 async function buscarCEPEdicao() {
     const cep = document.getElementById("cepEdicao");
     if (!cep) return;
@@ -313,7 +300,7 @@ async function buscarCEPEdicao() {
         if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = dados.localidade || "";
         if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = dados.uf || "";
         if (document.getElementById("complementoEdicao")) document.getElementById("complementoEdicao").value = dados.complemento || "";
-        
+
         const numInput = document.getElementById("numeroEdicao");
         if (numInput) numInput.focus();
 
@@ -322,10 +309,6 @@ async function buscarCEPEdicao() {
         alert("Erro ao consultar o CEP.");
     }
 }
-
-// =====================================================
-// CARREGAR COMPRAS E HISTÓRICO DE PEDIDOS
-// =====================================================
 
 async function carregarCompras() {
     const comprasVazio = document.getElementById("compras-vazio");
@@ -417,10 +400,6 @@ async function carregarCompras() {
     }
 }
 
-// =====================================================
-// MODAL E SOLICITAÇÃO DE DEVOLUÇÃO
-// =====================================================
-
 function abrirModalDevolucao(idPedido, idProduto, nomeProduto) {
     const elPedido = document.getElementById("devolucaoIdPedido");
     const elProduto = document.getElementById("devolucaoIdProduto");
@@ -482,10 +461,6 @@ async function confirmarDevolucao(evento) {
     }
 }
 
-// =====================================================
-// LOGOUT
-// =====================================================
-
 async function sairDoPerfil() {
     if (!confirm("Você tem certeza que deseja sair?")) {
         return;
@@ -493,9 +468,11 @@ async function sairDoPerfil() {
 
     try {
         await fazerFetchResiliente("logout.php", { method: "POST" });
+        localStorage.removeItem("usuarioLogado");
         window.location.replace("/TelaLogin/login.html");
     } catch (erro) {
         console.error("Erro ao realizar logout:", erro);
+        localStorage.removeItem("usuarioLogado");
         window.location.replace("/TelaLogin/login.html");
     }
 }
