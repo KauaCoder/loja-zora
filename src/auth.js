@@ -3,11 +3,6 @@
 // PostgreSQL + Sessão PHP + LocalStorage Fallback
 // =====================================================
 
-
-// =====================================================
-// VERIFICAR SESSÃO NO SERVIDOR
-// =====================================================
-
 async function obterUsuarioLogado() {
     try {
         const resposta = await fetch("/usuario_logado.php", {
@@ -20,11 +15,8 @@ async function obterUsuarioLogado() {
 
         if (resposta.ok) {
             const resultado = await resposta.json();
-            if (resultado && resultado.sucesso === true && resultado.logado === true) {
-                // Atualiza o localStorage com os dados mais recentes
-                if (resultado.cliente) {
-                    localStorage.setItem("usuarioLogado", JSON.stringify(resultado.cliente));
-                }
+            if (resultado && resultado.sucesso === true && resultado.logado === true && resultado.cliente) {
+                localStorage.setItem("usuarioLogado", JSON.stringify(resultado.cliente));
                 return resultado.cliente;
             }
         }
@@ -32,7 +24,6 @@ async function obterUsuarioLogado() {
         console.error("Erro ao verificar sessão no servidor:", erro);
     }
 
-    // FALLBACK: Tenta recuperar o usuário salvo no localStorage caso a requisição falhe/atrase
     const dadosLocais = localStorage.getItem("usuarioLogado");
     if (dadosLocais) {
         try {
@@ -45,20 +36,10 @@ async function obterUsuarioLogado() {
     return null;
 }
 
-
-// =====================================================
-// VERIFICAR SE ESTÁ LOGADO
-// =====================================================
-
 async function estaLogado() {
     const usuario = await obterUsuarioLogado();
     return usuario !== null;
 }
-
-
-// =====================================================
-// PROTEGER PÁGINA
-// =====================================================
 
 async function protegerPagina() {
     const usuario = await obterUsuarioLogado();
@@ -71,11 +52,6 @@ async function protegerPagina() {
     return true;
 }
 
-
-// =====================================================
-// LOGOUT
-// =====================================================
-
 async function logout(redirecionar = true) {
     try {
         await fetch("/logout.php", {
@@ -86,23 +62,15 @@ async function logout(redirecionar = true) {
         console.error("Erro ao fazer logout:", erro);
     }
 
-    // Remove todos os dados residuais do localStorage
     localStorage.removeItem("usuarioLogado");
     localStorage.removeItem("idCliente");
     localStorage.removeItem("emailUsuario");
     localStorage.removeItem("nomeUsuario");
-    localStorage.removeItem("telefoneUsuario");
-    localStorage.removeItem("enderecoUsuario");
 
     if (redirecionar) {
         window.location.replace("/Telainicial/index.html");
     }
 }
-
-
-// =====================================================
-// ATUALIZAR MENU
-// =====================================================
 
 async function atualizarMenuUsuario() {
     const usuario = await obterUsuarioLogado();
@@ -112,8 +80,13 @@ async function atualizarMenuUsuario() {
         const elemento = document.getElementById(id);
         if (elemento) {
             if (logado) {
-                const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
-                elemento.textContent = `Olá, ${primeiroNome}`;
+                const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+                if (ehAdmin) {
+                    elemento.textContent = "📊 Dashboard Adm";
+                } else {
+                    const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+                    elemento.textContent = `Olá, ${primeiroNome}`;
+                }
             } else {
                 elemento.textContent = "Login";
             }
@@ -121,30 +94,20 @@ async function atualizarMenuUsuario() {
     });
 }
 
-
-// =====================================================
-// ABRIR PERFIL (CORRIGIDO PARA O CAMINHO REAL DO PROJETO)
-// =====================================================
-
 async function abrirPerfil() {
     const usuario = await obterUsuarioLogado();
 
     if (usuario) {
-        if (usuario.is_admin) {
+        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+        if (ehAdmin) {
             window.location.href = "/src/TelaAdmin/admin.html";
         } else {
-            // Direciona para o caminho correto dentro de src/TelaCliente
             window.location.href = "/src/TelaCliente/cliente.html";
         }
     } else {
         window.location.href = "/TelaLogin/login.html";
     }
 }
-
-
-// =====================================================
-// DISPONIBILIZAR FUNÇÕES GLOBAIS
-// =====================================================
 
 window.estaLogado = estaLogado;
 window.obterUsuarioLogado = obterUsuarioLogado;
