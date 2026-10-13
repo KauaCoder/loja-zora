@@ -45,15 +45,53 @@ function fecharTudo() {
 }
 
 function abrirPerfil() {
-    window.location.href = "/TelaLogin/login.html";
+    if (typeof window.abrirPerfil === "function") {
+        window.abrirPerfil();
+    } else {
+        window.location.href = "/TelaLogin/login.html";
+    }
 }
 
 // =====================================================
-// LOGIN / PERFIL
+// VERIFICAÇÃO DE LOGIN E ATUALIZAÇÃO DO MENU
 // =====================================================
 
-if (typeof atualizarMenuUsuario === "function") {
-    atualizarMenuUsuario();
+async function checarEAtualizarMenu() {
+    let usuario = null;
+
+    if (typeof obterUsuarioLogado === "function") {
+        usuario = await obterUsuarioLogado();
+    } else {
+        const dadosLocais = localStorage.getItem("usuarioLogado");
+        if (dadosLocais) {
+            try {
+                usuario = JSON.parse(dadosLocais);
+            } catch (e) {
+                usuario = null;
+            }
+        }
+    }
+
+    const menuDesktop = document.getElementById("menuUsuario");
+    const menuMobile = document.getElementById("menuUsuarioMobile");
+
+    if (usuario && (usuario.nome || usuario.email)) {
+        const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+
+        if (menuDesktop) {
+            menuDesktop.textContent = `Olá, ${primeiroNome}`;
+        }
+        if (menuMobile) {
+            menuMobile.textContent = `Olá, ${primeiroNome}`;
+        }
+    } else {
+        if (menuDesktop) {
+            menuDesktop.textContent = "Login";
+        }
+        if (menuMobile) {
+            menuMobile.textContent = "Login";
+        }
+    }
 }
 
 // =====================================================
@@ -532,10 +570,15 @@ function irParaSlide(numero) {
 // INICIALIZAÇÃO
 // =====================================================
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
+    // 1. Atualiza o menu do usuário (espera o DOM estar completamente pronto)
+    await checarEAtualizarMenu();
+
+    // 2. Carrega os pedidos e o catálogo
     carregarCarrinho();
     carregarCatalogo();
 
+    // 3. Inicializa o Carrossel
     if (slides.length > 0) {
         setInterval(proximoSlide, 5000);
     }
