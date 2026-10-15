@@ -1,9 +1,13 @@
 try {
+    const emailLimpo = typeof email === 'string' ? email.trim() : '';
+
     const resposta = await fetch('/login.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json' 
+        },
         credentials: 'include',
-        body: JSON.stringify({ email, senha })
+        body: JSON.stringify({ email: emailLimpo, senha })
     });
 
     const textoResposta = await resposta.text();
@@ -17,10 +21,12 @@ try {
         return;
     }
 
-    if (resultado.sucesso) {
-        // Redireciona para /TelaAdmin/admin.html (se is_admin = true) ou /Telainicial/index.html (se cliente)
-        window.location.replace(resultado.redirecionar || '/Telainicial/index.html');
+    if (resposta.ok && resultado.sucesso) {
+        // Redireciona para a rota informada pelo PHP (/TelaAdmin/admin.html ou /TelaCliente/cliente.html)
+        const destino = resultado.redirecionar || '/TelaCliente/cliente.html';
+        window.location.replace(destino);
     } else {
+        // Trata a mensagem enviada pelo backend (ex: "E-mail ou senha incorretos.")
         alert(resultado.mensagem || "E-mail ou senha incorretos.");
     }
 
