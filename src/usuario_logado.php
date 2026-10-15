@@ -10,7 +10,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Vary: Origin');
 
-// Lista de origens permitidas (incluindo o seu domínio real do Render)
+// Lista de origens permitidas
 $origensPermitidas = [
     'https://loja-zora.onrender.com',
     'http://localhost:3000',
@@ -18,8 +18,6 @@ $origensPermitidas = [
 ];
 
 $origem = $_SERVER['HTTP_ORIGIN'] ?? null;
-
-// Se a origem veio no cabeçalho e está na lista (ou se não veio, assume o mesmo domínio)
 $origemPermitida = ($origem !== null && in_array($origem, $origensPermitidas, true)) || $origem === null;
 
 if ($origem !== null && !$origemPermitida) {
@@ -32,17 +30,18 @@ if ($origem !== null && !$origemPermitida) {
     exit;
 }
 
+// Configuração unificada de CORS
 if ($origem !== null && $origemPermitida) {
     header('Access-Control-Allow-Origin: ' . $origem);
-    header('Access-Control-Allow-Credentials: true');
 } else {
     header('Access-Control-Allow-Origin: https://loja-zora.onrender.com');
-    header('Access-Control-Allow-Credentials: true');
 }
 
+header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 
+// Tratamento correto do Preflight CORS (OPTIONS)
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
     http_response_code(204);
     exit;
@@ -100,7 +99,7 @@ function responderJson(array $dados, int $status = 200): void
     echo json_encode($dados, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
 }
 
-function encerrarSessaoAtual(): void
+function encerrarSessaoAtual(bool $isHttps): void
 {
     $_SESSION = [];
 
@@ -110,9 +109,9 @@ function encerrarSessaoAtual(): void
             'expires' => time() - 42000,
             'path' => $params['path'] ?? '/',
             'domain' => $params['domain'] ?? '',
-            'secure' => (bool) ($params['secure'] ?? false),
-            'httponly' => (bool) ($params['httponly'] ?? true),
-            'samesite' => $params['samesite'] ?? 'Lax',
+            'secure' => $isHttps,
+            'httponly' => true,
+            'samesite' => $isHttps ? 'None' : 'Lax',
         ]);
     }
 
@@ -173,7 +172,7 @@ try {
     $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$cliente) {
-        encerrarSessaoAtual();
+        encerrarSessaoAtual($isHttps);
 
         responderJson([
             'sucesso' => true,
