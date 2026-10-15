@@ -313,7 +313,8 @@ if (formLogin) {
 
             let destino = respostaServidor.redirecionar;
             if (!destino) {
-                destino = ehAdmin ? "/src/TelaAdmin/admin.html" : "/src/TelaCliente/cliente.html";
+                // CORRIGIDO: Removido o "/src/" do início dos caminhos
+                destino = ehAdmin ? "/TelaAdmin/admin.html" : "/TelaCliente/cliente.html";
             }
 
             window.location.replace(destino);
