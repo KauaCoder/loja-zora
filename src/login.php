@@ -100,7 +100,8 @@ try {
     // FORÇA A GRAVAÇÃO IMEDIATA DA SESSÃO NO DISCO DO RENDER
     session_write_close();
 
-    $redirecionar = $isAdmin ? "/TelaAdmin/admin.html" : "/Telainicial/index.html";
+    // CORRIGIDO: Redireciona cliente comum para /TelaCliente/cliente.html
+    $redirecionar = $isAdmin ? "/TelaAdmin/admin.html" : "/TelaCliente/cliente.html";
 
     echo json_encode([
         "sucesso"      => true,
