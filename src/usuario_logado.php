@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * ZORA — Verificação de sessão ativa
+ * ZORA — Verificação de Usuário Logado e Sessão
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -30,7 +30,6 @@ if ($origem !== null && !$origemPermitida) {
     exit;
 }
 
-// Configuração unificada de CORS
 if ($origem !== null && $origemPermitida) {
     header('Access-Control-Allow-Origin: ' . $origem);
 } else {
@@ -41,19 +40,9 @@ header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 
-// Tratamento correto do Preflight CORS (OPTIONS)
+// Tratamento de Preflight CORS (OPTIONS)
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
     http_response_code(204);
-    exit;
-}
-
-if (!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'POST'], true)) {
-    header('Allow: GET, POST, OPTIONS');
-    http_response_code(405);
-    echo json_encode([
-        'sucesso' => false,
-        'mensagem' => 'Método não permitido.'
-    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -72,14 +61,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_trans_sid', '0');
 
-    $sameSite = $isHttps ? 'None' : 'Lax';
-
     session_set_cookie_params([
         'lifetime' => 86400,
         'path' => '/',
         'secure' => $isHttps,
         'httponly' => true,
-        'samesite' => $sameSite,
+        'samesite' => $isHttps ? 'None' : 'Lax',
     ]);
 
     if (!session_start()) {
@@ -120,6 +107,7 @@ function encerrarSessaoAtual(bool $isHttps): void
     }
 }
 
+// Carrega a conexão com o banco de dados
 $caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
     ? __DIR__ . '/src/conexao.php'
     : __DIR__ . '/conexao.php';
