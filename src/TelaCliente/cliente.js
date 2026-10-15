@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
     const rotasPossiveis = [
-        `/src/TelaCliente/${nomeArquivo}`,
+        `/TelaCliente/${nomeArquivo}`,
         `/TelaCliente/${nomeArquivo}`,
         `/${nomeArquivo}`,
         `../${nomeArquivo}`
