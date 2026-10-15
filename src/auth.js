@@ -100,9 +100,9 @@ async function abrirPerfil() {
     if (usuario) {
         const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
         if (ehAdmin) {
-            window.location.href = "/src/TelaAdmin/admin.html";
+            window.location.href = "/TelaAdmin/admin.html";
         } else {
-            window.location.href = "/src/TelaCliente/cliente.html";
+            window.location.href = "/TelaCliente/cliente.html";
         }
     } else {
         window.location.href = "/TelaLogin/login.html";
