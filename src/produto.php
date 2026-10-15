@@ -77,6 +77,9 @@ $caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
     : __DIR__ . '/conexao.php';
 
 if (!is_file($caminhoConexao)) {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
     http_response_code(500);
     echo json_encode([
         'sucesso' => false,
@@ -97,6 +100,9 @@ try {
     // =============================================
 
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         header('Allow: GET, OPTIONS');
         http_response_code(405);
         echo json_encode([
@@ -113,6 +119,9 @@ try {
     $idProdutoRaw = $_GET['id'] ?? null;
 
     if (!$idProdutoRaw || !is_numeric($idProdutoRaw) || (int) $idProdutoRaw <= 0) {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         http_response_code(400);
         echo json_encode([
             'sucesso' => false,
@@ -122,6 +131,13 @@ try {
     }
 
     $idProduto = (int) $idProdutoRaw;
+
+    // Apenas administradores enxergam informações sensíveis do fornecedor
+    $isAdmin = filter_var($_SESSION['is_admin'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
 
     // =============================================
     // BUSCAR PRODUTO NO POSTGRESQL
@@ -175,9 +191,6 @@ try {
     $qtdMax = (int) $produto['qtd_max_produto'];
     $percentualRestante = $qtdMax > 0 ? round(($qtdAtual / $qtdMax) * 100, 1) : 0;
 
-    // Apenas administradores enxergam informações sensíveis do fornecedor
-    $isAdmin = filter_var($_SESSION['is_admin'] ?? false, FILTER_VALIDATE_BOOLEAN);
-
     $respostaProduto = [
         'id_produto'         => (int) $produto['id_produto'],
         'nome'               => $produto['nm_produto'],
@@ -207,6 +220,10 @@ try {
     ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
 
 } catch (Throwable $erro) {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
     error_log('ZORA: erro ao carregar produto ID ' . ($idProduto ?? 0) . ': ' . $erro->getMessage());
 
     http_response_code(500);
