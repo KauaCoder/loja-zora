@@ -3,27 +3,54 @@
 // PostgreSQL + Sessão PHP + LocalStorage Fallback
 // =====================================================
 
-async function obterUsuarioLogado() {
-    try {
-        const resposta = await fetch("/usuario_logado.php", {
-            method: "GET",
-            headers: {
-                "Cache-Control": "no-cache, no-store"
-            },
-            credentials: "include"
-        });
+// Função genérica para tentar rotas da API em múltiplos caminhos
+async function requisitarAPI(rotas, opcoes = {}) {
+    for (const rota of rotas) {
+        try {
+            const resposta = await fetch(rota, {
+                ...opcoes,
+                headers: {
+                    "Cache-Control": "no-cache, no-store",
+                    ...(opcoes.headers || {})
+                },
+                credentials: "include"
+            });
 
-        if (resposta.ok) {
-            const resultado = await resposta.json();
-            if (resultado && resultado.sucesso === true && resultado.logado === true && resultado.cliente) {
-                localStorage.setItem("usuarioLogado", JSON.stringify(resultado.cliente));
-                return resultado.cliente;
+            if (resposta.ok) {
+                const dados = await resposta.json();
+                return { ok: true, dados };
             }
+        } catch (e) {
+            // Se falhar a rota atual, tenta a próxima do array
+            continue;
         }
-    } catch (erro) {
-        console.error("Erro ao verificar sessão no servidor:", erro);
+    }
+    return { ok: false };
+}
+
+async function obterUsuarioLogado() {
+    // Tenta primeiro no servidor em rotas absolutas e relativas
+    const rotasSessao = [
+        "/usuario_logado.php",
+        "../usuario_logado.php",
+        "./usuario_logado.php"
+    ];
+
+    const resultado = await requisitarAPI(rotasSessao, { method: "GET" });
+
+    if (resultado.ok && resultado.dados) {
+        const resposta = resultado.dados;
+        if (resposta.sucesso === true && resposta.logado === true && resposta.cliente) {
+            localStorage.setItem("usuarioLogado", JSON.stringify(resposta.cliente));
+            return resposta.cliente;
+        } else if (resposta.logado === false) {
+            // Se o servidor disse expressamente que NÃO está logado, limpa o cache local
+            localStorage.removeItem("usuarioLogado");
+            return null;
+        }
     }
 
+    // Fallback: Se o servidor estiver off-line ou em caso de erro na rede, usa o LocalStorage
     const dadosLocais = localStorage.getItem("usuarioLogado");
     if (dadosLocais) {
         try {
@@ -53,14 +80,13 @@ async function protegerPagina() {
 }
 
 async function logout(redirecionar = true) {
-    try {
-        await fetch("/logout.php", {
-            method: "POST",
-            credentials: "include"
-        });
-    } catch (erro) {
-        console.error("Erro ao fazer logout:", erro);
-    }
+    const rotasLogout = [
+        "/logout.php",
+        "../logout.php",
+        "./logout.php"
+    ];
+
+    await requisitarAPI(rotasLogout, { method: "POST" });
 
     localStorage.removeItem("usuarioLogado");
     localStorage.removeItem("idCliente");
@@ -109,6 +135,7 @@ async function abrirPerfil() {
     }
 }
 
+// Expõe as funções globalmente para o escopo window
 window.estaLogado = estaLogado;
 window.obterUsuarioLogado = obterUsuarioLogado;
 window.protegerPagina = protegerPagina;
