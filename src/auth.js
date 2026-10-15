@@ -1,144 +1,205 @@
-// =====================================================
-// ZORA - AUTENTICAÇÃO CENTRAL
-// PostgreSQL + Sessão PHP + LocalStorage Fallback
-// =====================================================
+<?php
+declare(strict_types=1);
 
-// Função genérica para tentar rotas da API em múltiplos caminhos
-async function requisitarAPI(rotas, opcoes = {}) {
-    for (const rota of rotas) {
-        try {
-            const resposta = await fetch(rota, {
-                ...opcoes,
-                headers: {
-                    "Cache-Control": "no-cache, no-store",
-                    ...(opcoes.headers || {})
-                },
-                credentials: "include"
-            });
+/**
+ * ZORA — Verificação de Usuário Logado e Sessão
+ */
 
-            if (resposta.ok) {
-                const dados = await resposta.json();
-                return { ok: true, dados };
-            }
-        } catch (e) {
-            // Se falhar a rota atual, tenta a próxima do array
-            continue;
+header('Content-Type: application/json; charset=UTF-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Vary: Origin');
+
+// Lista de origens permitidas
+$origensPermitidas = [
+    'https://loja-zora.onrender.com',
+    'http://localhost:3000',
+    'http://localhost:8080'
+];
+
+$origem = $_SERVER['HTTP_ORIGIN'] ?? null;
+$origemPermitida = ($origem !== null && in_array($origem, $origensPermitidas, true)) || $origem === null;
+
+if ($origem !== null && !$origemPermitida) {
+    http_response_code(403);
+    echo json_encode([
+        'sucesso' => false,
+        'logado' => false,
+        'mensagem' => 'Origem não autorizada.'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($origem !== null && $origemPermitida) {
+    header('Access-Control-Allow-Origin: ' . $origem);
+} else {
+    header('Access-Control-Allow-Origin: https://loja-zora.onrender.com');
+}
+
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
+// Tratamento de Preflight CORS (OPTIONS)
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Suporte a HTTPS no Proxy Reverso do Render
+$httpsDireto = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' &&
+    strtolower((string) $_SERVER['HTTPS']) !== 'off';
+$protoEncaminhado = strtolower(trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0]));
+$isHttps = $httpsDireto || $protoEncaminhado === 'https';
+
+if ($isHttps) {
+    $_SERVER['HTTPS'] = 'on';
+}
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_trans_sid', '0');
+
+    session_set_cookie_params([
+        'lifetime' => 86400,
+        'path' => '/',
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => $isHttps ? 'None' : 'Lax',
+    ]);
+
+    if (!session_start()) {
+        http_response_code(500);
+        echo json_encode([
+            'sucesso' => false,
+            'logado' => false,
+            'mensagem' => 'Não foi possível iniciar a sessão.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+function responderJson(array $dados, int $status = 200): void
+{
+    http_response_code($status);
+    echo json_encode($dados, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+}
+
+function encerrarSessaoAtual(bool $isHttps): void
+{
+    $_SESSION = [];
+
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', [
+            'expires' => time() - 42000,
+            'path' => $params['path'] ?? '/',
+            'domain' => $params['domain'] ?? '',
+            'secure' => $isHttps,
+            'httponly' => true,
+            'samesite' => $isHttps ? 'None' : 'Lax',
+        ]);
+    }
+
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
+    }
+}
+
+// Carrega a conexão com o banco de dados
+$caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
+    ? __DIR__ . '/src/conexao.php'
+    : __DIR__ . '/conexao.php';
+
+if (!is_file($caminhoConexao)) {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    error_log('ZORA: arquivo conexao.php não encontrado.');
+    responderJson([
+        'sucesso' => false,
+        'logado' => false,
+        'mensagem' => 'Erro interno de configuração.'
+    ], 500);
+    exit;
+}
+
+try {
+    require_once $caminhoConexao;
+
+    if (!isset($conexao) || !($conexao instanceof PDO)) {
+        throw new RuntimeException('A conexão PDO não foi inicializada.');
+    }
+
+    $idSessao = $_SESSION['id_cliente'] ?? null;
+
+    if (!is_scalar($idSessao) || (int) $idSessao <= 0) {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
         }
-    }
-    return { ok: false };
-}
 
-async function obterUsuarioLogado() {
-    // Tenta primeiro no servidor em rotas absolutas e relativas
-    const rotasSessao = [
-        "/usuario_logado.php",
-        "../usuario_logado.php",
-        "./usuario_logado.php"
-    ];
-
-    const resultado = await requisitarAPI(rotasSessao, { method: "GET" });
-
-    if (resultado.ok && resultado.dados) {
-        const resposta = resultado.dados;
-        if (resposta.sucesso === true && resposta.logado === true && resposta.cliente) {
-            localStorage.setItem("usuarioLogado", JSON.stringify(resposta.cliente));
-            return resposta.cliente;
-        } else if (resposta.logado === false) {
-            // Se o servidor disse expressamente que NÃO está logado, limpa o cache local
-            localStorage.removeItem("usuarioLogado");
-            return null;
-        }
+        responderJson([
+            'sucesso' => true,
+            'logado' => false,
+            'is_admin' => false,
+            'cliente' => null
+        ]);
+        exit;
     }
 
-    // Fallback: Se o servidor estiver off-line ou em caso de erro na rede, usa o LocalStorage
-    const dadosLocais = localStorage.getItem("usuarioLogado");
-    if (dadosLocais) {
-        try {
-            return JSON.parse(dadosLocais);
-        } catch (e) {
-            return null;
-        }
+    $idCliente = (int) $idSessao;
+
+    $sql = 'SELECT id_cliente, nome, e_mail, telefone, COALESCE(is_admin, FALSE) AS is_admin
+            FROM cliente
+            WHERE id_cliente = :id_cliente
+            LIMIT 1';
+
+    $stmt = $conexao->prepare($sql);
+    $stmt->execute([':id_cliente' => $idCliente]);
+    $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$cliente) {
+        encerrarSessaoAtual($isHttps);
+
+        responderJson([
+            'sucesso' => true,
+            'logado' => false,
+            'is_admin' => false,
+            'cliente' => null
+        ]);
+        exit;
     }
 
-    return null;
-}
+    $isAdmin = filter_var($cliente['is_admin'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-async function estaLogado() {
-    const usuario = await obterUsuarioLogado();
-    return usuario !== null;
-}
+    $_SESSION['is_admin'] = $isAdmin;
 
-async function protegerPagina() {
-    const usuario = await obterUsuarioLogado();
+    session_write_close();
 
-    if (!usuario) {
-        window.location.replace("/TelaLogin/login.html");
-        return false;
+    responderJson([
+        'sucesso' => true,
+        'logado' => true,
+        'is_admin' => $isAdmin,
+        'cliente' => [
+            'id_cliente' => (int) $cliente['id_cliente'],
+            'nome' => $cliente['nome'],
+            'email' => $cliente['e_mail'],
+            'telefone' => $cliente['telefone'] ?? '',
+            'is_admin' => $isAdmin
+        ]
+    ]);
+} catch (Throwable $erro) {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
     }
 
-    return true;
+    error_log('ZORA: falha na verificação de sessão: ' . $erro->getMessage());
+
+    responderJson([
+        'sucesso' => false,
+        'logado' => false,
+        'is_admin' => false,
+        'mensagem' => 'Não foi possível verificar a sessão. Tente novamente.'
+    ], 500);
 }
-
-async function logout(redirecionar = true) {
-    const rotasLogout = [
-        "/logout.php",
-        "../logout.php",
-        "./logout.php"
-    ];
-
-    await requisitarAPI(rotasLogout, { method: "POST" });
-
-    localStorage.removeItem("usuarioLogado");
-    localStorage.removeItem("idCliente");
-    localStorage.removeItem("emailUsuario");
-    localStorage.removeItem("nomeUsuario");
-
-    if (redirecionar) {
-        window.location.replace("/Telainicial/index.html");
-    }
-}
-
-async function atualizarMenuUsuario() {
-    const usuario = await obterUsuarioLogado();
-    const logado = usuario !== null;
-
-    ["menuUsuario", "menuUsuarioMobile"].forEach(id => {
-        const elemento = document.getElementById(id);
-        if (elemento) {
-            if (logado) {
-                const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
-                if (ehAdmin) {
-                    elemento.textContent = "📊 Dashboard Adm";
-                } else {
-                    const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
-                    elemento.textContent = `Olá, ${primeiroNome}`;
-                }
-            } else {
-                elemento.textContent = "Login";
-            }
-        }
-    });
-}
-
-async function abrirPerfil() {
-    const usuario = await obterUsuarioLogado();
-
-    if (usuario) {
-        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
-        if (ehAdmin) {
-            window.location.href = "/TelaAdmin/admin.html";
-        } else {
-            window.location.href = "/TelaCliente/cliente.html";
-        }
-    } else {
-        window.location.href = "/TelaLogin/login.html";
-    }
-}
-
-// Expõe as funções globalmente para o escopo window
-window.estaLogado = estaLogado;
-window.obterUsuarioLogado = obterUsuarioLogado;
-window.protegerPagina = protegerPagina;
-window.logout = logout;
-window.abrirPerfil = abrirPerfil;
-window.atualizarMenuUsuario = atualizarMenuUsuario;
