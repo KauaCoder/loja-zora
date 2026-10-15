@@ -1,58 +1,159 @@
 <?php
-/* =========================================================
-   ZORA - CONEXÃO COM BANCO DE DADOS (SUPABASE + RENDER)
-   ========================================================= */
 
-$db_url = getenv('DATABASE_URL');
+header("Content-Type: application/json; charset=UTF-8");
 
-if (!$db_url) {
-    http_response_code(500);
-    error_log("Erro Crítico: A variável DATABASE_URL não foi configurada no Render.");
-    header("Content-Type: application/json; charset=UTF-8");
-    die(json_encode([
-        "sucesso" => false,
-        "mensagem" => "Erro de configuração no servidor de banco de dados."
-    ], JSON_UNESCAPED_UNICODE));
-}
-
-$dbopts = parse_url($db_url);
-
-if ($dbopts === false || !isset($dbopts["host"])) {
-    preg_match('/postgres:\/\/(.*?):(.*?)@(.*?):(\d+)\/(.*)/', $db_url, $matches);
-    $user     = $matches[1] ?? '';
-    $password = urldecode($matches[2] ?? '');
-    $host     = $matches[3] ?? 'aws-0-us-east-1.pooler.supabase.com';
-    $port     = $matches[4] ?? 6543;
-    $dbname   = $matches[5] ?? 'postgres';
-} else {
-    $host     = $dbopts["host"] ?? 'aws-0-us-east-1.pooler.supabase.com';
-    $port     = $dbopts["port"] ?? 6543;
-    $user     = $dbopts["user"] ?? '';
-    $password = isset($dbopts["pass"]) ? urldecode($dbopts["pass"]) : '';
-    $dbname   = isset($dbopts["path"]) ? ltrim($dbopts["path"], '/') : 'postgres';
-}
-
-if (empty($host) || str_contains($host, 'port=')) {
-    $host = 'aws-0-us-east-1.pooler.supabase.com';
-}
+// Tenta localizar conexao.php na raiz ou na pasta /src
+$caminho_conexao = file_exists(__DIR__ . '/src/conexao.php') ? __DIR__ . '/src/conexao.php' : __DIR__ . '/conexao.php';
+require_once $caminho_conexao;
 
 try {
-    $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require";
 
-    $conexao = new PDO($dsn, $user, $password, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false
+    // Recebe os dados enviados pelo JavaScript
+    $dados = json_decode(file_get_contents("php://input"), true);
+
+    if (!$dados) {
+        throw new Exception("Dados inválidos.");
+    }
+
+    // =========================
+    // DADOS DO CLIENTE
+    // =========================
+
+    $nome     = trim($dados["nome"] ?? "");
+    $email    = strtolower(trim($dados["email"] ?? $dados["e_mail"] ?? ""));
+    $telefone = trim($dados["telefone"] ?? "");
+    $senha    = $dados["senha"] ?? "";
+
+    // =========================
+    // DADOS DO ENDEREÇO
+    // =========================
+
+    $endereco = $dados["endereco"] ?? [];
+
+    $cep         = trim($endereco["cep"] ?? "");
+    $rua         = trim($endereco["rua"] ?? $endereco["endereco"] ?? "");
+    $numero      = trim($endereco["numero"] ?? "");
+    $complemento = trim($endereco["complemento"] ?? "");
+    $bairro      = trim($endereco["bairro"] ?? "");
+    $cidade      = trim($endereco["cidade"] ?? "");
+    $estado      = strtoupper(trim($endereco["estado"] ?? ""));
+
+    // =========================
+    // VALIDAÇÕES
+    // =========================
+
+    if ($nome === "")     throw new Exception("Nome é obrigatório.");
+    if ($email === "")    throw new Exception("E-mail é obrigatório.");
+    if ($senha === "" || strlen($senha) < 6) throw new Exception("A senha deve ter no mínimo 6 caracteres.");
+    if ($cep === "")      throw new Exception("CEP é obrigatório.");
+    if ($rua === "")      throw new Exception("Rua é obrigatória.");
+    if ($numero === "")   throw new Exception("Número é obrigatório.");
+    if ($bairro === "")   throw new Exception("Bairro é obrigatório.");
+    if ($cidade === "")   throw new Exception("Cidade é obrigatória.");
+    if ($estado === "")   throw new Exception("Estado é obrigatório.");
+
+    // =========================
+    // VERIFICAR E-MAIL DUPLICADO
+    // Coluna correta no banco: e_mail (com underline)
+    // =========================
+
+    $sqlEmail = "
+        SELECT id_cliente
+        FROM cliente
+        WHERE e_mail = :email
+        LIMIT 1
+    ";
+
+    $stmtEmail = $conexao->prepare($sqlEmail);
+    $stmtEmail->execute([":email" => $email]);
+
+    if ($stmtEmail->fetch()) {
+        throw new Exception("Este e-mail já está cadastrado.");
+    }
+
+    // =========================
+    // HASH DA SENHA
+    // =========================
+
+    $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
+
+    // =========================
+    // INICIAR TRANSAÇÃO
+    // =========================
+
+    $conexao->beginTransaction();
+
+    // =========================
+    // CADASTRAR CLIENTE
+    // =========================
+
+    $sqlCliente = "
+        INSERT INTO cliente (nome, e_mail, senha, telefone)
+        VALUES (:nome, :email, :senha, :telefone)
+        RETURNING id_cliente
+    ";
+
+    $stmtCliente = $conexao->prepare($sqlCliente);
+    $stmtCliente->execute([
+        ":nome"     => $nome,
+        ":email"    => $email,
+        ":senha"    => $senhaHash,
+        ":telefone" => $telefone
     ]);
 
-} catch (PDOException $e) {
-    error_log("Erro de Conexão Supabase: " . $e->getMessage());
+    $idCliente = (int) $stmtCliente->fetchColumn();
 
-    http_response_code(500);
-    header("Content-Type: application/json; charset=UTF-8");
+    if (!$idCliente) {
+        throw new Exception("Não foi possível gerar o ID do cliente.");
+    }
+
+    // =========================
+    // CADASTRAR ENDEREÇO
+    // =========================
+
+    $sqlEndereco = "
+        INSERT INTO endereco (id_cliente, cep, endereco, numero, complemento, bairro, cidade, estado)
+        VALUES (:id_cliente, :cep, :endereco, :numero, :complemento, :bairro, :cidade, :estado)
+    ";
+
+    $stmtEndereco = $conexao->prepare($sqlEndereco);
+    $stmtEndereco->execute([
+        ":id_cliente"  => $idCliente,
+        ":cep"         => $cep,
+        ":endereco"    => $rua,
+        ":numero"      => $numero,
+        ":complemento" => $complemento,
+        ":bairro"      => $bairro,
+        ":cidade"      => $cidade,
+        ":estado"      => $estado
+    ]);
+
+    // =========================
+    // CONFIRMAR TRANSAÇÃO
+    // =========================
+
+    $conexao->commit();
+
+    echo json_encode([
+        "sucesso"    => true,
+        "mensagem"   => "Cadastro realizado com sucesso!",
+        "id_cliente" => $idCliente
+    ], JSON_UNESCAPED_UNICODE);
+
+} catch (Exception $e) {
+
+    if (isset($conexao) && $conexao->inTransaction()) {
+        $conexao->rollBack();
+    }
+
+    $msg = $e->getMessage();
+    if (strpos($msg, "23505") !== false || strpos($msg, "e_mail") !== false) {
+        $msg = "Este e-mail já está cadastrado.";
+    }
+
     echo json_encode([
         "sucesso"  => false,
-        "mensagem" => "Não foi possível conectar ao banco de dados."
+        "mensagem" => $msg
     ], JSON_UNESCAPED_UNICODE);
-    exit;
+
 }
