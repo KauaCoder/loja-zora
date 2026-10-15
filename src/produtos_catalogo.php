@@ -65,7 +65,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
 
 $caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
     ? __DIR__ . '/src/conexao.php'
-    : __DIR__ . '/conexao.php';
+    : (file_exists(__DIR__ . '/conexao.php') ? __DIR__ . '/conexao.php' : __DIR__ . '/../conexao.php');
 
 if (!is_file($caminhoConexao)) {
     http_response_code(500);
@@ -111,7 +111,7 @@ try {
             'nome'       => $produto['nm_produto'],
             'preco'      => round((float) $produto['preco'], 2),
             'estoque'    => (int) $produto['qtd_item'],
-            'qtd_item'   => (int) $produto['qtd_item'], // Mantido para compatibilidade legado
+            'qtd_item'   => (int) $produto['qtd_item'], // Compatibilidade legado
             'categoria'  => $produto['categoria'] ?? 'Geral',
             'imagem'     => $produto['imagem'] ?? 'default.jpg',
             'descricao'  => $produto['descricao'] ?? ''
