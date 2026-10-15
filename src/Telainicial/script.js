@@ -60,7 +60,7 @@ async function abrirPerfil() {
         if (ehAdmin) {
             window.location.href = "/TelaAdmin/admin.html";
         } else {
-            window.location.href = "/TelaCliente/cliente.html";
+            window.location.href = "/TelaEntrega/entrega.html";
         }
     } else {
         window.location.href = "/TelaLogin/login.html";
