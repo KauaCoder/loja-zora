@@ -1596,3 +1596,25 @@ body {
         transition-duration: 0.01ms;
     }
 }
+/* Correção da sobreposição do menu */
+nav {
+    position: relative;
+    z-index: auto;
+}
+
+#overlay {
+    z-index: 1800;
+}
+
+#sidebar {
+    z-index: 3000;
+}
+
+#Pedidos {
+    z-index: 2000;
+}
+
+/* Impede a rolagem da página com um painel aberto */
+body.painel-aberto {
+    overflow: hidden;
+}
