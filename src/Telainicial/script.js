@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - TELA INICIAL, CATÁLOGO E CARRINHO
-// Versão sem menu lateral
+// Versão sem dependência de consulta de estoque em tempo real
 // =====================================================
 
 
@@ -208,23 +208,15 @@ function renderizarCatalogo(produtos) {
             return;
         }
 
-        const precoValido =
-            Number.isFinite(preco) && preco >= 0
-                ? preco
-                : 0;
-
-        const estoqueValido =
-            Number.isFinite(estoque) ? estoque : 0;
-
+        const precoValido = Number.isFinite(preco) && preco >= 0 ? preco : 0;
+        const estoqueValido = Number.isFinite(estoque) ? estoque : 0;
         const imagemSrc = obterImagemProduto(produto.imagem);
 
         const card = document.createElement("div");
         card.className = "produto";
 
         const link = document.createElement("a");
-        link.href =
-            "/TelaProdutos/produtos.html?id=" +
-            encodeURIComponent(id);
+        link.href = "/TelaProdutos/produtos.html?id=" + encodeURIComponent(id);
 
         const imagem = document.createElement("img");
         imagem.src = imagemSrc;
@@ -242,8 +234,7 @@ function renderizarCatalogo(produtos) {
         titulo.textContent = nome;
 
         const precoElemento = document.createElement("p");
-        precoElemento.textContent =
-            `R$ ${formatarPreco(precoValido)}`;
+        precoElemento.textContent = `R$ ${formatarPreco(precoValido)}`;
 
         const botao = document.createElement("button");
         botao.type = "button";
@@ -256,19 +247,14 @@ function renderizarCatalogo(produtos) {
         } else {
             botao.textContent = "Comprar";
 
-            botao.addEventListener("click", async function () {
-                botao.disabled = true;
-
-                try {
-                    await adicionarPedidos(
-                        id,
-                        nome,
-                        precoValido,
-                        imagemSrc
-                    );
-                } finally {
-                    botao.disabled = false;
-                }
+            botao.addEventListener("click", function () {
+                adicionarPedidos(
+                    id,
+                    nome,
+                    precoValido,
+                    imagemSrc,
+                    estoqueValido
+                );
             });
         }
 
@@ -279,45 +265,6 @@ function renderizarCatalogo(produtos) {
 
         container.appendChild(card);
     });
-}
-
-async function obterEstoqueBD(idProduto) {
-    try {
-        const resposta = await fetch(
-            `/consultar_estoque.php?id=${encodeURIComponent(idProduto)}`,
-            {
-                headers: {
-                    "Accept": "application/json"
-                }
-            }
-        );
-
-        const resultado = await resposta.json();
-
-        if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(
-                resultado.mensagem || "Falha ao consultar estoque."
-            );
-        }
-
-        const estoque = Number(resultado.estoque);
-
-        if (!Number.isFinite(estoque) || estoque < 0) {
-            throw new Error("Estoque retornado inválido.");
-        }
-
-        return estoque;
-
-    } catch (erro) {
-        console.error(
-            "Erro ao verificar estoque do produto:",
-            idProduto,
-            erro
-        );
-
-        // null significa que não foi possível confirmar o estoque.
-        return null;
-    }
 }
 
 
@@ -350,7 +297,8 @@ function carregarCarrinho() {
                         Math.floor(Number(produto.quantidade) || 1)
                     ),
                     nome: String(produto.nome || "Produto ZORA"),
-                    imagem: produto.imagem || "/img/Logo%201.png"
+                    imagem: produto.imagem || "/img/Logo%201.png",
+                    estoque: Number.isFinite(Number(produto.estoque)) ? Number(produto.estoque) : Infinity
                 }))
                 : [];
         }
@@ -553,7 +501,7 @@ function renderizarPedidos() {
     atualizarBadge();
 }
 
-async function adicionarPedidos(idProduto, nome, preco, imagem) {
+function adicionarPedidos(idProduto, nome, preco, imagem, estoqueDisponivel) {
     const id = Number(idProduto);
     const valor = Number(preco);
 
@@ -575,21 +523,12 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
         ? Number(produtoExistente.quantidade) || 0
         : 0;
 
-    // Não permite adicionar sem conseguir confirmar o estoque.
-    const estoque = await obterEstoqueBD(id);
+    const limiteEstoque = Number.isFinite(Number(estoqueDisponivel))
+        ? Number(estoqueDisponivel)
+        : (produtoExistente && Number.isFinite(Number(produtoExistente.estoque)) ? Number(produtoExistente.estoque) : Infinity);
 
-    if (estoque === null) {
-        alert(
-            "Não foi possível verificar o estoque. " +
-            "Tente novamente em instantes."
-        );
-        return;
-    }
-
-    if (quantidadeAtual + 1 > estoque) {
-        alert(
-            `Estoque insuficiente. Disponíveis: ${estoque} unidade(s).`
-        );
+    if (quantidadeAtual + 1 > limiteEstoque) {
+        alert(`Estoque insuficiente. Disponíveis: ${limiteEstoque} unidade(s).`);
         return;
     }
 
@@ -601,7 +540,8 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
             nome: String(nome || "Produto ZORA"),
             preco: valor,
             imagem: imagem || "/img/Logo%201.png",
-            quantidade: 1
+            quantidade: 1,
+            estoque: limiteEstoque
         });
     }
 
@@ -614,7 +554,7 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
     abrirPedidos();
 }
 
-async function alterarQuantidade(indice, delta) {
+function alterarQuantidade(indice, delta) {
     const produto = pedidosArray[indice];
 
     if (!produto) return;
@@ -627,22 +567,9 @@ async function alterarQuantidade(indice, delta) {
         return;
     }
 
-    if (delta > 0) {
-        const estoque = await obterEstoqueBD(produto.id_produto);
-
-        if (estoque === null) {
-            alert(
-                "Não foi possível verificar o estoque. " +
-                "Tente novamente."
-            );
-            return;
-        }
-
-        if (novaQuantidade > estoque) {
-            alert(
-                `Quantidade máxima atingida. ` +
-                `Disponíveis: ${estoque} unidade(s).`
-            );
+    if (delta > 0 && Number.isFinite(Number(produto.estoque))) {
+        if (novaQuantidade > produto.estoque) {
+            alert(`Quantidade máxima atingida. Disponíveis: ${produto.estoque} unidade(s).`);
             return;
         }
     }
@@ -701,77 +628,26 @@ function fecharPedidos() {
 // 5. FINALIZAÇÃO DO PEDIDO
 // =====================================================
 
-async function pagarPedido() {
+function pagarPedido() {
     if (pedidosArray.length === 0) {
         alert("Seu carrinho está vazio.");
         return;
     }
 
-    // Verifica novamente o estoque de cada produto.
-    const produtosSemEstoque = [];
-    let houveAjuste = false;
-
-    for (let i = pedidosArray.length - 1; i >= 0; i--) {
-        const item = pedidosArray[i];
-        const estoqueBD = await obterEstoqueBD(item.id_produto);
-
-        if (estoqueBD === null) {
-            alert(
-                "Não foi possível validar o estoque de todos os itens. " +
-                "Por favor, tente novamente."
-            );
-            return;
-        }
-
-        if (estoqueBD <= 0) {
-            produtosSemEstoque.push(item.nome);
-            pedidosArray.splice(i, 1);
-            houveAjuste = true;
-        } else if (item.quantidade > estoqueBD) {
-            item.quantidade = estoqueBD;
-            houveAjuste = true;
-        }
-    }
-
-    if (houveAjuste) {
-        salvarCarrinho();
-        renderizarPedidos();
-
-        if (produtosSemEstoque.length > 0) {
-            alert(
-                "Alguns itens no seu carrinho esgotaram e foram removidos:\n- " +
-                produtosSemEstoque.join("\n- ")
-            );
-        } else {
-            alert(
-                "A quantidade de alguns itens foi ajustada de acordo com o estoque disponível."
-            );
-        }
-
-        if (pedidosArray.length === 0) {
-            return;
-        }
-    }
-
-    // Redireciona para a tela de checkout / pagamento
+    // Redireciona diretamente para a tela de checkout / pagamento
     window.location.href = "/TelaPagamento/pagamento.html";
 }
 
+
 // =====================================================
-// INICIALIZAÇÃO DA PÁGINA
+// 6. INICIALIZAÇÃO DA PÁGINA
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Carrega os produtos do catálogo
     carregarCatalogo();
-
-    // 2. Restaura os itens salvos no carrinho
     carregarCarrinho();
-
-    // 3. Atualiza o estado do botão/texto de login
     checarEAtualizarMenu();
 
-    // 4. Associa o clique do fundo escuro (overlay) para fechar o carrinho
     const overlay = obterOverlay();
     if (overlay) {
         overlay.addEventListener("click", fecharTudo);
