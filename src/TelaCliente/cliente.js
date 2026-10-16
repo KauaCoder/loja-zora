@@ -1,5 +1,5 @@
 // =====================================================
-// ZORA - PERFIL DO CLIENTE (Versão Blindada & Resiliente)
+// ZORA - PERFIL DO CLIENTE (Versão Corrigida & Direta)
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
-// FUNÇÃO RESILIENTE ATUALIZADA: Injeta automaticamente o id_cliente do localStorage na URL
+// FUNÇÃO RESILIENTE CORRIGIDA: Rotas diretas e limpas para evitar erros 404
 async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
     let idClienteParam = "";
     const dadosLocais = localStorage.getItem("usuarioLogado");
@@ -35,17 +35,18 @@ async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
         }
     }
 
+    // Ordem otimizada: tenta na raiz absoluta, depois pasta atual e pasta pai
     const rotasPossiveis = [
-        `/TelaCliente/${nomeArquivo}`,
         `/${nomeArquivo}`,
-        `../${nomeArquivo}`
+        `./${nomeArquivo}`,
+        `../${nomeArquivo}`,
+        `/TelaCliente/${nomeArquivo}`
     ];
 
     let ultimoErro = null;
 
     for (const rota of rotasPossiveis) {
         try {
-            // Adiciona o parâmetro id_cliente na URL para garantir bypass caso os cookies falhem no Render
             let urlFinal = rota;
             if (idClienteParam) {
                 urlFinal += (rota.includes("?") ? "&" : "?") + idClienteParam;
@@ -79,7 +80,6 @@ async function verificarLogin() {
             resultado = JSON.parse(texto);
         } catch (e) {
             console.error("Resposta inválida do servidor:", texto);
-            // Se falhou no servidor mas existe no localStorage, não expulsa imediatamente
             if (localStorage.getItem("usuarioLogado")) return true;
             window.location.replace("/TelaLogin/login.html");
             return false;
@@ -121,6 +121,7 @@ async function carregarDadosPerfil() {
 
         const cliente = resultado.cliente;
 
+        // Preenche os campos do perfil com segurança
         if (document.getElementById("nomeUsuario")) document.getElementById("nomeUsuario").textContent = cliente.nome || "Usuário";
         if (document.getElementById("emailUsuario")) document.getElementById("emailUsuario").textContent = cliente.email || "-";
         if (document.getElementById("nomePerfil")) document.getElementById("nomePerfil").textContent = cliente.nome || "-";
@@ -131,7 +132,19 @@ async function carregarDadosPerfil() {
 
     } catch (erro) {
         console.error("Erro ao carregar perfil:", erro);
-        alert("Não foi possível carregar os dados do perfil.");
+        
+        // Fallback de emergência caso a API falhe mas o usuário esteja no localStorage:
+        // Preenche pelo menos com o que está guardado no navegador para a tela não ficar vazia!
+        const dadosLocais = localStorage.getItem("usuarioLogado");
+        if (dadosLocais) {
+            try {
+                const usuario = JSON.parse(dadosLocais);
+                if (document.getElementById("nomeUsuario")) document.getElementById("nomeUsuario").textContent = usuario.nome || "Usuário";
+                if (document.getElementById("emailUsuario")) document.getElementById("emailUsuario").textContent = usuario.email || "-";
+                if (document.getElementById("nomePerfil")) document.getElementById("nomePerfil").textContent = usuario.nome || "-";
+                if (document.getElementById("emailPerfil")) document.getElementById("emailPerfil").textContent = usuario.email || "-";
+            } catch (err) {}
+        }
     }
 }
 
