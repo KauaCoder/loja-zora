@@ -1,8 +1,7 @@
 // =====================================================
-// ZORA - TELA DE ENTREGA (Versão Blindada & Resiliente)
+// ZORA - TELA DE ENTREGA E PAGAMENTO UNIFICADAS
 // PostgreSQL + Sessão PHP + Bypass Render
 // =====================================================
-
 
 // =====================================================
 // MENU
@@ -29,7 +28,6 @@ function hideSidebar() {
 
 async function verificarLogin() {
     try {
-        // Recupera o ID do cliente armazenado no navegador
         let idClienteParam = "";
         const dadosLocais = localStorage.getItem("usuarioLogado");
         if (dadosLocais) {
@@ -56,7 +54,6 @@ async function verificarLogin() {
         try {
             resultado = JSON.parse(texto);
         } catch (e) {
-            // Fallback de resiliência: se o servidor falhar mas houver dados locais, considera logado
             if (dadosLocais) return true;
             return false;
         }
@@ -78,19 +75,13 @@ async function verificarLogin() {
 
         const texto = logado ? nomeTexto : "Login";
 
-        if (menuUsuario) {
-            menuUsuario.textContent = texto;
-        }
-
-        if (menuUsuarioMobile) {
-            menuUsuarioMobile.textContent = texto;
-        }
+        if (menuUsuario) menuUsuario.textContent = texto;
+        if (menuUsuarioMobile) menuUsuarioMobile.textContent = texto;
 
         return logado;
 
     } catch (erro) {
         console.error("Erro ao verificar login:", erro);
-        // Fallback para evitar bloqueio indevido no Render
         if (localStorage.getItem("usuarioLogado")) return true;
         return false;
     }
@@ -111,7 +102,6 @@ async function abrirPerfil() {
     }
 }
 
-// Verifica o login ao carregar o script
 verificarLogin();
 
 
@@ -151,20 +141,16 @@ if (!totalPedido || !itensPedido || itensPedido.length === 0) {
 
 function renderizarResumo() {
     const valorTotalEl = document.getElementById("valorTotal");
+    const valorTotalPagamentoEl = document.getElementById("valorTotalPagamento");
 
-    if (valorTotalEl) {
-        valorTotalEl.textContent =
-            "R$ " +
-            Number(totalPedido)
-                .toFixed(2)
-                .replace(".", ",");
-    }
+    const formatado = "R$ " + Number(totalPedido).toFixed(2).replace(".", ",");
+
+    if (valorTotalEl) valorTotalEl.textContent = formatado;
+    if (valorTotalPagamentoEl) valorTotalPagamentoEl.textContent = formatado;
 
     const lista = document.getElementById("listaResumo");
 
-    if (!lista) {
-        return;
-    }
+    if (!lista) return;
 
     lista.innerHTML = "";
 
@@ -175,12 +161,8 @@ function renderizarResumo() {
         const item = document.createElement("li");
 
         item.innerHTML = `
-            <span>
-                ${quantidade}x ${produto.nome}
-            </span>
-            <span>
-                R$ ${(preco * quantidade).toFixed(2).replace(".", ",")}
-            </span>
+            <span>${quantidade}x ${produto.nome}</span>
+            <span>R$ ${(preco * quantidade).toFixed(2).replace(".", ",")}</span>
         `;
 
         lista.appendChild(item);
@@ -189,15 +171,14 @@ function renderizarResumo() {
 
 
 // =====================================================
-// MÁSCARA CPF
+// MÁSCARA CPF E CEP
 // =====================================================
 
 const cpf = document.getElementById("cpf");
 
 if (cpf) {
     cpf.addEventListener("input", () => {
-        let valor = cpf.value.replace(/\D/g, "");
-        valor = valor.substring(0, 11);
+        let valor = cpf.value.replace(/\D/g, "").substring(0, 11);
         valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
         valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
         valor = valor.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
@@ -205,23 +186,15 @@ if (cpf) {
     });
 }
 
-
-// =====================================================
-// CEP
-// =====================================================
-
 const cepInput = document.getElementById("cep");
 const statusCep = document.getElementById("statusCep");
 
 if (cepInput) {
     cepInput.addEventListener("input", () => {
-        let valor = cepInput.value.replace(/\D/g, "");
-        valor = valor.substring(0, 8);
-
+        let valor = cepInput.value.replace(/\D/g, "").substring(0, 8);
         if (valor.length > 5) {
             valor = valor.replace(/^(\d{5})(\d)/, "$1-$2");
         }
-
         cepInput.value = valor;
 
         if (statusCep) {
@@ -239,9 +212,7 @@ if (cepInput) {
 // =====================================================
 
 async function buscarCEP() {
-    if (!cepInput) {
-        return;
-    }
+    if (!cepInput) return;
 
     const valor = cepInput.value.replace(/\D/g, "");
 
@@ -261,10 +232,7 @@ async function buscarCEP() {
 
     try {
         const resposta = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
-
-        if (!resposta.ok) {
-            throw new Error("Falha na consulta do CEP.");
-        }
+        if (!resposta.ok) throw new Error("Falha na consulta do CEP.");
 
         const dados = await resposta.json();
 
@@ -313,20 +281,93 @@ async function buscarCEP() {
 // =====================================================
 
 function limparEndereco() {
-    const rua = document.getElementById("rua");
-    const bairro = document.getElementById("bairro");
-    const cidade = document.getElementById("cidade");
-    const estado = document.getElementById("estado");
-
-    if (rua) rua.value = "";
-    if (bairro) bairro.value = "";
-    if (cidade) cidade.value = "";
-    if (estado) estado.value = "";
+    ["rua", "bairro", "cidade", "estado"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
 }
 
 
 // =====================================================
-// FINALIZAR PEDIDO
+// CONTROLE DE ETAPAS (AVANÇAR PARA PAGAMENTO)
+// =====================================================
+
+const btnIrParaPagamento = document.getElementById("btnIrParaPagamento");
+const btnVoltarEtapa = document.getElementById("btnVoltarEtapa");
+const blocoEtapa1 = document.getElementById("blocoEtapa1");
+const blocoEtapa2 = document.getElementById("blocoEtapa2");
+const indicadorPasso1 = document.getElementById("indicadorPasso1");
+const indicadorPasso2 = document.getElementById("indicadorPasso2");
+const linhaPasso = document.getElementById("linhaPasso");
+
+if (btnIrParaPagamento) {
+    btnIrParaPagamento.addEventListener("click", () => {
+        const nome = document.getElementById("nome").value.trim();
+        const cpfValor = document.getElementById("cpf").value.trim();
+        const cepValor = document.getElementById("cep").value.trim();
+        const rua = document.getElementById("rua").value.trim();
+        const numero = document.getElementById("numero").value.trim();
+        const bairro = document.getElementById("bairro").value.trim();
+        const cidade = document.getElementById("cidade").value.trim();
+        const estado = document.getElementById("estado").value.trim();
+
+        if (!nome) { alert("Informe seu nome completo."); document.getElementById("nome").focus(); return; }
+        if (cpfValor.replace(/\D/g, "").length !== 11) { alert("Informe um CPF válido."); document.getElementById("cpf").focus(); return; }
+        if (cepValor.replace(/\D/g, "").length !== 8 || !rua || !bairro || !cidade || !estado) { alert("Informe um endereço válido."); document.getElementById("cep").focus(); return; }
+        if (!numero) { alert("Informe o número do endereço."); document.getElementById("numero").focus(); return; }
+
+        // Armazena e exibe os dados fornecidos na tela de pagamento (Etapa 2)
+        const resumoClienteEl = document.getElementById("resumoClienteExibicao");
+        const resumoEnderecoEl = document.getElementById("resumoEnderecoExibicao");
+        const complementoVal = document.getElementById("complemento").value.trim();
+        const compTexto = complementoVal ? `, ${complementoVal}` : "";
+
+        if (resumoClienteEl) {
+            resumoClienteEl.innerHTML = `<strong>Nome:</strong> ${nome} <br><strong>CPF:</strong> ${cpfValor}`;
+        }
+        if (resumoEnderecoEl) {
+            resumoEnderecoEl.innerHTML = `<strong>Endereço:</strong> ${rua}, ${numero}${compTexto} - ${bairro}, ${cidade}/${estado} (CEP: ${cepValor})`;
+        }
+
+        // Alterna os blocos na mesma página
+        if (blocoEtapa1) blocoEtapa1.classList.remove("ativa");
+        if (blocoEtapa2) blocoEtapa2.classList.add("ativa");
+
+        if (indicadorPasso1) {
+            indicadorPasso1.classList.remove("ativo");
+            indicadorPasso1.classList.add("concluido");
+            const num1 = indicadorPasso1.querySelector(".passo-numero");
+            if (num1) num1.textContent = "✓";
+        }
+
+        if (linhaPasso) linhaPasso.classList.add("ativo");
+        if (indicadorPasso2) indicadorPasso2.classList.add("ativo");
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
+if (btnVoltarEtapa) {
+    btnVoltarEtapa.addEventListener("click", () => {
+        if (blocoEtapa2) blocoEtapa2.classList.remove("ativa");
+        if (blocoEtapa1) blocoEtapa1.classList.add("ativa");
+
+        if (indicadorPasso2) indicadorPasso2.classList.remove("ativo");
+        if (linhaPasso) linhaPasso.classList.remove("ativo");
+        if (indicadorPasso1) {
+            indicadorPasso1.classList.remove("concluido");
+            indicadorPasso1.classList.add("ativo");
+            const num1 = indicadorPasso1.querySelector(".passo-numero");
+            if (num1) num1.textContent = "1";
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
+
+// =====================================================
+// FINALIZAR PEDIDO (SUBMIT FINAL NA MESMA TELA)
 // =====================================================
 
 const formEntrega = document.getElementById("formEntrega");
@@ -335,10 +376,6 @@ if (formEntrega) {
     formEntrega.addEventListener("submit", async function (event) {
         event.preventDefault();
 
-        // =========================================
-        // VERIFICAR SESSÃO
-        // =========================================
-
         const logado = await verificarLogin();
 
         if (!logado) {
@@ -346,10 +383,6 @@ if (formEntrega) {
             window.location.href = "/TelaLogin/login.html";
             return;
         }
-
-        // =========================================
-        // PEGAR DADOS
-        // =========================================
 
         const nome = document.getElementById("nome").value.trim();
         const cpfValor = document.getElementById("cpf").value.trim();
@@ -361,55 +394,11 @@ if (formEntrega) {
         const estado = document.getElementById("estado").value.trim();
         const complemento = document.getElementById("complemento").value.trim();
 
-        // =========================================
-        // VALIDAÇÕES
-        // =========================================
-
-        if (!nome) {
-            alert("Informe seu nome completo.");
-            document.getElementById("nome").focus();
-            return;
-        }
-
-        if (cpfValor.replace(/\D/g, "").length !== 11) {
-            alert("Informe um CPF válido.");
-            document.getElementById("cpf").focus();
-            return;
-        }
-
-        if (cepValor.replace(/\D/g, "").length !== 8 || !rua || !bairro || !cidade || !estado) {
-            alert("Informe um endereço válido.");
-            document.getElementById("cep").focus();
-            return;
-        }
-
-        if (!numero) {
-            alert("Informe o número do endereço.");
-            document.getElementById("numero").focus();
-            return;
-        }
-
         if (!itensPedido || itensPedido.length === 0) {
             alert("Seu pedido está vazio.");
             window.location.href = "/Telainicial/index.html";
             return;
         }
-
-        // =========================================
-        // VERIFICAR PRODUTOS
-        // =========================================
-
-        for (const produto of itensPedido) {
-            if (!produto.id_produto || Number(produto.id_produto) <= 0) {
-                alert('O produto "' + produto.nome + '" não possui um ID do banco de dados.');
-                console.error("Produto sem id_produto:", produto);
-                return;
-            }
-        }
-
-        // =========================================
-        // BOTÃO
-        // =========================================
 
         const btn = document.getElementById("btnContinuar");
 
@@ -419,10 +408,6 @@ if (formEntrega) {
         }
 
         try {
-            // =====================================
-            // PREPARAR ITENS E ID DO CLIENTE
-            // =====================================
-
             let idClienteExtra = null;
             const dadosLocais = localStorage.getItem("usuarioLogado");
             if (dadosLocais) {
@@ -442,10 +427,6 @@ if (formEntrega) {
                 };
             });
 
-            // =====================================
-            // ENVIAR PARA PHP
-            // =====================================
-
             const resposta = await fetch(
                 "/finalizar_pedido.php",
                 {
@@ -455,7 +436,7 @@ if (formEntrega) {
                     },
                     credentials: "include",
                     body: JSON.stringify({
-                        id_cliente: idClienteExtra, // Injeta o ID por segurança contra falhas de sessão no Render
+                        id_cliente: idClienteExtra,
                         cpf: cpfValor,
                         nome: nome,
                         endereco: {
@@ -473,13 +454,10 @@ if (formEntrega) {
             );
 
             const texto = await resposta.text();
-            console.log("Resposta do servidor:", texto);
-
             let resultado;
             try {
                 resultado = JSON.parse(texto);
             } catch (erroJSON) {
-                console.error("Resposta não é JSON:", texto);
                 throw new Error("O servidor retornou uma resposta inválida.");
             }
 
@@ -492,9 +470,13 @@ if (formEntrega) {
                 throw new Error(resultado.mensagem || "Não foi possível finalizar o pedido.");
             }
 
-            // Sucesso: Redireciona para a tela de pagamento
-            alert("Endereço salvo com sucesso! Prosseguindo para o pagamento...");
-            window.location.href = "/TelaPagamento/pagamento.html";
+            // Sucesso total: Limpa carrinho e dados temporários
+            localStorage.removeItem("carrinho");
+            localStorage.removeItem("pedidos");
+            localStorage.removeItem("totalPedido");
+
+            alert("Pedido e pagamento realizados com sucesso!");
+            window.location.href = "/Telainicial/index.html";
 
         } catch (erro) {
             console.error("Erro ao finalizar pedido:", erro);
@@ -502,7 +484,7 @@ if (formEntrega) {
 
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = "Continuar para Pagamento";
+                btn.textContent = "Finalizar Compra";
             }
         }
     });
