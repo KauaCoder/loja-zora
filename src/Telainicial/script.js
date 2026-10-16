@@ -756,3 +756,24 @@ async function pagarPedido() {
     // Redireciona para a tela de checkout / pagamento
     window.location.href = "/TelaPagamento/pagamento.html";
 }
+
+// =====================================================
+// INICIALIZAÇÃO DA PÁGINA
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Carrega os produtos do catálogo
+    carregarCatalogo();
+
+    // 2. Restaura os itens salvos no carrinho
+    carregarCarrinho();
+
+    // 3. Atualiza o estado do botão/texto de login
+    checarEAtualizarMenu();
+
+    // 4. Associa o clique do fundo escuro (overlay) para fechar o carrinho
+    const overlay = obterOverlay();
+    if (overlay) {
+        overlay.addEventListener("click", fecharTudo);
+    }
+});
