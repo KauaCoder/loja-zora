@@ -45,24 +45,23 @@ if (!$caminho_conexao) {
 require_once $caminho_conexao;
 
 try {
-
     if (!isset($conexao) || !($conexao instanceof PDO)) {
         throw new Exception("Variável \$conexao não foi definida corretamente.");
     }
 
     // =============================================
-    // CONSULTA RESILIENTE AO POSTGRESQL (SUPABASE)
+    // CONSULTA AO POSTGRESQL (SUPABASE - ESTRUTURA REAL)
     // =============================================
 
     $sql = "
         SELECT
             id_produto,
-            COALESCE(nome, nm_produto, 'Produto Sem Nome') AS nome,
+            nm_produto,
             preco,
-            COALESCE(estoque, qtd_item, 0) AS estoque,
-            COALESCE(categoria, 'Geral') AS categoria,
-            COALESCE(imagem, 'Logo 1.png') AS imagem,
-            COALESCE(descricao, '') AS descricao
+            item_qtd,
+            categoria,
+            imagem,
+            descricao
         FROM public.produto
         ORDER BY id_produto ASC
     ";
@@ -77,13 +76,13 @@ try {
     foreach ($dados as $produto) {
         $produtos[] = [
             "id_produto" => (int) $produto["id_produto"],
-            "nome"        => $produto["nome"],
-            "preco"       => round((float) $produto["preco"], 2),
-            "estoque"     => (int) $produto["estoque"],
-            "qtd_item"    => (int) $produto["estoque"],
-            "categoria"   => $produto["categoria"],
-            "imagem"      => $produto["imagem"],
-            "descricao"   => $produto["descricao"]
+            "nome"        => $produto["nm_produto"] ?? "Produto ZORA",
+            "preco"       => round((float) ($produto["preco"] ?? 0), 2),
+            "estoque"     => (int) ($produto["item_qtd"] ?? 0),
+            "qtd_item"    => (int) ($produto["item_qtd"] ?? 0),
+            "categoria"   => $produto["categoria"] ?? "Geral",
+            "imagem"      => $produto["imagem"] ?? "Logo 1.png",
+            "descricao"   => $produto["descricao"] ?? ""
         ];
     }
 
@@ -93,7 +92,6 @@ try {
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $erro) {
-
     http_response_code(500);
 
     echo json_encode([
