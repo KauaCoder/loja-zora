@@ -39,7 +39,7 @@ if (!$caminho_conexao) {
     http_response_code(500);
     echo json_encode([
         "sucesso" => false,
-        "mensagem" => "Não foi possível localizar o arquivo conexao.php."
+        "mensagem" => "Não foi possível localizar o ficheiro conexao.php."
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -56,12 +56,10 @@ $email    = trim($input["email"] ?? "");
 $senha    = $input["senha"] ?? "";
 $cpf      = preg_replace('/[^0-9]/', '', $input["cpf"] ?? "");
 $telefone = preg_replace('/[^0-9]/', '', $input["telefone"] ?? "");
-$cep      = preg_replace('/[^0-9]/', '', $input["cep"] ?? "");
-$rua      = trim($input["rua"] ?? $input["logradouro"] ?? "");
-$numero   = trim($input["numero"] ?? "");
-$bairro   = trim($input["bairro"] ?? "");
-$cidade   = trim($input["cidade"] ?? "");
-$uf       = strtoupper(trim($input["uf"] ?? "RJ"));
+
+// NOTA: Os dados de morada (CEP, rua, etc.) foram lidos do frontend, 
+// mas não devem ser inseridos na tabela "cliente", pois não existem lá. 
+// Devem ser inseridos na tabela "endereco" após a criação do cliente.
 
 if (empty($nome) || empty($email) || empty($senha)) {
     http_response_code(400);
@@ -74,11 +72,11 @@ if (empty($nome) || empty($email) || empty($senha)) {
 
 try {
     if (!isset($conexao) || !($conexao instanceof PDO)) {
-        throw new Exception("Conexão com o banco de dados inválida.");
+        throw new Exception("Conexão com a base de dados inválida.");
     }
 
-    // Verificar se o e-mail já existe na tabela cliente
-    $sql_check = "SELECT id_cliente FROM public.cliente WHERE email = :email LIMIT 1";
+    // Verificar se o e-mail já existe na tabela cliente usando a coluna "e_mail" exata
+    $sql_check = "SELECT id_cliente FROM public.cliente WHERE e_mail = :email LIMIT 1";
     $stmt_check = $conexao->prepare($sql_check);
     $stmt_check->bindValue(":email", $email);
     $stmt_check->execute();
@@ -87,7 +85,7 @@ try {
         http_response_code(400);
         echo json_encode([
             "sucesso" => false,
-            "mensagem" => "Este e-mail já está cadastrado."
+            "mensagem" => "Este e-mail já está registado."
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -95,32 +93,20 @@ try {
     // Hash seguro da senha
     $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
 
-    // Inserir novo cliente no PostgreSQL
+    // Inserir novo cliente no PostgreSQL apenas com as colunas que existem na tabela
     $sql_insert = "
         INSERT INTO public.cliente (
-            nm_cliente,
-            email,
+            nome,
+            e_mail,
             senha,
             cpf,
-            telefone,
-            cep,
-            rua,
-            numero,
-            bairro,
-            cidade,
-            uf
+            telefone
         ) VALUES (
             :nome,
             :email,
             :senha,
             :cpf,
-            :telefone,
-            :cep,
-            :rua,
-            :numero,
-            :bairro,
-            :cidade,
-            :uf
+            :telefone
         )
         RETURNING id_cliente;
     ";
@@ -131,19 +117,13 @@ try {
     $stmt_insert->bindValue(":senha", $senha_hash);
     $stmt_insert->bindValue(":cpf", $cpf);
     $stmt_insert->bindValue(":telefone", $telefone);
-    $stmt_insert->bindValue(":cep", $cep);
-    $stmt_insert->bindValue(":rua", $rua);
-    $stmt_insert->bindValue(":numero", $numero);
-    $stmt_insert->bindValue(":bairro", $bairro);
-    $stmt_insert->bindValue(":cidade", $cidade);
-    $stmt_insert->bindValue(":uf", $uf);
 
     $stmt_insert->execute();
     $novo_cliente = $stmt_insert->fetch(PDO::FETCH_ASSOC);
 
     echo json_encode([
         "sucesso" => true,
-        "mensagem" => "Cadastro realizado com sucesso!",
+        "mensagem" => "Registo efetuado com sucesso!",
         "id_cliente" => $novo_cliente["id_cliente"] ?? null
     ], JSON_UNESCAPED_UNICODE);
 
@@ -151,6 +131,6 @@ try {
     http_response_code(500);
     echo json_encode([
         "sucesso" => false,
-        "mensagem" => "Erro ao realizar cadastro: " . $erro->getMessage()
+        "mensagem" => "Erro ao realizar registo: " . $erro->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
