@@ -6,39 +6,66 @@
 // 1. MENU LATERAL & OVERLAY (MOBILE)
 // =====================================================
 
-function showSidebar() {
-    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
-    const overlay = document.getElementById("overlay");
+function obterSidebar() {
+    return document.getElementById("sidebar") || document.querySelector(".sidebar");
+}
 
-    if (sidebar) {
-        sidebar.style.display = "flex";
-        sidebar.classList.add("ativo", "active");
-    }
+function obterOverlay() {
+    return document.getElementById("overlay") || document.querySelector(".overlay");
+}
+
+function sincronizarOverlay() {
+    const sidebar = obterSidebar();
+    const overlay = obterOverlay();
+    const pedidos = document.getElementById("Pedidos");
+
+    const menuAberto = sidebar && (
+        sidebar.classList.contains("ativo") || sidebar.classList.contains("active")
+    );
+
+    const pedidosAberto = pedidos && pedidos.classList.contains("ativo");
+
+    const algumPainelAberto = Boolean(menuAberto || pedidosAberto);
+
     if (overlay) {
-        overlay.classList.add("ativo");
+        overlay.classList.toggle("ativo", algumPainelAberto);
     }
+
+    // Impede a rolagem da página quando um painel está aberto.
+    document.body.classList.toggle("painel-aberto", algumPainelAberto);
+}
+
+function showSidebar() {
+    const sidebar = obterSidebar();
+
+    if (!sidebar) {
+        console.warn("ZORA: menu lateral não encontrado.");
+        return;
+    }
+
+    // Apenas adiciona as classes. O CSS cuida do display e da animação.
+    sidebar.classList.add("ativo", "active");
+    sincronizarOverlay();
 }
 
 function hideSidebar() {
-    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
-    const overlay = document.getElementById("overlay");
+    const sidebar = obterSidebar();
 
     if (sidebar) {
-        sidebar.style.display = "none";
         sidebar.classList.remove("ativo", "active");
     }
 
-    const pedidos = document.getElementById("Pedidos");
-    if (overlay && (!pedidos || !pedidos.classList.contains("ativo"))) {
-        overlay.classList.remove("ativo");
-    }
+    sincronizarOverlay();
 }
 
 function fecharTudo() {
-    hideSidebar();
-    fecharPedidos();
-    const overlay = document.getElementById("overlay");
-    if (overlay) overlay.classList.remove("ativo");
+    const sidebar = obterSidebar();
+    const pedidos = document.getElementById("Pedidos");
+
+    if (sidebar) sidebar.classList.remove("ativo", "active");
+    if (pedidos) pedidos.classList.remove("ativo");
+
+    sincronizarOverlay();
 }
 
 async function abrirPerfil() {
@@ -89,22 +116,23 @@ async function checarEAtualizarMenu() {
     const menuDesktop = document.getElementById("menuUsuario");
     const menuMobile = document.getElementById("menuUsuarioMobile");
 
+    let texto = "Login";
+
     if (usuario && (usuario.nome || usuario.email)) {
         const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
 
         if (ehAdmin) {
-            if (menuDesktop) menuDesktop.textContent = "📊 Dashboard Adm";
-            if (menuMobile) menuMobile.textContent = "📊 Dashboard Adm";
+            texto = "📊 Dashboard Adm";
         } else {
             const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
-            if (menuDesktop) menuDesktop.textContent = `Olá, ${primeiroNome}`;
-            if (menuMobile) menuMobile.textContent = `Olá, ${primeiroNome}`;
+            texto = `Olá, ${primeiroNome}`;
         }
-    } else {
-        if (menuDesktop) menuDesktop.textContent = "Login";
-        if (menuMobile) menuMobile.textContent = "Login";
     }
+
+    if (menuDesktop) menuDesktop.textContent = texto;
+    if (menuMobile) menuMobile.textContent = texto;
 }
+
 
 // =====================================================
 // 2. DETALHES COMPLEMENTARES DOS PRODUTOS
@@ -137,6 +165,7 @@ const detalhes = detalhesProdutos[idProduto] || {
 
 let tamanhoSelecionado = null;
 
+
 // =====================================================
 // 3. CARREGAR DETALHES DO PRODUTO (BD POSTGRESQL)
 // =====================================================
@@ -148,7 +177,9 @@ async function carregarProduto() {
     }
 
     try {
-        const resposta = await fetch("/produtos_catalogo.php");
+        const resposta = await fetch("/produtos_catalogo.php", {
+            headers: { "Accept": "application/json" }
+        });
         const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.sucesso || !Array.isArray(resultado.produtos)) {
@@ -267,6 +298,7 @@ function carregarTamanhos() {
     });
 }
 
+
 // =====================================================
 // 4. LÓGICA DO CARRINHO COMPATÍVEL COM O INDEX
 // =====================================================
@@ -277,18 +309,14 @@ function carregarCarrinho() {
     const carrinhoSalvo = localStorage.getItem("carrinho");
     if (!carrinhoSalvo) {
         pedidosArray = [];
-        atualizarTotal();
-        atualizarBadge();
-        renderizarPedidos();
-        return;
-    }
-
-    try {
-        pedidosArray = JSON.parse(carrinhoSalvo);
-        if (!Array.isArray(pedidosArray)) pedidosArray = [];
-    } catch (erro) {
-        console.error("Erro ao carregar carrinho:", erro);
-        pedidosArray = [];
+    } else {
+        try {
+            const dados = JSON.parse(carrinhoSalvo);
+            pedidosArray = Array.isArray(dados) ? dados : [];
+        } catch (erro) {
+            console.error("Erro ao carregar carrinho:", erro);
+            pedidosArray = [];
+        }
     }
 
     renderizarPedidos();
@@ -482,8 +510,14 @@ function abrirPedidos() {
     if (pedidos) {
         pedidos.classList.add("ativo");
     }
-    const overlay = document.getElementById("overlay");
-    if (overlay) overlay.classList.add("ativo");
+
+    // Fecha a sidebar se estiver aberta para não sobrepor o carrinho
+    const sidebar = obterSidebar();
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
+
+    sincronizarOverlay();
 }
 
 function fecharPedidos() {
@@ -491,11 +525,8 @@ function fecharPedidos() {
     if (pedidos) {
         pedidos.classList.remove("ativo");
     }
-    const overlay = document.getElementById("overlay");
-    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
-    if (overlay && (!sidebar || sidebar.style.display !== "flex")) {
-        overlay.classList.remove("ativo");
-    }
+    
+    sincronizarOverlay();
 }
 
 async function pagarPedido() {
@@ -519,6 +550,7 @@ async function pagarPedido() {
 
     window.location.href = "/TelaEntrega/entrega.html";
 }
+
 
 // =====================================================
 // 5. BOTÃO ADICIONAR AO CARRINHO (PÁGINA DO PRODUTO)
@@ -554,7 +586,7 @@ async function adicionarAoCarrinhoPágina() {
 
     if (itemExistente) {
         itemExistente.quantidade = qtdAtual + 1;
-        itemExistente.tamanho = tamanhoSelecionado;
+        itemExistente.tamanho = tamanhoSelecionado; // Atualiza o tamanho se o usuário escolher um diferente
     } else {
         pedidosArray.push({
             id_produto: Number(produto.id_produto),
@@ -572,8 +604,9 @@ async function adicionarAoCarrinhoPágina() {
     abrirPedidos();
 }
 
+
 // =====================================================
-// INICIALIZAÇÃO DA PÁGINA DO PRODUTO
+// 6. INICIALIZAÇÃO DA PÁGINA DO PRODUTO
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", async function () {
@@ -584,5 +617,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     const botaoComprar = document.getElementById("botaoComprar");
     if (botaoComprar) {
         botaoComprar.addEventListener("click", adicionarAoCarrinhoPágina);
+    }
+
+    // Associa o clique no fundo escuro para fechar o menu ou o carrinho
+    const overlay = obterOverlay();
+    if (overlay) {
+        overlay.addEventListener("click", fecharTudo);
     }
 });
