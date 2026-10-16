@@ -1,11 +1,10 @@
-/* =========================================================
-   ZORA - PRODUTOS (DETALHES + CARRINHO + MENU MOBILE)
-   PostgreSQL + PHP + LocalStorage
-========================================================= */
+// =====================================================
+// ZORA - PÁGINA DO PRODUTO & INTEGRAÇÃO COM SITE/INDEX
+// =====================================================
 
-// =========================================================
-// 0. MENU LATERAL & NAVEGAÇÃO MOBILE
-// =========================================================
+// =====================================================
+// 1. MENU LATERAL & OVERLAY (MOBILE)
+// =====================================================
 
 function showSidebar() {
     const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
@@ -28,6 +27,18 @@ function hideSidebar() {
         sidebar.style.display = "none";
         sidebar.classList.remove("ativo", "active");
     }
+
+    const pedidos = document.getElementById("Pedidos");
+    if (overlay && (!pedidos || !pedidos.classList.contains("ativo"))) {
+        overlay.classList.remove("ativo");
+    }
+}
+
+function fecharTudo() {
+    hideSidebar();
+    fecharPedidos();
+    const overlay = document.getElementById("overlay");
+    if (overlay) overlay.classList.remove("ativo");
 }
 
 async function abrirPerfil() {
@@ -50,18 +61,54 @@ async function abrirPerfil() {
         const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
 
         if (ehAdmin) {
-            window.location.href = "/src/TelaAdmin/admin.html";
+            window.location.href = "/TelaAdmin/admin.html";
         } else {
-            window.location.href = "/src/TelaCliente/cliente.html";
+            window.location.href = "/TelaCliente/cliente.html";
         }
     } else {
         window.location.href = "/TelaLogin/login.html";
     }
 }
 
-// =========================================================
-// 1. DETALHES LOCAIS DOS PRODUTOS
-// =========================================================
+async function checarEAtualizarMenu() {
+    if (typeof atualizarMenuUsuario === "function") {
+        await atualizarMenuUsuario();
+        return;
+    }
+
+    let usuario = null;
+    const dadosLocais = localStorage.getItem("usuarioLogado");
+    if (dadosLocais) {
+        try {
+            usuario = JSON.parse(dadosLocais);
+        } catch (e) {
+            usuario = null;
+        }
+    }
+
+    const menuDesktop = document.getElementById("menuUsuario");
+    const menuMobile = document.getElementById("menuUsuarioMobile");
+
+    if (usuario && (usuario.nome || usuario.email)) {
+        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+
+        if (ehAdmin) {
+            if (menuDesktop) menuDesktop.textContent = "📊 Dashboard Adm";
+            if (menuMobile) menuMobile.textContent = "📊 Dashboard Adm";
+        } else {
+            const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+            if (menuDesktop) menuDesktop.textContent = `Olá, ${primeiroNome}`;
+            if (menuMobile) menuMobile.textContent = `Olá, ${primeiroNome}`;
+        }
+    } else {
+        if (menuDesktop) menuDesktop.textContent = "Login";
+        if (menuMobile) menuMobile.textContent = "Login";
+    }
+}
+
+// =====================================================
+// 2. DETALHES COMPLEMENTARES DOS PRODUTOS
+// =====================================================
 
 const detalhesProdutos = {
     1: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha", composicao: "96% Algodão 4% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
@@ -75,10 +122,6 @@ const detalhesProdutos = {
     9: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha", composicao: "Poliéster e Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
     10: { tamanhos: ["P", "M", "G", "GG"], tecido: "Fleece", composicao: "Poliéster", marca: "ZORA", colecao: "Coleção ZORA" }
 };
-
-// =========================================================
-// 2. PARÂMETROS DA URL E VARIÁVEIS
-// =========================================================
 
 const parametros = new URLSearchParams(window.location.search);
 const idProduto = parametros.get("id");
@@ -94,9 +137,9 @@ const detalhes = detalhesProdutos[idProduto] || {
 
 let tamanhoSelecionado = null;
 
-// =========================================================
-// 3. CARREGAR PRODUTO DO POSTGRESQL (RESILIENTE)
-// =========================================================
+// =====================================================
+// 3. CARREGAR DETALHES DO PRODUTO (BD POSTGRESQL)
+// =====================================================
 
 async function carregarProduto() {
     if (!idProduto) {
@@ -105,21 +148,19 @@ async function carregarProduto() {
     }
 
     try {
-        // Tenta buscar no produtos_catalogo.php e filtrar pelo ID recebido na URL
         const resposta = await fetch("/produtos_catalogo.php");
         const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.sucesso || !Array.isArray(resultado.produtos)) {
-            throw new Error("Não foi possível carregar a lista de produtos.");
+            throw new Error("Não foi possível carregar o produto.");
         }
 
         produto = resultado.produtos.find(p => Number(p.id_produto) === Number(idProduto));
 
         if (!produto) {
-            throw new Error("Produto não encontrado no catálogo.");
+            throw new Error("Produto não encontrado.");
         }
 
-        // Renderiza as informações na tela
         const elNome = document.getElementById("nomeProduto");
         if (elNome) elNome.textContent = produto.nome;
 
@@ -140,7 +181,7 @@ async function carregarProduto() {
         }
 
         const elDescricao = document.getElementById("descricaoProduto");
-        if (elDescricao) elDescricao.textContent = produto.descricao || "Sem descrição disponível.";
+        if (elDescricao) elDescricao.textContent = produto.descricao || "Sem descrição informada.";
 
         const elTecido = document.getElementById("tecidoProduto");
         if (elTecido) elTecido.textContent = detalhes.tecido;
@@ -226,29 +267,264 @@ function carregarTamanhos() {
     });
 }
 
-// =========================================================
-// 4. CARRINHO DE COMPRAS
-// =========================================================
+// =====================================================
+// 4. LÓGICA DO CARRINHO COMPATÍVEL COM O INDEX
+// =====================================================
 
 let pedidosArray = [];
 
 function carregarCarrinho() {
     const carrinhoSalvo = localStorage.getItem("carrinho");
-    if (carrinhoSalvo) {
-        try {
-            pedidosArray = JSON.parse(carrinhoSalvo);
-            if (!Array.isArray(pedidosArray)) pedidosArray = [];
-        } catch (e) {
-            pedidosArray = [];
-        }
+    if (!carrinhoSalvo) {
+        pedidosArray = [];
+        atualizarTotal();
+        atualizarBadge();
+        renderizarPedidos();
+        return;
     }
+
+    try {
+        pedidosArray = JSON.parse(carrinhoSalvo);
+        if (!Array.isArray(pedidosArray)) pedidosArray = [];
+    } catch (erro) {
+        console.error("Erro ao carregar carrinho:", erro);
+        pedidosArray = [];
+    }
+
+    renderizarPedidos();
+    atualizarBadge();
 }
 
 function salvarCarrinho() {
     localStorage.setItem("carrinho", JSON.stringify(pedidosArray));
 }
 
-function adicionarAoCarrinho() {
+function calcularTotal() {
+    return pedidosArray.reduce((total, p) => {
+        const preco = Number(p.preco) || 0;
+        const quantidade = Number(p.quantidade) || 1;
+        return total + (preco * quantidade);
+    }, 0);
+}
+
+function renderizarPedidos() {
+    const lista = document.getElementById("listaPedidos");
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    if (pedidosArray.length === 0) {
+        atualizarTotal();
+        return;
+    }
+
+    pedidosArray.forEach((p, indice) => {
+        const id = Number(p.id_produto);
+        const preco = Number(p.preco) || 0;
+        const quantidade = Number(p.quantidade) || 1;
+        const imagemSrc = p.imagem || "/img/Logo 1.png";
+
+        const item = document.createElement("li");
+        item.className = "item-carrinho";
+
+        const linkFoto = document.createElement("a");
+        linkFoto.href = `/TelaProdutos/produtos.html?id=${id}`;
+        linkFoto.className = "carrinho-foto-link";
+
+        const foto = document.createElement("img");
+        foto.src = imagemSrc;
+        foto.alt = p.nome;
+        foto.className = "carrinho-foto";
+        foto.onerror = function () {
+            this.onerror = null;
+            this.src = "/img/Logo 1.png";
+        };
+        linkFoto.appendChild(foto);
+
+        const detalhesDiv = document.createElement("div");
+        detalhesDiv.className = "carrinho-detalhes";
+
+        const linkNome = document.createElement("a");
+        linkNome.href = `/TelaProdutos/produtos.html?id=${id}`;
+        linkNome.className = "carrinho-nome";
+        linkNome.textContent = p.tamanho ? `${p.nome} (${p.tamanho})` : p.nome;
+
+        const precoUnitario = document.createElement("span");
+        precoUnitario.className = "carrinho-preco-unitario";
+        precoUnitario.textContent = `R$ ${preco.toFixed(2).replace(".", ",")}`;
+
+        const qtdContainer = document.createElement("div");
+        qtdContainer.className = "qtd-controle";
+
+        const btnMenos = document.createElement("button");
+        btnMenos.type = "button";
+        btnMenos.className = "qtd-btn";
+        btnMenos.textContent = "-";
+        btnMenos.addEventListener("click", () => alterarQuantidade(indice, -1));
+
+        const numQtd = document.createElement("span");
+        numQtd.className = "qtd-numero";
+        numQtd.textContent = quantidade;
+
+        const btnMais = document.createElement("button");
+        btnMais.type = "button";
+        btnMais.className = "qtd-btn";
+        btnMais.textContent = "+";
+        btnMais.addEventListener("click", () => alterarQuantidade(indice, 1));
+
+        qtdContainer.appendChild(btnMenos);
+        qtdContainer.appendChild(numQtd);
+        qtdContainer.appendChild(btnMais);
+
+        detalhesDiv.appendChild(linkNome);
+        detalhesDiv.appendChild(precoUnitario);
+        detalhesDiv.appendChild(qtdContainer);
+
+        const acoes = document.createElement("div");
+        acoes.className = "carrinho-acoes";
+
+        const subtotal = document.createElement("span");
+        subtotal.className = "carrinho-subtotal";
+        subtotal.textContent = `R$ ${(preco * quantidade).toFixed(2).replace(".", ",")}`;
+
+        const btnRemover = document.createElement("button");
+        btnRemover.type = "button";
+        btnRemover.className = "remover-item";
+        btnRemover.innerHTML = "🗑";
+        btnRemover.title = "Remover produto";
+        btnRemover.addEventListener("click", () => removerPedido(indice));
+
+        acoes.appendChild(subtotal);
+        acoes.appendChild(btnRemover);
+
+        item.appendChild(linkFoto);
+        item.appendChild(detalhesDiv);
+        item.appendChild(acoes);
+
+        lista.appendChild(item);
+    });
+
+    atualizarTotal();
+}
+
+async function obterEstoqueBD(idProduto) {
+    try {
+        const resposta = await fetch(`/consultar_estoque.php?id=${idProduto}`);
+        const resultado = await resposta.json();
+        if (resposta.ok && resultado.sucesso) {
+            return Number(resultado.estoque);
+        }
+    } catch (erro) {
+        console.error("Erro ao verificar estoque:", erro);
+    }
+    return null;
+}
+
+async function alterarQuantidade(indice, delta) {
+    const item = pedidosArray[indice];
+    if (!item) return;
+
+    const novaQuantidade = (Number(item.quantidade) || 1) + delta;
+
+    if (delta > 0) {
+        const estoqueBD = await obterEstoqueBD(item.id_produto);
+        if (estoqueBD !== null && novaQuantidade > estoqueBD) {
+            alert(`Quantidade máxima em estoque atingida (${estoqueBD} unidades disponíveis).`);
+            return;
+        }
+    }
+
+    item.quantidade = novaQuantidade;
+
+    if (item.quantidade <= 0) {
+        pedidosArray.splice(indice, 1);
+    }
+
+    salvarCarrinho();
+    renderizarPedidos();
+    atualizarBadge();
+}
+
+function removerPedido(indice) {
+    if (indice < 0 || indice >= pedidosArray.length) return;
+    pedidosArray.splice(indice, 1);
+    salvarCarrinho();
+    renderizarPedidos();
+    atualizarBadge();
+}
+
+function atualizarTotal() {
+    const total = calcularTotal();
+    const elemento = document.getElementById("total");
+    if (elemento) {
+        elemento.textContent = total.toFixed(2).replace(".", ",");
+    }
+}
+
+function atualizarBadge() {
+    const quantidadeTotal = pedidosArray.reduce(
+        (soma, p) => soma + (Number(p.quantidade) || 0), 0
+    );
+
+    document.querySelectorAll(".badge-carrinho").forEach(badge => {
+        if (quantidadeTotal > 0) {
+            badge.textContent = quantidadeTotal;
+            badge.classList.add("show");
+        } else {
+            badge.textContent = "";
+            badge.classList.remove("show");
+        }
+    });
+}
+
+function abrirPedidos() {
+    const pedidos = document.getElementById("Pedidos");
+    if (pedidos) {
+        pedidos.classList.add("ativo");
+    }
+    const overlay = document.getElementById("overlay");
+    if (overlay) overlay.classList.add("ativo");
+}
+
+function fecharPedidos() {
+    const pedidos = document.getElementById("Pedidos");
+    if (pedidos) {
+        pedidos.classList.remove("ativo");
+    }
+    const overlay = document.getElementById("overlay");
+    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
+    if (overlay && (!sidebar || sidebar.style.display !== "flex")) {
+        overlay.classList.remove("ativo");
+    }
+}
+
+async function pagarPedido() {
+    if (!pedidosArray || pedidosArray.length === 0) {
+        alert("Seu carrinho está vazio.");
+        return;
+    }
+
+    if (typeof estaLogado === "function") {
+        const logado = await estaLogado();
+        if (!logado) {
+            alert("Você precisa estar logado para fazer um pedido!");
+            window.location.href = "/TelaLogin/login.html";
+            return;
+        }
+    }
+
+    const total = calcularTotal();
+    localStorage.setItem("totalPedido", total.toFixed(2));
+    localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
+
+    window.location.href = "/TelaEntrega/entrega.html";
+}
+
+// =====================================================
+// 5. BOTÃO ADICIONAR AO CARRINHO (PÁGINA DO PRODUTO)
+// =====================================================
+
+async function adicionarAoCarrinhoPágina() {
     if (!produto) {
         alert("Produto não encontrado.");
         return;
@@ -267,10 +543,14 @@ function adicionarAoCarrinho() {
     const itemExistente = pedidosArray.find(p => Number(p.id_produto) === Number(produto.id_produto));
     const qtdAtual = itemExistente ? Number(itemExistente.quantidade) : 0;
 
-    if (qtdAtual + 1 > Number(produto.estoque)) {
-        alert("Você atingiu o limite disponível em estoque para este produto.");
+    const estoqueDisponivel = await obterEstoqueBD(produto.id_produto) || Number(produto.estoque);
+
+    if (qtdAtual + 1 > estoqueDisponivel) {
+        alert(`Desculpe, apenas ${estoqueDisponivel} unidade(s) disponível(is) em estoque.`);
         return;
     }
+
+    const imagemSrc = produto.imagem ? `/img/${produto.imagem}` : "/img/Logo 1.png";
 
     if (itemExistente) {
         itemExistente.quantidade = qtdAtual + 1;
@@ -281,22 +561,28 @@ function adicionarAoCarrinho() {
             nome: produto.nome,
             preco: Number(produto.preco),
             tamanho: tamanhoSelecionado,
-            imagem: produto.imagem ? `/img/${produto.imagem}` : "/img/Logo 1.png",
+            imagem: imagemSrc,
             quantidade: 1
         });
     }
 
     salvarCarrinho();
-    alert("Produto adicionado ao carrinho com sucesso!");
+    renderizarPedidos();
+    atualizarBadge();
+    abrirPedidos();
 }
 
-// INICIALIZAÇÃO DA PÁGINA
-document.addEventListener("DOMContentLoaded", function () {
+// =====================================================
+// INICIALIZAÇÃO DA PÁGINA DO PRODUTO
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", async function () {
+    await checarEAtualizarMenu();
     carregarCarrinho();
     carregarProduto();
 
     const botaoComprar = document.getElementById("botaoComprar");
     if (botaoComprar) {
-        botaoComprar.addEventListener("click", adicionarAoCarrinho);
+        botaoComprar.addEventListener("click", adicionarAoCarrinhoPágina);
     }
 });
