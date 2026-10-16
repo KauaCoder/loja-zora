@@ -1,5 +1,5 @@
 // =====================================================
-// ZORA - PERFIL DO CLIENTE (Versão Corrigida & Direta)
+// ZORA - PERFIL DO CLIENTE (Versão Completa & Atualizada)
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
-// FUNÇÃO RESILIENTE CORRIGIDA: Rotas diretas e limpas para evitar erros 404
+// FUNÇÃO RESILIENTE: Rotas otimizadas com injeção automática de id_cliente
 async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
     let idClienteParam = "";
     const dadosLocais = localStorage.getItem("usuarioLogado");
@@ -35,7 +35,6 @@ async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
         }
     }
 
-    // Ordem otimizada: tenta na raiz absoluta, depois pasta atual e pasta pai
     const rotasPossiveis = [
         `/${nomeArquivo}`,
         `./${nomeArquivo}`,
@@ -133,8 +132,7 @@ async function carregarDadosPerfil() {
     } catch (erro) {
         console.error("Erro ao carregar perfil:", erro);
         
-        // Fallback de emergência caso a API falhe mas o usuário esteja no localStorage:
-        // Preenche pelo menos com o que está guardado no navegador para a tela não ficar vazia!
+        // Fallback de emergência usando o localStorage para nunca deixar a tela vazia
         const dadosLocais = localStorage.getItem("usuarioLogado");
         if (dadosLocais) {
             try {
@@ -207,22 +205,43 @@ async function salvarNovoNome() {
     }
 }
 
+// FUNÇÃO DE ENDEREÇO UNIVERSAL (Suporta IDs como cep, cepPerfil ou cepEndereco)
 function carregarEndereco(endereco) {
     if (!endereco || !endereco.id_endereco) {
-        ["cepPerfil", "ruaPerfil", "numeroPerfil", "complementoPerfil", "bairroPerfil", "cidadePerfil", "estadoPerfil"].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = "-";
+        const idsPossiveis = ["cep", "rua", "numero", "complemento", "bairro", "cidade", "estado"];
+        idsPossiveis.forEach(campo => {
+            [
+                document.getElementById(campo),
+                document.getElementById(campo + "Perfil"),
+                document.getElementById(campo + "Endereco")
+            ].forEach(el => {
+                if (el) el.textContent = "-";
+            });
         });
         return;
     }
 
-    if (document.getElementById("cepPerfil")) document.getElementById("cepPerfil").textContent = endereco.cep || "-";
-    if (document.getElementById("ruaPerfil")) document.getElementById("ruaPerfil").textContent = endereco.rua || "-";
-    if (document.getElementById("numeroPerfil")) document.getElementById("numeroPerfil").textContent = endereco.numero || "-";
-    if (document.getElementById("complementoPerfil")) document.getElementById("complementoPerfil").textContent = endereco.complemento || "-";
-    if (document.getElementById("bairroPerfil")) document.getElementById("bairroPerfil").textContent = endereco.bairro || "-";
-    if (document.getElementById("cidadePerfil")) document.getElementById("cidadePerfil").textContent = endereco.cidade || "-";
-    if (document.getElementById("estadoPerfil")) document.getElementById("estadoPerfil").textContent = endereco.estado || "-";
+    const preencherCampo = (chave, valor) => {
+        const texto = (valor !== null && valor !== undefined && valor !== "") ? valor : "-";
+        
+        const candidatos = [
+            document.getElementById(chave),
+            document.getElementById(chave + "Perfil"),
+            document.getElementById(chave + "Endereco")
+        ];
+
+        candidatos.forEach(el => {
+            if (el) el.textContent = texto;
+        });
+    };
+
+    preencherCampo("cep", endereco.cep);
+    preencherCampo("rua", endereco.rua);
+    preencherCampo("numero", endereco.numero);
+    preencherCampo("complemento", endereco.complemento);
+    preencherCampo("bairro", endereco.bairro);
+    preencherCampo("cidade", endereco.cidade);
+    preencherCampo("estado", endereco.estado);
 }
 
 async function mostrarEdicaoEndereco() {
