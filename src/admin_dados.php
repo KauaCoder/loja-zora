@@ -95,8 +95,13 @@ try {
         throw new RuntimeException('A conexão PDO não foi inicializada corretamente.');
     }
 
-    // VERIFICAÇÃO DE AUTENTICAÇÃO
+    // VERIFICAÇÃO DE AUTENTICAÇÃO (Sessão do PHP ou parâmetro URL alternativo)
     $idSessao = $_SESSION['id_cliente'] ?? null;
+
+    if (!is_scalar($idSessao) || (int) $idSessao <= 0) {
+        // Tenta recuperar via GET caso o cookie de sessão tenha falhado no Render
+        $idSessao = $_GET['id_cliente'] ?? null;
+    }
 
     if (!is_scalar($idSessao) || (int) $idSessao <= 0) {
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -114,7 +119,7 @@ try {
 
     $idCliente = (int) $idSessao;
 
-    // Checa permissão de administrador
+    // Checa permissão de administrador diretamente na base de dados
     $stmtAdmin = $conexao->prepare('SELECT COALESCE(is_admin, FALSE) AS is_admin FROM cliente WHERE id_cliente = :id LIMIT 1');
     $stmtAdmin->execute([':id' => $idCliente]);
     $rowAdmin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
