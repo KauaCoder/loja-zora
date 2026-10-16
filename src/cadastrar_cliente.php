@@ -1,159 +1,156 @@
 <?php
+/* =========================================================
+   ZORA - CADASTRO DE CLIENTE (POSTGRESQL + SUPABASE)
+   ========================================================= */
 
 header("Content-Type: application/json; charset=UTF-8");
+header("Cache-Control: no-cache, no-store, must-revalidate");
 
-// Tenta localizar conexao.php na raiz ou na pasta /src
-$caminho_conexao = file_exists(__DIR__ . '/src/conexao.php') ? __DIR__ . '/src/conexao.php' : __DIR__ . '/conexao.php';
+// =============================================
+// VERIFICAR MÉTODO HTTP
+// =============================================
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    http_response_code(405);
+    echo json_encode([
+        "sucesso" => false,
+        "mensagem" => "Método não permitido. Utilize POST."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// =============================================
+// LOCALIZAR E CARREGAR CONEXÃO
+// =============================================
+$caminhos_conexao = [
+    __DIR__ . '/conexao.php',
+    __DIR__ . '/src/conexao.php',
+    __DIR__ . '/../conexao.php'
+];
+
+$caminho_conexao = null;
+foreach ($caminhos_conexao as $caminho) {
+    if (file_exists($caminho)) {
+        $caminho_conexao = $caminho;
+        break;
+    }
+}
+
+if (!$caminho_conexao) {
+    http_response_code(500);
+    echo json_encode([
+        "sucesso" => false,
+        "mensagem" => "Não foi possível localizar o arquivo conexao.php."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 require_once $caminho_conexao;
 
+// =============================================
+// LER DADOS ENVIADOS (JSON OU FORM)
+// =============================================
+$input = json_decode(file_get_contents("php://input"), true) ?? $_POST;
+
+$nome     = trim($input["nome"] ?? "");
+$email    = trim($input["email"] ?? "");
+$senha    = $input["senha"] ?? "";
+$cpf      = preg_replace('/[^0-9]/', '', $input["cpf"] ?? "");
+$telefone = preg_replace('/[^0-9]/', '', $input["telefone"] ?? "");
+$cep      = preg_replace('/[^0-9]/', '', $input["cep"] ?? "");
+$rua      = trim($input["rua"] ?? $input["logradouro"] ?? "");
+$numero   = trim($input["numero"] ?? "");
+$bairro   = trim($input["bairro"] ?? "");
+$cidade   = trim($input["cidade"] ?? "");
+$uf       = strtoupper(trim($input["uf"] ?? "RJ"));
+
+if (empty($nome) || empty($email) || empty($senha)) {
+    http_response_code(400);
+    echo json_encode([
+        "sucesso" => false,
+        "mensagem" => "Preencha todos os campos obrigatórios (Nome, E-mail e Senha)."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 try {
+    if (!isset($conexao) || !($conexao instanceof PDO)) {
+        throw new Exception("Conexão com o banco de dados inválida.");
+    }
 
-    // Recebe os dados enviados pelo JavaScript
-    $dados = json_decode(file_get_contents("php://input"), true);
+    // Verificar se o e-mail já existe na tabela cliente
+    $sql_check = "SELECT id_cliente FROM public.cliente WHERE email = :email LIMIT 1";
+    $stmt_check = $conexao->prepare($sql_check);
+    $stmt_check->bindValue(":email", $email);
+    $stmt_check->execute();
 
-    if (!$dados) {
-        throw new Exception("Dados inválidos.");
-    }
+    if ($stmt_check->fetch()) {
+        http_response_code(400);
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "Este e-mail já está cadastrado."
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
-    // =========================
-    // DADOS DO CLIENTE
-    // =========================
+    // Hash seguro da senha
+    $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
 
-    $nome     = trim($dados["nome"] ?? "");
-    $email    = strtolower(trim($dados["email"] ?? $dados["e_mail"] ?? ""));
-    $telefone = trim($dados["telefone"] ?? "");
-    $senha    = $dados["senha"] ?? "";
+    // Inserir novo cliente no PostgreSQL
+    $sql_insert = "
+        INSERT INTO public.cliente (
+            nm_cliente,
+            email,
+            senha,
+            cpf,
+            telefone,
+            cep,
+            rua,
+            numero,
+            bairro,
+            cidade,
+            uf
+        ) VALUES (
+            :nome,
+            :email,
+            :senha,
+            :cpf,
+            :telefone,
+            :cep,
+            :rua,
+            :numero,
+            :bairro,
+            :cidade,
+            :uf
+        )
+        RETURNING id_cliente;
+    ";
 
-    // =========================
-    // DADOS DO ENDEREÇO
-    // =========================
+    $stmt_insert = $conexao->prepare($sql_insert);
+    $stmt_insert->bindValue(":nome", $nome);
+    $stmt_insert->bindValue(":email", $email);
+    $stmt_insert->bindValue(":senha", $senha_hash);
+    $stmt_insert->bindValue(":cpf", $cpf);
+    $stmt_insert->bindValue(":telefone", $telefone);
+    $stmt_insert->bindValue(":cep", $cep);
+    $stmt_insert->bindValue(":rua", $rua);
+    $stmt_insert->bindValue(":numero", $numero);
+    $stmt_insert->bindValue(":bairro", $bairro);
+    $stmt_insert->bindValue(":cidade", $cidade);
+    $stmt_insert->bindValue(":uf", $uf);
 
-    $endereco = $dados["endereco"] ?? [];
+    $stmt_insert->execute();
+    $novo_cliente = $stmt_insert->fetch(PDO::FETCH_ASSOC);
 
-    $cep         = trim($endereco["cep"] ?? "");
-    $rua         = trim($endereco["rua"] ?? $endereco["endereco"] ?? "");
-    $numero      = trim($endereco["numero"] ?? "");
-    $complemento = trim($endereco["complemento"] ?? "");
-    $bairro      = trim($endereco["bairro"] ?? "");
-    $cidade      = trim($endereco["cidade"] ?? "");
-    $estado      = strtoupper(trim($endereco["estado"] ?? ""));
+    echo json_encode([
+        "sucesso" => true,
+        "mensagem" => "Cadastro realizado com sucesso!",
+        "id_cliente" => $novo_cliente["id_cliente"] ?? null
+    ], JSON_UNESCAPED_UNICODE);
 
-    // =========================
-    // VALIDAÇÕES
-    // =========================
-
-    if ($nome === "")     throw new Exception("Nome é obrigatório.");
-    if ($email === "")    throw new Exception("E-mail é obrigatório.");
-    if ($senha === "" || strlen($senha) < 6) throw new Exception("A senha deve ter no mínimo 6 caracteres.");
-    if ($cep === "")      throw new Exception("CEP é obrigatório.");
-    if ($rua === "")      throw new Exception("Rua é obrigatória.");
-    if ($numero === "")   throw new Exception("Número é obrigatório.");
-    if ($bairro === "")   throw new Exception("Bairro é obrigatório.");
-    if ($cidade === "")   throw new Exception("Cidade é obrigatória.");
-    if ($estado === "")   throw new Exception("Estado é obrigatório.");
-
-    // =========================
-    // VERIFICAR E-MAIL DUPLICADO
-    // Coluna correta no banco: e_mail (com underline)
-    // =========================
-
-    $sqlEmail = "
-        SELECT id_cliente
-        FROM cliente
-        WHERE e_mail = :email
-        LIMIT 1
-    ";
-
-    $stmtEmail = $conexao->prepare($sqlEmail);
-    $stmtEmail->execute([":email" => $email]);
-
-    if ($stmtEmail->fetch()) {
-        throw new Exception("Este e-mail já está cadastrado.");
-    }
-
-    // =========================
-    // HASH DA SENHA
-    // =========================
-
-    $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
-
-    // =========================
-    // INICIAR TRANSAÇÃO
-    // =========================
-
-    $conexao->beginTransaction();
-
-    // =========================
-    // CADASTRAR CLIENTE
-    // =========================
-
-    $sqlCliente = "
-        INSERT INTO cliente (nome, e_mail, senha, telefone)
-        VALUES (:nome, :email, :senha, :telefone)
-        RETURNING id_cliente
-    ";
-
-    $stmtCliente = $conexao->prepare($sqlCliente);
-    $stmtCliente->execute([
-        ":nome"     => $nome,
-        ":email"    => $email,
-        ":senha"    => $senhaHash,
-        ":telefone" => $telefone
-    ]);
-
-    $idCliente = (int) $stmtCliente->fetchColumn();
-
-    if (!$idCliente) {
-        throw new Exception("Não foi possível gerar o ID do cliente.");
-    }
-
-    // =========================
-    // CADASTRAR ENDEREÇO
-    // =========================
-
-    $sqlEndereco = "
-        INSERT INTO endereco (id_cliente, cep, endereco, numero, complemento, bairro, cidade, estado)
-        VALUES (:id_cliente, :cep, :endereco, :numero, :complemento, :bairro, :cidade, :estado)
-    ";
-
-    $stmtEndereco = $conexao->prepare($sqlEndereco);
-    $stmtEndereco->execute([
-        ":id_cliente"  => $idCliente,
-        ":cep"         => $cep,
-        ":endereco"    => $rua,
-        ":numero"      => $numero,
-        ":complemento" => $complemento,
-        ":bairro"      => $bairro,
-        ":cidade"      => $cidade,
-        ":estado"      => $estado
-    ]);
-
-    // =========================
-    // CONFIRMAR TRANSAÇÃO
-    // =========================
-
-    $conexao->commit();
-
-    echo json_encode([
-        "sucesso"    => true,
-        "mensagem"   => "Cadastro realizado com sucesso!",
-        "id_cliente" => $idCliente
-    ], JSON_UNESCAPED_UNICODE);
-
-} catch (Exception $e) {
-
-    if (isset($conexao) && $conexao->inTransaction()) {
-        $conexao->rollBack();
-    }
-
-    $msg = $e->getMessage();
-    if (strpos($msg, "23505") !== false || strpos($msg, "e_mail") !== false) {
-        $msg = "Este e-mail já está cadastrado.";
-    }
-
-    echo json_encode([
-        "sucesso"  => false,
-        "mensagem" => $msg
-    ], JSON_UNESCAPED_UNICODE);
-
+} catch (Throwable $erro) {
+    http_response_code(500);
+    echo json_encode([
+        "sucesso" => false,
+        "mensagem" => "Erro ao realizar cadastro: " . $erro->getMessage()
+    ], JSON_UNESCAPED_UNICODE);
 }
