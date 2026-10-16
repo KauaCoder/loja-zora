@@ -8,69 +8,43 @@
 
     <link rel="stylesheet" href="entrega.css">
     <link rel="stylesheet" href="/EstiloBase.css">
+    <style>
+        /* Estilo para controlar a visibilidade das etapas na mesma página */
+        .etapa-form {
+            display: none;
+        }
+        .etapa-form.ativa {
+            display: block;
+        }
+    </style>
 </head>
 
 <body>
 
     <!-- MENU -->
     <nav>
-
         <!-- Menu Lateral -->
         <ul class="sidebar">
-
-            <li>
-                <a href="#" onclick="hideSidebar()">✕</a>
-            </li>
-
-            <li>
-                <a href="/Telainicial/index.html">Produtos</a>
-            </li>
-
-            <li>
-                <a href="/Telainicial/index.html">Pedidos</a>
-            </li>
-
-            <li>
-                <a href="#">Sobre</a>
-            </li>
-
-            <li class="hideOnMobile">
-                <a href="#" id="menuUsuarioMobile" onclick="abrirPerfil()">Login</a>
-            </li>
+            <li><a href="#" onclick="hideSidebar()">✕</a></li>
+            <li><a href="/Telainicial/index.html">Produtos</a></li>
+            <li><a href="/Telainicial/index.html">Pedidos</a></li>
+            <li><a href="#">Sobre</a></li>
+            <li class="hideOnMobile"><a href="#" id="menuUsuarioMobile" onclick="abrirPerfil()">Login</a></li>
         </ul>
 
         <!-- Menu Principal -->
         <ul>
-
-            <li>
-                <a href="/Telainicial/index.html">ZORA</a>
-            </li>
-
-            <li class="hideOnMobile">
-                <a href="/Telainicial/index.html">Produtos</a>
-            </li>
-
-            <li class="hideOnMobile">
-                <a href="/Telainicial/index.html">Pedidos</a>
-            </li>
-
-            <li class="hideOnMobile">
-                <a href="#">Sobre</a>
-            </li>
-            <li class="hideOnMobile">
-                <a href="#" id="menuUsuario" onclick="abrirPerfil()">Login</a>
-            </li>
-            <li class="menu-button">
-                <a href="#" onclick="showSidebar()">☰</a>
-            </li>
-
+            <li><a href="/Telainicial/index.html">ZORA</a></li>
+            <li class="hideOnMobile"><a href="/Telainicial/index.html">Produtos</a></li>
+            <li class="hideOnMobile"><a href="/Telainicial/index.html">Pedidos</a></li>
+            <li class="hideOnMobile"><a href="#">Sobre</a></li>
+            <li class="hideOnMobile"><a href="#" id="menuUsuario" onclick="abrirPerfil()">Login</a></li>
+            <li class="menu-button"><a href="#" onclick="showSidebar()">☰</a></li>
         </ul>
-
     </nav>
 
     <!-- FINALIZAR PEDIDO -->
     <section class="entrega-wrap">
-
         <div class="container">
 
             <a href="/Telainicial/index.html" class="voltar">← Voltar aos produtos</a>
@@ -78,83 +52,110 @@
             <h2>Finalizar Pedido</h2>
 
             <p class="subtitulo">
-                Confirme seus dados para que possamos entregar seu pedido.
+                Preencha seus dados de entrega e escolha a forma de pagamento.
             </p>
 
-            <!-- Passos -->
+            <!-- Passos visuais -->
             <div class="passos">
-                <div class="passo ativo">
+                <div class="passo" id="indicadorPasso1">
                     <span class="passo-numero">1</span>
                     <span class="passo-label">Endereço</span>
                 </div>
-                <div class="passo-linha"></div>
-                <div class="passo">
+                <div class="passo-linha" id="linhaPasso"></div>
+                <div class="passo" id="indicadorPasso2">
                     <span class="passo-numero">2</span>
                     <span class="passo-label">Pagamento</span>
                 </div>
             </div>
 
             <div class="resumo">
-
                 <h3>Resumo do Pedido</h3>
-
                 <ul id="listaResumo"></ul>
-
                 <div class="linha linha-total">
                     <span>Total</span>
                     <span id="valorTotal">R$ 0,00</span>
                 </div>
-
             </div>
 
+            <!-- FORMULÁRIO ÚNICO COM 2 ETAPAS NA MESMA TELA -->
             <form id="formEntrega" novalidate>
 
-                <label for="nome">Nome Completo</label>
-                <input type="text" id="nome" autocomplete="name" required>
+                <!-- ================= ETAPA 1: ENDEREÇO ================= -->
+                <div id="blocoEtapa1" class="etapa-form ativa">
+                    <label for="nome">Nome Completo</label>
+                    <input type="text" id="nome" autocomplete="name" required>
 
-                <label for="cpf">CPF</label>
-                <input type="text" id="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" required>
+                    <label for="cpf">CPF</label>
+                    <input type="text" id="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" required>
 
-                <label for="cep">CEP</label>
-                <input type="text" id="cep" inputmode="numeric" maxlength="9" placeholder="00000-000" autocomplete="postal-code" required>
-                <span class="status-cep" id="statusCep"></span>
+                    <label for="cep">CEP</label>
+                    <input type="text" id="cep" inputmode="numeric" maxlength="9" placeholder="00000-000" autocomplete="postal-code" required>
+                    <span class="status-cep" id="statusCep"></span>
 
-                <label for="rua">Rua</label>
-                <input type="text" id="rua" readonly placeholder="Preenchido automaticamente">
+                    <label for="rua">Rua</label>
+                    <input type="text" id="rua" readonly placeholder="Preenchido automaticamente">
 
-                <div class="campo-duplo">
-                    <div>
-                        <label for="numero">Número</label>
-                        <input type="text" id="numero" inputmode="numeric" required>
+                    <div class="campo-duplo">
+                        <div>
+                            <label for="numero">Número</label>
+                            <input type="text" id="numero" inputmode="numeric" required>
+                        </div>
+                        <div>
+                            <label for="complemento">Complemento</label>
+                            <input type="text" id="complemento" placeholder="Opcional">
+                        </div>
                     </div>
-                    <div>
-                        <label for="complemento">Complemento</label>
-                        <input type="text" id="complemento" placeholder="Opcional">
+
+                    <label for="bairro">Bairro</label>
+                    <input type="text" id="bairro" readonly placeholder="Preenchido automaticamente">
+
+                    <div class="campo-duplo">
+                        <div>
+                            <label for="cidade">Cidade</label>
+                            <input type="text" id="cidade" readonly>
+                        </div>
+                        <div>
+                            <label for="estado">Estado</label>
+                            <input type="text" id="estado" readonly>
+                        </div>
                     </div>
+
+                    <button type="button" id="btnIrParaPagamento" style="margin-top: 20px;">
+                        Continuar para Pagamento
+                    </button>
                 </div>
 
-                <label for="bairro">Bairro</label>
-                <input type="text" id="bairro" readonly placeholder="Preenchido automaticamente">
+                <!-- ================= ETAPA 2: PAGAMENTO ================= -->
+                <div id="blocoEtapa2" class="etapa-form">
+                    <div class="opcoes-pagamento" style="margin-bottom: 25px;">
+                        <label style="display: block; margin-bottom: 12px; font-weight: bold; font-size: 16px;">Selecione a forma de pagamento:</label>
+                        
+                        <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; font-size: 15px;">
+                            <input type="radio" name="formaPagamento" value="pix" checked> Pix (Aprovação imediata)
+                        </label>
 
-                <div class="campo-duplo">
-                    <div>
-                        <label for="cidade">Cidade</label>
-                        <input type="text" id="cidade" readonly>
+                        <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; font-size: 15px;">
+                            <input type="radio" name="formaPagamento" value="cartao"> Cartão de Crédito
+                        </label>
+
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 15px;">
+                            <input type="radio" name="formaPagamento" value="boleto"> Boleto Bancário
+                        </label>
                     </div>
-                    <div>
-                        <label for="estado">Estado</label>
-                        <input type="text" id="estado" readonly>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" id="btnVoltarEtapa" style="background: #6c757d; flex: 1;">
+                            Voltar
+                        </button>
+                        <button type="submit" id="btnContinuar" style="flex: 2;">
+                            Finalizar Compra
+                        </button>
                     </div>
                 </div>
-
-                <button type="submit" id="btnContinuar">
-                    Continuar para Pagamento
-                </button>
 
             </form>
 
         </div>
-
     </section>
 
     <!-- SCRIPTS -->
