@@ -686,7 +686,7 @@ function pagarPedido() {
         return;
     }
 
-    window.location.href = "/TelaPagamento/pagamento.html";
+    window.location.href = "/TelaEntrega/entrega.html";
 }
 
 
