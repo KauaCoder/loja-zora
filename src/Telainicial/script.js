@@ -1,12 +1,17 @@
 // =====================================================
 // ZORA - TELA INICIAL, CATÁLOGO E CARRINHO
-// Versão sem dependência de consulta de estoque em tempo real
+// Versão com Menu Lateral (Sidebar)
 // =====================================================
 
 
 // =====================================================
-// 1. OVERLAY E PERFIL
+// 1. MENU LATERAL, OVERLAY E PERFIL
 // =====================================================
+
+function obterSidebar() {
+    return document.getElementById("sidebar")
+        || document.querySelector(".sidebar");
+}
 
 function obterOverlay() {
     return document.getElementById("overlay")
@@ -14,21 +19,65 @@ function obterOverlay() {
 }
 
 function sincronizarOverlay() {
+    const sidebar = obterSidebar();
     const overlay = obterOverlay();
     const pedidos = document.getElementById("Pedidos");
 
-    const pedidosAberto = pedidos && pedidos.classList.contains("ativo");
+    const menuAberto = sidebar && (
+        sidebar.classList.contains("ativo")
+        || sidebar.classList.contains("active")
+    );
+
+    const pedidosAberto = pedidos
+        && pedidos.classList.contains("ativo");
+
+    const algumPainelAberto = Boolean(
+        menuAberto || pedidosAberto
+    );
 
     if (overlay) {
-        overlay.classList.toggle("ativo", Boolean(pedidosAberto));
+        overlay.classList.toggle(
+            "ativo",
+            algumPainelAberto
+        );
     }
 
-    // Impede a rolagem da página quando o carrinho está aberto.
-    document.body.classList.toggle("painel-aberto", Boolean(pedidosAberto));
+    // Impede a rolagem da página quando um painel está aberto.
+    document.body.classList.toggle(
+        "painel-aberto",
+        algumPainelAberto
+    );
+}
+
+function showSidebar() {
+    const sidebar = obterSidebar();
+
+    if (!sidebar) {
+        console.warn("ZORA: menu lateral não encontrado.");
+        return;
+    }
+
+    sidebar.classList.add("ativo", "active");
+    sincronizarOverlay();
+}
+
+function hideSidebar() {
+    const sidebar = obterSidebar();
+
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
+
+    sincronizarOverlay();
 }
 
 function fecharTudo() {
+    const sidebar = obterSidebar();
     const pedidos = document.getElementById("Pedidos");
+
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
 
     if (pedidos) {
         pedidos.classList.remove("ativo");
@@ -97,6 +146,7 @@ async function checarEAtualizarMenu() {
     }
 
     const menuDesktop = document.getElementById("menuUsuario");
+    const menuMobile = document.getElementById("menuUsuarioMobile");
 
     let texto = "Login";
 
@@ -119,6 +169,7 @@ async function checarEAtualizarMenu() {
     }
 
     if (menuDesktop) menuDesktop.textContent = texto;
+    if (menuMobile) menuMobile.textContent = texto;
 }
 
 
@@ -175,7 +226,6 @@ function obterImagemProduto(imagem) {
         return "/img/Logo%201.png";
     }
 
-    // Preserva URLs completas e caminhos já definidos.
     if (/^(https?:\/\/|\/)/i.test(imagem)) {
         return imagem;
     }
@@ -390,7 +440,6 @@ function renderizarPedidos() {
         const item = document.createElement("li");
         item.className = "item-carrinho";
 
-        // Imagem do produto
         const linkFoto = document.createElement("a");
         linkFoto.href =
             `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
@@ -409,7 +458,6 @@ function renderizarPedidos() {
 
         linkFoto.appendChild(foto);
 
-        // Informações do produto
         const detalhes = document.createElement("div");
         detalhes.className = "carrinho-detalhes";
 
@@ -426,7 +474,6 @@ function renderizarPedidos() {
         precoUnitario.className = "carrinho-preco-unitario";
         precoUnitario.textContent = `R$ ${formatarPreco(preco)}`;
 
-        // Controles de quantidade
         const qtdContainer = document.createElement("div");
         qtdContainer.className = "qtd-controle";
 
@@ -466,7 +513,6 @@ function renderizarPedidos() {
             qtdContainer
         );
 
-        // Subtotal e remoção
         const acoes = document.createElement("div");
         acoes.className = "carrinho-acoes";
 
@@ -608,6 +654,12 @@ function abrirPedidos() {
         return;
     }
 
+    // Fecha a sidebar se estiver aberta para não sobrepor o carrinho
+    const sidebar = obterSidebar();
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
+
     pedidos.classList.add("ativo");
 
     sincronizarOverlay();
@@ -634,7 +686,6 @@ function pagarPedido() {
         return;
     }
 
-    // Redireciona diretamente para a tela de checkout / pagamento
     window.location.href = "/TelaPagamento/pagamento.html";
 }
 
