@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - TELA INICIAL, CATÁLOGO E CARRINHO
-// Versão com Menu Lateral (Sidebar)
+// Versão Completa & Atualizada
 // =====================================================
 
 
@@ -677,7 +677,7 @@ function fecharPedidos() {
 
 
 // =====================================================
-// 5. FINALIZAÇÃO DO PEDIDO
+// 5. FINALIZAÇÃO DO PEDIDO (ATUALIZADO E SEGURO)
 // =====================================================
 
 function pagarPedido() {
@@ -685,6 +685,11 @@ function pagarPedido() {
         alert("Seu carrinho está vazio.");
         return;
     }
+
+    // Salva explicitamente os itens e o valor total no localStorage antes de avançar
+    localStorage.setItem("carrinho", JSON.stringify(pedidosArray));
+    localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
+    localStorage.setItem("totalPedido", calcularTotal());
 
     window.location.href = "/TelaEntrega/entrega.html";
 }
