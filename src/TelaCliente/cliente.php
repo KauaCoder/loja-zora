@@ -64,10 +64,15 @@ if (!$caminho_conexao) {
 require_once $caminho_conexao;
 
 try {
-    // Suporte flexível para id_cliente, cliente_id ou usuario_id
+    // 1. Tenta pegar da sessão PHP
     $idCliente = $_SESSION["id_cliente"] ?? $_SESSION["cliente_id"] ?? $_SESSION["usuario_id"] ?? null;
 
-    if (!$idCliente) {
+    // 2. Se a sessão falhou no Render, tenta resgatar pelo parâmetro GET da URL
+    if (!$idCliente && isset($_GET['id_cliente'])) {
+        $idCliente = $_GET['id_cliente'];
+    }
+
+    if (!$idCliente || !is_scalar($idCliente) || (int) $idCliente <= 0) {
         http_response_code(401);
         echo json_encode([
             "sucesso"  => false,
@@ -103,7 +108,9 @@ try {
 
     if (!$cliente) {
         $_SESSION = [];
-        session_destroy();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
 
         http_response_code(404);
         echo json_encode([
