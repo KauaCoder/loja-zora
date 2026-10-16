@@ -14,19 +14,19 @@ body {
     color: #333;
 }
 
-/* Fundo Escuro para Modais/Menus (Overlay) */
+/* Fundo Escuro para Modais/Carrinho (Overlay) */
 .overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(20, 17, 14, 0.48);
     z-index: 1800;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 260ms ease, visibility 260ms ease;
 }
 
 .overlay.ativo {
@@ -44,7 +44,7 @@ nav {
     background: #F5EFE6;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
     position: relative;
-    z-index: 1500;
+    z-index: auto;
 }
 
 nav ul {
@@ -98,74 +98,9 @@ nav a:hover {
     object-fit: contain;
 }
 
-
-/* =========================
-   MENU MOBILE / SIDEBAR
-========================= */
-
-.menu-button {
-    display: none;
-}
-
-.menu-button a {
-    font-size: 26px;
-}
-
-.sidebar {
-    position: fixed;
-    top: 0;
-    right: -300px;
-    width: 270px;
-    height: 100vh;
-    background: #F5EFE6;
-    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding-top: 10px;
-    transition: right 0.4s ease;
-    z-index: 3000;
-}
-
-.sidebar.active,
-.sidebar.ativo {
-    right: 0;
-}
-
-.sidebar li {
-    width: 100%;
-    height: auto;
-    list-style: none;
-}
-
-.sidebar-fechar a {
-    font-size: 24px;
-    justify-content: flex-end;
-    padding-right: 25px;
-}
-
-.sidebar a {
-    width: 100%;
-    padding: 16px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #000;
-    text-decoration: none;
-    font-size: 17px;
-}
-
-.sidebar a:hover {
-    background: #fffaf0;
-}
-
 @media (max-width: 800px) {
     .hideOnMobile {
         display: none !important;
-    }
-
-    .menu-button {
-        display: block;
     }
 
     .logo-menu img {
@@ -183,15 +118,17 @@ nav a:hover {
     position: fixed;
     top: 0;
     right: -450px;
-    width: 420px;
-    max-width: 100%;
+    width: min(420px, 100vw);
     height: 100vh;
+    height: 100dvh;
     background: #ffffff;
     box-shadow: -8px 0 25px rgba(0, 0, 0, 0.15);
     transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     z-index: 2000;
     display: flex;
     flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior: contain;
 }
 
 .caixa-pedidos.ativo {
@@ -202,9 +139,10 @@ nav a:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 22px 24px;
+    padding: 20px clamp(16px, 5vw, 24px);
     background: #F5EFE6;
     border-bottom: 1px solid #eae2d8;
+    gap: 16px;
 }
 
 .topo-pedidos h2 {
@@ -220,11 +158,15 @@ nav a:hover {
     font-size: 22px;
     color: #555;
     cursor: pointer;
-    transition: color 0.2s ease;
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: 50%;
+    transition: color 0.2s ease, background 0.2s ease;
 }
 
 .topo-pedidos button:hover {
     color: #000;
+    background: rgba(0, 0, 0, 0.05);
 }
 
 /* LISTA DE ITENS DO CARRINHO */
@@ -237,6 +179,8 @@ nav a:hover {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-height: 0;
+    overscroll-behavior: contain;
 }
 
 #listaPedidos:empty::after {
@@ -255,8 +199,8 @@ nav a:hover {
     gap: 14px;
     padding: 12px;
     background: #fafafa;
-    border: 1px solid #f0f0f0;
-    border-radius: 12px;
+    border: 1px solid #eee5dc;
+    border-radius: 14px;
     transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
@@ -431,6 +375,7 @@ nav a:hover {
 
 .PedidosPagar button {
     width: 100%;
+    min-height: 44px;
     padding: 15px;
     background: #000;
     color: white;
@@ -440,13 +385,17 @@ nav a:hover {
     font-size: 15px;
     font-weight: bold;
     letter-spacing: 0.5px;
-    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    transition: background 260ms cubic-bezier(.2, .8, .2, 1), transform 260ms cubic-bezier(.2, .8, .2, 1), box-shadow 260ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .PedidosPagar button:hover {
     background: #222;
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+.PedidosPagar button:active {
+    transform: scale(.985);
 }
 
 
@@ -464,6 +413,7 @@ nav a:hover {
     border-radius: 20px;
     background: #111;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    isolation: isolate;
 }
 
 .promocao-track {
@@ -494,6 +444,7 @@ nav a:hover {
     height: 100%;
     object-fit: cover;
     display: block;
+    will-change: transform;
 }
 
 .promocao-slide::after {
@@ -569,6 +520,8 @@ nav a:hover {
     font-size: 20px;
     cursor: pointer;
     transition: 0.3s;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
 .carousel-btn:hover {
@@ -636,8 +589,7 @@ nav a:hover {
 ========================= */
 
 .catalogo {
-    width: 94%;
-    max-width: 1700px;
+    width: min(94%, 1700px);
     margin: 40px auto;
 }
 
@@ -647,6 +599,8 @@ nav a:hover {
     align-items: baseline;
     gap: 15px;
     margin-bottom: 35px;
+    flex-wrap: wrap;
+    row-gap: 8px;
 }
 
 .catalogo h2 {
@@ -668,7 +622,12 @@ nav a:hover {
 }
 
 .nav-produtos-btn {
-    display: none; /* Escondido no Desktop */
+    display: none;
+    transition: transform 260ms cubic-bezier(.2, .8, .2, 1), box-shadow 260ms cubic-bezier(.2, .8, .2, 1), background 260ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.nav-produtos-btn:hover {
+    box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
 }
 
 .produtos {
@@ -696,7 +655,8 @@ nav a:hover {
     background: #ffffff;
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .065);
+    border: 1px solid rgba(50, 40, 30, .045);
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -718,6 +678,7 @@ nav a:hover {
     height: 380px;
     object-fit: cover;
     display: block;
+    background: #f3eee8;
     transition: transform 0.3s ease;
 }
 
@@ -743,6 +704,7 @@ nav a:hover {
 .produto button {
     margin: auto 15px 18px;
     padding: 12px 10px;
+    min-height: 44px;
     border: none;
     border-radius: 99px;
     background: #000;
@@ -750,12 +712,17 @@ nav a:hover {
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
-    transition: background 0.3s, transform 0.2s;
+    transition: background 260ms cubic-bezier(.2, .8, .2, 1), transform 260ms cubic-bezier(.2, .8, .2, 1), box-shadow 260ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .produto button:hover {
     background: #444;
     transform: scale(1.02);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .13);
+}
+
+.produto button:active {
+    transform: scale(.985);
 }
 
 
@@ -781,18 +748,27 @@ nav a:hover {
     }
 }
 
-/* CARROSSEL MOBILE COM TRAÇO INDICADOR (Até 700px) */
 @media (max-width: 700px) {
     .catalogo {
         width: 100%;
-        padding: 0 15px;
+        padding-inline: 14px;
+        margin-block: 30px;
+    }
+
+    .catalogo h2 {
+        font-size: clamp(23px, 6vw, 29px);
+    }
+
+    .catalogo-cabecalho {
+        justify-content: center;
+        gap: 8px 12px;
+        margin-bottom: 22px;
     }
 
     .dica-mobile {
         display: inline;
     }
 
-    /* Botões auxiliares nas pontas no mobile */
     .nav-produtos-btn {
         display: flex;
         align-items: center;
@@ -823,12 +799,13 @@ nav a:hover {
         display: flex;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
-        gap: 14px;
-        padding-bottom: 12px;
+        gap: 12px;
+        padding: 2px 2px 14px;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: #24201c #e8e1d9;
     }
 
-    /* Barra / Traço Indicador na parte inferior */
     .produtos::-webkit-scrollbar {
         height: 5px;
     }
@@ -843,14 +820,13 @@ nav a:hover {
         border-radius: 10px;
     }
 
-    /* Reduz o card para metade do tamanho e permite espreitar o produto ao lado */
     .produto {
-        flex: 0 0 52%;
+        flex: 0 0 min(58%, 230px);
         scroll-snap-align: start;
     }
 
     .produto img {
-        height: 190px;
+        height: clamp(165px, 48vw, 210px);
     }
 
     .produto h3 {
@@ -869,6 +845,61 @@ nav a:hover {
         padding: 9px 5px;
         font-size: 12px;
     }
+
+    .carousel-promocoes {
+        height: clamp(300px, 95vw, 380px);
+        width: calc(100% - 24px);
+        margin: 20px auto 35px;
+        border-radius: 14px;
+    }
+
+    .promocao-info {
+        left: 7%;
+        width: 86%;
+    }
+
+    .promocao-info h2 {
+        font-size: clamp(25px, 7vw, 32px);
+    }
+
+    .promocao-info p {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .carousel-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .anterior { left: 8px; }
+    .proximo { right: 8px; }
+
+    .rodape-principal {
+        padding: 32px 18px 18px;
+    }
+
+    .rodape-conteudo {
+        gap: 26px;
+    }
+
+    .rodape-coluna {
+        min-width: min(100%, 220px);
+    }
+}
+
+@media (max-width: 380px) {
+    .caixa-pedidos {
+        width: 100%;
+    }
+
+    .produto {
+        flex-basis: 66%;
+    }
+
+    .promocao-info h2 {
+        font-size: 24px;
+    }
 }
 
 
@@ -881,6 +912,7 @@ nav a:hover {
     color: #f4f4f4;
     padding: 40px 20px 20px;
     margin-top: 60px;
+    overflow-wrap: anywhere;
 }
 
 .rodape-conteudo {
@@ -930,7 +962,7 @@ nav a:hover {
 .rodape-coluna ul li a {
     color: #cccccc;
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: color 260ms cubic-bezier(.2, .8, .2, 1), opacity 260ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .rodape-coluna ul li a:hover {
@@ -948,6 +980,7 @@ nav a:hover {
     text-decoration: none;
     font-weight: bold;
     font-size: 0.95rem;
+    transition: color 260ms cubic-bezier(.2, .8, .2, 1), opacity 260ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .redes-sociais a:hover {
@@ -963,377 +996,15 @@ nav a:hover {
     color: #888888;
 }
 
-/* =========================================================
-   ZORA — MELHORIAS VISUAIS E DE DINÂMICA
-   Como usar: cole este bloco NO FINAL do seu arquivo CSS atual.
-   Mantém as classes existentes e aprimora menu, carrinho,
-   catálogo, responsividade, acessibilidade e microinterações.
-========================================================= */
 
-:root {
-    --zora-bg: #fffaf5;
-    --zora-beige: #f5efe6;
-    --zora-beige-hover: #eee2d3;
-    --zora-ink: #211d19;
-    --zora-muted: #77716b;
-    --zora-gold: #c18b52;
-    --zora-pink: #d63384;
-    --zora-border: #e8ded2;
-    --zora-shadow: 0 12px 35px rgba(33, 29, 25, .12);
-    --zora-radius: 16px;
-    --zora-motion: 260ms cubic-bezier(.2, .8, .2, 1);
-}
+/* =========================
+   ACESSIBILIDADE
+========================= */
 
-html {
-    scroll-behavior: smooth;
-    scroll-padding-top: 80px;
-}
-
-body {
-    overflow-x: clip;
-    -webkit-tap-highlight-color: transparent;
-}
-
-button,
-a {
-    -webkit-tap-highlight-color: transparent;
-}
-
-button {
-    font: inherit;
-}
-
-a:focus-visible,
-button:focus-visible,
-[tabindex]:focus-visible {
-    outline: 3px solid var(--zora-gold);
-    outline-offset: 3px;
-}
-
-/* Overlay: camada uniforme para menu e painel */
-.overlay {
-    background: rgba(20, 17, 14, .48);
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
-    transition: opacity var(--zora-motion), visibility var(--zora-motion);
-}
-
-/* =========================================================
-   MENU MOBILE / SIDEBAR
-========================================================= */
-.menu-button {
-    display: none;
-}
-
-.menu-button a {
-    font-size: 26px;
-}
-
-.sidebar {
-    position: fixed;
-    inset: 0 0 0 auto;
-    width: min(84vw, 340px);
-    max-width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    padding: 14px 18px max(24px, env(safe-area-inset-bottom));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    background: var(--zora-bg);
-    box-shadow: -12px 0 35px rgba(0, 0, 0, .16);
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    transform: translate3d(105%, 0, 0);
-    visibility: hidden;
-    pointer-events: none;
-    transition: transform var(--zora-motion), visibility var(--zora-motion);
-    z-index: 3000;
-    will-change: transform;
-}
-
-.sidebar.active,
-.sidebar.ativo {
-    transform: translate3d(0, 0, 0);
-    visibility: visible;
-    pointer-events: auto;
-}
-
-.sidebar li {
-    width: 100%;
-    height: auto;
-    list-style: none;
-    margin: 3px 0;
-}
-
-.sidebar .sidebar-fechar {
-    margin: 0 0 18px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--zora-border);
-}
-
-.sidebar .sidebar-fechar a {
-    min-height: 48px;
-    justify-content: flex-end;
-    padding: 8px 10px;
-    font-size: 27px;
-}
-
-.sidebar a {
-    width: 100%;
-    min-height: 52px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 12px;
-    border-radius: 10px;
-    color: var(--zora-ink);
-    text-decoration: none;
-    font-size: 16px;
-    font-weight: 500;
-    transition: background var(--zora-motion), color var(--zora-motion), transform var(--zora-motion);
-}
-
-.sidebar a:hover {
-    background: var(--zora-beige-hover);
-    color: #85552f;
-}
-
-.sidebar a:active {
-    transform: scale(.985);
-}
-
-.sidebar .badge-carrinho {
-    flex-shrink: 0;
-    margin-left: auto;
-}
-
-@media (max-width: 800px) {
-    .hideOnMobile { display: none !important; }
-    .menu-button { display: block; }
-    .logo-menu img { width: 85px; max-height: 40px; }
-}
-
-/* =========================================================
-   CARRINHO / PAINEL DE PEDIDOS
-========================================================= */
-.caixa-pedidos {
-    width: min(420px, 100vw);
-    height: 100vh;
-    height: 100dvh;
-    padding-bottom: env(safe-area-inset-bottom);
-    overscroll-behavior: contain;
-    box-shadow: -12px 0 35px rgba(0, 0, 0, .16);
-    transition: right var(--zora-motion);
-}
-
-.topo-pedidos {
-    gap: 16px;
-    padding: 20px clamp(16px, 5vw, 24px);
-}
-
-.topo-pedidos button {
-    min-width: 42px;
-    min-height: 42px;
-    border-radius: 50%;
-}
-
-.topo-pedidos button:hover {
-    background: rgba(0, 0, 0, .05);
-}
-
-#listaPedidos {
-    min-height: 0;
-    overscroll-behavior: contain;
-}
-
-.item-carrinho {
-    border-color: #eee5dc;
-    border-radius: 14px;
-}
-
-.PedidosPagar button,
-.produto button {
-    min-height: 44px;
-    transition: background var(--zora-motion), transform var(--zora-motion), box-shadow var(--zora-motion);
-}
-
-.PedidosPagar button:active,
-.produto button:active {
-    transform: scale(.985);
-}
-
-/* =========================================================
-   CATÁLOGO E CARDS
-========================================================= */
-.catalogo {
-    width: min(94%, 1700px);
-}
-
-.catalogo-cabecalho {
-    flex-wrap: wrap;
-    row-gap: 8px;
-}
-
-.produto {
-    border: 1px solid rgba(50, 40, 30, .045);
-    box-shadow: 0 5px 18px rgba(0, 0, 0, .065);
-}
-
-.produto img {
-    background: #f3eee8;
-}
-
-.produto button:hover {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, .13);
-}
-
-.nav-produtos-btn {
-    transition: transform var(--zora-motion), box-shadow var(--zora-motion), background var(--zora-motion);
-}
-
-.nav-produtos-btn:hover {
-    box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
-}
-
-/* =========================================================
-   CARROSSEL DE PROMOÇÕES
-========================================================= */
-.carousel-promocoes {
-    isolation: isolate;
-}
-
-.promocao-slide img {
-    will-change: transform;
-}
-
-.carousel-btn {
-    -webkit-backdrop-filter: blur(5px);
-    backdrop-filter: blur(5px);
-}
-
-/* =========================================================
-   RODAPÉ
-========================================================= */
-.rodape-principal {
-    overflow-wrap: anywhere;
-}
-
-.rodape-coluna a,
-.redes-sociais a {
-    transition: color var(--zora-motion), opacity var(--zora-motion);
-}
-
-/* =========================================================
-   TELAS PEQUENAS
-========================================================= */
-@media (max-width: 700px) {
-    .catalogo {
-        width: 100%;
-        padding-inline: 14px;
-        margin-block: 30px;
-    }
-
-    .catalogo h2 {
-        font-size: clamp(23px, 6vw, 29px);
-    }
-
-    .catalogo-cabecalho {
-        justify-content: center;
-        gap: 8px 12px;
-        margin-bottom: 22px;
-    }
-
-    .produtos {
-        gap: 12px;
-        padding: 2px 2px 14px;
-        scrollbar-width: thin;
-        scrollbar-color: #24201c #e8e1d9;
-    }
-
-    .produto {
-        flex: 0 0 min(58%, 230px);
-        scroll-snap-align: start;
-    }
-
-    .produto img {
-        height: clamp(165px, 48vw, 210px);
-    }
-
-    .produto h3 {
-        font-size: 14px;
-        min-height: 36px;
-    }
-
-    .produto p {
-        font-size: 16px;
-    }
-
-    .carousel-promocoes {
-        height: clamp(300px, 95vw, 380px);
-        width: calc(100% - 24px);
-        margin: 20px auto 35px;
-        border-radius: 14px;
-    }
-
-    .promocao-info {
-        left: 7%;
-        width: 86%;
-    }
-
-    .promocao-info h2 {
-        font-size: clamp(25px, 7vw, 32px);
-    }
-
-    .promocao-info p {
-        font-size: 14px;
-        line-height: 1.5;
-    }
-
-    .carousel-btn {
-        width: 38px;
-        height: 38px;
-    }
-
-    .anterior { left: 8px; }
-    .proximo { right: 8px; }
-
-    .rodape-principal {
-        padding: 32px 18px 18px;
-    }
-
-    .rodape-conteudo {
-        gap: 26px;
-    }
-
-    .rodape-coluna {
-        min-width: min(100%, 220px);
-    }
-}
-
-@media (max-width: 380px) {
-    .sidebar {
-        width: min(88vw, 320px);
-        padding-inline: 14px;
-    }
-
-    .caixa-pedidos {
-        width: 100%;
-    }
-
-    .produto {
-        flex-basis: 66%;
-    }
-
-    .promocao-info h2 {
-        font-size: 24px;
-    }
-}
-
-/* Reduz animações para quem ativou essa preferência no aparelho */
 @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
+    html {
+        scroll-behavior: auto;
+    }
 
     *,
     *::before,
@@ -1343,275 +1014,6 @@ button:focus-visible,
         scroll-behavior: auto !important;
         transition-duration: .01ms !important;
     }
-}
-
-nav {
-    z-index: auto;
-}
-
-.overlay {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-}
-
-.sidebar {
-    justify-content: flex-start;
-    width: min(82vw, 320px);
-    padding: 0 0 max(24px, env(safe-area-inset-bottom));
-    border-radius: 24px 0 0 24px;
-    background: var(--zora-bg);
-    z-index: 3000;
-}
-
-/* Topo com o botão fechar */
-.sidebar .sidebar-fechar {
-    margin: 0;
-    padding: 12px 14px;
-    background: var(--zora-beige);
-    border-bottom: 1px solid var(--zora-border);
-}
-
-.sidebar .sidebar-fechar a {
-    width: 44px;
-    min-height: 0;
-    height: 44px;
-    margin-left: auto;
-    padding: 0;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 22px;
-}
-
-/* Links */
-.sidebar li {
-    margin: 0;
-    padding: 0 20px;
-}
-
-.sidebar .sidebar-fechar {
-    padding: 12px 14px;
-}
-
-.sidebar li:not(.sidebar-fechar) {
-    border-bottom: 1px solid var(--zora-border);
-}
-
-.sidebar li:not(.sidebar-fechar) a {
-    padding: 20px 4px;
-    border-radius: 0;
-    font-size: 17px;
-    letter-spacing: .3px;
-}
-
-.sidebar li:not(.sidebar-fechar) a:hover {
-    background: transparent;
-    color: var(--zora-gold);
-}
-
-/* Login / Dashboard como botão */
-.sidebar li:last-child {
-    margin-top: 24px;
-    border-bottom: none;
-}
-
-.sidebar li:last-child a {
-    justify-content: center;
-    padding: 15px;
-    border-radius: 99px;
-    background: #000;
-    color: #fff;
-    font-weight: 700;
-}
-
-.sidebar li:last-child a:hover {
-    background: #333;
-    color: #fff;
-}
-
-/* ==========================================
-   ZORA — CORREÇÃO DO MENU MOBILE
-   Colocar no FINAL do arquivo CSS
-========================================== */
-
-/* Evita rolagem horizontal indesejada */
-html {
-    overflow-x: clip;
-}
-
-body {
-    overflow-x: clip;
-}
-
-/* Fundo escuro atrás do menu */
-.overlay {
-    position: fixed;
-    inset: 0;
-
-    width: 100%;
-    height: 100%;
-    height: 100dvh;
-
-    background: rgba(20, 17, 14, 0.48);
-
-    /* Desativado para evitar o efeito de desfoque */
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-
-    z-index: 1800;
-
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-
-    transition:
-        opacity 260ms ease,
-        visibility 260ms ease;
-}
-
-/* Overlay visível */
-.overlay.ativo {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
-
-/* Menu lateral fechado */
-.sidebar {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-
-    width: min(84vw, 340px);
-    max-width: 100%;
-
-    height: 100vh;
-    height: 100dvh;
-
-    padding: 14px 18px;
-    padding-bottom: max(24px, env(safe-area-inset-bottom));
-
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-
-    background: #fffaf5;
-    box-shadow: -12px 0 35px rgba(0, 0, 0, 0.16);
-
-    z-index: 3000;
-
-    /* Um único método de animação */
-    transform: translate3d(105%, 0, 0);
-
-    visibility: hidden;
-    pointer-events: none;
-
-    transition:
-        transform 260ms cubic-bezier(.2, .8, .2, 1),
-        visibility 260ms ease;
-
-    will-change: transform;
-}
-
-/* Menu aberto: aceita as duas classes usadas no projeto */
-.sidebar.active,
-.sidebar.ativo {
-    transform: translate3d(0, 0, 0);
-    visibility: visible;
-    pointer-events: auto;
-}
-
-/* Itens do menu */
-.sidebar li {
-    width: 100%;
-    height: auto;
-    margin: 3px 0;
-    list-style: none;
-    flex-shrink: 0;
-}
-
-/* Links */
-.sidebar a {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-
-    width: 100%;
-    min-height: 50px;
-    padding: 14px 12px;
-
-    border-radius: 10px;
-
-    color: #211d19;
-    text-decoration: none;
-    font-size: 16px;
-    font-weight: 500;
-
-    transition:
-        background 200ms ease,
-        color 200ms ease;
-}
-
-.sidebar a:hover {
-    background: #eee2d3;
-    color: #85552f;
-}
-
-/* Botão de fechar */
-.sidebar .sidebar-fechar {
-    margin-bottom: 14px;
-    border-bottom: 1px solid #e8ded2;
-}
-
-.sidebar .sidebar-fechar a {
-    min-height: 48px;
-    justify-content: flex-end;
-    font-size: 27px;
-}
-
-/* Botão de abrir o menu */
-.menu-button {
-    display: none;
-}
-
-@media (max-width: 800px) {
-    .menu-button {
-        display: block;
-    }
-
-    .hideOnMobile {
-        display: none !important;
-    }
-}
-
-/* Respeita a preferência por menos animações */
-@media (prefers-reduced-motion: reduce) {
-    .sidebar,
-    .overlay {
-        transition-duration: 0.01ms;
-    }
-}
-/* Correção da sobreposição do menu */
-nav {
-    position: relative;
-    z-index: auto;
-}
-
-#overlay {
-    z-index: 1800;
-}
-
-#sidebar {
-    z-index: 3000;
-}
-
-#Pedidos {
-    z-index: 2000;
 }
 
 /* Impede a rolagem da página com um painel aberto */
