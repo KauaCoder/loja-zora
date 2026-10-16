@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /* =========================================================
    ZORA - CADASTRO DE CLIENTE E ENDEREÇO (POSTGRESQL + SUPABASE)
    ========================================================= */
@@ -53,19 +55,19 @@ $input = json_decode(file_get_contents("php://input"), true) ?? $_POST;
 
 // Dados do Cliente
 $nome     = trim($input["nome"] ?? "");
-$email    = trim($input["email"] ?? "");
+$email    = strtolower(trim($input["email"] ?? ""));
 $senha    = $input["senha"] ?? "";
 $cpf      = preg_replace('/[^0-9]/', '', $input["cpf"] ?? "");
 $telefone = preg_replace('/[^0-9]/', '', $input["telefone"] ?? "");
 
-// Dados do Endereço
+// Dados do Endereço (com suporte a variações de chaves vindas do front-end)
 $cep         = preg_replace('/[^0-9]/', '', $input["cep"] ?? "");
-$rua         = trim($input["rua"] ?? $input["logradouro"] ?? "");
+$rua         = trim($input["rua"] ?? $input["logradouro"] ?? $input["endereco"] ?? "");
 $numero      = trim($input["numero"] ?? "");
 $complemento = trim($input["complemento"] ?? "");
 $bairro      = trim($input["bairro"] ?? "");
 $cidade      = trim($input["cidade"] ?? "");
-$uf          = strtoupper(trim($input["uf"] ?? "RJ"));
+$uf          = strtoupper(trim($input["estado"] ?? $input["uf"] ?? "RJ"));
 
 if (empty($nome) || empty($email) || empty($senha)) {
     http_response_code(400);
@@ -120,7 +122,7 @@ try {
     $stmt_cliente->execute();
     
     $novo_cliente = $stmt_cliente->fetch(PDO::FETCH_ASSOC);
-    $id_cliente = $novo_cliente["id_cliente"];
+    $id_cliente = (int) $novo_cliente["id_cliente"];
 
     // 2. Inserir Endereço (Associado ao id_cliente)
     $sql_insert_endereco = "
@@ -145,10 +147,30 @@ try {
     // Confirma a transação (salva tudo na base de dados)
     $conexao->commit();
 
+    // ========================================================
+    // INICIAR A SESSÃO NO SERVIDOR PARA O NOVO UTILIZADOR
+    // ========================================================
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+    $_SESSION['id_cliente'] = $id_cliente;
+    $_SESSION['nome']       = $nome;
+    $_SESSION['email']      = $email;
+    $_SESSION['telefone']   = $telefone;
+    $_SESSION['is_admin']   = false;
+    session_write_close();
+
     echo json_encode([
         "sucesso" => true,
         "mensagem" => "Registo efetuado com sucesso!",
-        "id_cliente" => $id_cliente
+        "id_cliente" => $id_cliente,
+        "cliente" => [
+            "id_cliente" => $id_cliente,
+            "nome" => $nome,
+            "email" => $email,
+            "telefone" => $telefone,
+            "is_admin" => false
+        ]
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $erro) {
