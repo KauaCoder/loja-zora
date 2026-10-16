@@ -7,3 +7,149 @@ body {
     background-attachment: fixed;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+/* =========================================================
+   ESTILIZAÇÃO UNIFICADA E FIXA DO CARRINHO DE PEDIDOS
+   ========================================================= */
+
+/* Fundo da gaveta e scroll */
+#listaPedidos {
+    flex: 1;
+    list-style: none;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+/* Ficha de cada produto no carrinho */
+#listaPedidos li.item-carrinho {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #eeeeee;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Controlo da Imagem Miniatura (Fix para não esticar) */
+.carrinho-foto-link {
+    display: block;
+    width: 65px;
+    height: 65px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.carrinho-foto {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block;
+}
+
+/* Detalhes do produto (Nome e Preço Unitário) */
+.carrinho-detalhes {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.carrinho-nome {
+    font-size: 14px;
+    font-weight: 700;
+    color: #171717;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.carrinho-preco-unitario {
+    font-size: 12px;
+    color: #888888;
+}
+
+/* Controlos de Quantidade (- 1 +) */
+.qtd-controle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.qtd-btn {
+    width: 26px;
+    height: 26px;
+    background: #f0f0f0;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qtd-btn:hover {
+    background: #e0e0e0;
+}
+
+.qtd-numero {
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Acções do lado direito (Subtotal e Botão Remover) */
+.carrinho-acoes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.carrinho-subtotal {
+    font-size: 14px;
+    font-weight: 700;
+    color: #c85c78;
+}
+
+.remover-item {
+    background: transparent !important;
+    border: none !important;
+    font-size: 16px;
+    cursor: pointer;
+    color: #888888;
+    padding: 2px;
+    transition: color 0.2s;
+}
+
+.remover-item:hover {
+    color: #d32f2f !important;
+}
+
+/* Botão de Finalizar Compra no Rodapé */
+.PedidosPagar button {
+    width: 100%;
+    padding: 14px;
+    background: #000000;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    transition: background 0.3s ease;
+}
+
+.PedidosPagar button:hover {
+    background: #222222;
+}
