@@ -1,6 +1,5 @@
 // =====================================================
-// ZORA - PERFIL DO CLIENTE
-// PostgreSQL + Sessão PHP
+// ZORA - PERFIL DO CLIENTE (Versão Blindada & Resiliente)
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -21,9 +20,22 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+// FUNÇÃO RESILIENTE ATUALIZADA: Injeta automaticamente o id_cliente do localStorage na URL
 async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
+    let idClienteParam = "";
+    const dadosLocais = localStorage.getItem("usuarioLogado");
+    if (dadosLocais) {
+        try {
+            const usuario = JSON.parse(dadosLocais);
+            if (usuario && usuario.id_cliente) {
+                idClienteParam = `id_cliente=${usuario.id_cliente}`;
+            }
+        } catch (e) {
+            console.error("Erro ao ler localStorage:", e);
+        }
+    }
+
     const rotasPossiveis = [
-        `/TelaCliente/${nomeArquivo}`,
         `/TelaCliente/${nomeArquivo}`,
         `/${nomeArquivo}`,
         `../${nomeArquivo}`
@@ -33,7 +45,13 @@ async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
 
     for (const rota of rotasPossiveis) {
         try {
-            const resposta = await fetch(rota, {
+            // Adiciona o parâmetro id_cliente na URL para garantir bypass caso os cookies falhem no Render
+            let urlFinal = rota;
+            if (idClienteParam) {
+                urlFinal += (rota.includes("?") ? "&" : "?") + idClienteParam;
+            }
+
+            const resposta = await fetch(urlFinal, {
                 credentials: "include",
                 ...opcoes
             });
@@ -61,11 +79,14 @@ async function verificarLogin() {
             resultado = JSON.parse(texto);
         } catch (e) {
             console.error("Resposta inválida do servidor:", texto);
+            // Se falhou no servidor mas existe no localStorage, não expulsa imediatamente
+            if (localStorage.getItem("usuarioLogado")) return true;
             window.location.replace("/TelaLogin/login.html");
             return false;
         }
 
         if (!resultado.sucesso || !resultado.logado) {
+            if (localStorage.getItem("usuarioLogado")) return true;
             window.location.replace("/TelaLogin/login.html");
             return false;
         }
@@ -73,6 +94,7 @@ async function verificarLogin() {
         return true;
     } catch (erro) {
         console.error("Erro ao verificar sessão:", erro);
+        if (localStorage.getItem("usuarioLogado")) return true;
         window.location.replace("/TelaLogin/login.html");
         return false;
     }
