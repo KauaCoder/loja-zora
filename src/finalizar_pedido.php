@@ -196,6 +196,6 @@ try {
     http_response_code(400);
     echo json_encode([
         "sucesso" => false,
-        "mensagem" => $erro->getMessage()
+        "mensagem" => "Erro [Linha " . $erro->getLine() . "]: " . $erro->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
