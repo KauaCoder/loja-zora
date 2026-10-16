@@ -1,6 +1,6 @@
 <?php
 /* =========================================================
-   ZORA - CADASTRO DE CLIENTE (POSTGRESQL + SUPABASE)
+   ZORA - CADASTRO DE CLIENTE E ENDEREÇO (POSTGRESQL + SUPABASE)
    ========================================================= */
 
 header("Content-Type: application/json; charset=UTF-8");
@@ -51,15 +51,21 @@ require_once $caminho_conexao;
 // =============================================
 $input = json_decode(file_get_contents("php://input"), true) ?? $_POST;
 
+// Dados do Cliente
 $nome     = trim($input["nome"] ?? "");
 $email    = trim($input["email"] ?? "");
 $senha    = $input["senha"] ?? "";
 $cpf      = preg_replace('/[^0-9]/', '', $input["cpf"] ?? "");
 $telefone = preg_replace('/[^0-9]/', '', $input["telefone"] ?? "");
 
-// NOTA: Os dados de morada (CEP, rua, etc.) foram lidos do frontend, 
-// mas não devem ser inseridos na tabela "cliente", pois não existem lá. 
-// Devem ser inseridos na tabela "endereco" após a criação do cliente.
+// Dados do Endereço
+$cep         = preg_replace('/[^0-9]/', '', $input["cep"] ?? "");
+$rua         = trim($input["rua"] ?? $input["logradouro"] ?? "");
+$numero      = trim($input["numero"] ?? "");
+$complemento = trim($input["complemento"] ?? "");
+$bairro      = trim($input["bairro"] ?? "");
+$cidade      = trim($input["cidade"] ?? "");
+$uf          = strtoupper(trim($input["uf"] ?? "RJ"));
 
 if (empty($nome) || empty($email) || empty($senha)) {
     http_response_code(400);
@@ -75,7 +81,7 @@ try {
         throw new Exception("Conexão com a base de dados inválida.");
     }
 
-    // Verificar se o e-mail já existe na tabela cliente usando a coluna "e_mail" exata
+    // Verificar se o e-mail já existe na tabela cliente
     $sql_check = "SELECT id_cliente FROM public.cliente WHERE e_mail = :email LIMIT 1";
     $stmt_check = $conexao->prepare($sql_check);
     $stmt_check->bindValue(":email", $email);
@@ -93,41 +99,64 @@ try {
     // Hash seguro da senha
     $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
 
-    // Inserir novo cliente no PostgreSQL apenas com as colunas que existem na tabela
-    $sql_insert = "
-        INSERT INTO public.cliente (
-            nome,
-            e_mail,
-            senha,
-            cpf,
-            telefone
-        ) VALUES (
-            :nome,
-            :email,
-            :senha,
-            :cpf,
-            :telefone
-        )
+    // ========================================================
+    // INÍCIO DA TRANSAÇÃO (Garante que cliente e endereço são salvos juntos)
+    // ========================================================
+    $conexao->beginTransaction();
+
+    // 1. Inserir Cliente
+    $sql_insert_cliente = "
+        INSERT INTO public.cliente (nome, e_mail, senha, cpf, telefone) 
+        VALUES (:nome, :email, :senha, :cpf, :telefone)
         RETURNING id_cliente;
     ";
 
-    $stmt_insert = $conexao->prepare($sql_insert);
-    $stmt_insert->bindValue(":nome", $nome);
-    $stmt_insert->bindValue(":email", $email);
-    $stmt_insert->bindValue(":senha", $senha_hash);
-    $stmt_insert->bindValue(":cpf", $cpf);
-    $stmt_insert->bindValue(":telefone", $telefone);
+    $stmt_cliente = $conexao->prepare($sql_insert_cliente);
+    $stmt_cliente->bindValue(":nome", $nome);
+    $stmt_cliente->bindValue(":email", $email);
+    $stmt_cliente->bindValue(":senha", $senha_hash);
+    $stmt_cliente->bindValue(":cpf", $cpf);
+    $stmt_cliente->bindValue(":telefone", $telefone);
+    $stmt_cliente->execute();
+    
+    $novo_cliente = $stmt_cliente->fetch(PDO::FETCH_ASSOC);
+    $id_cliente = $novo_cliente["id_cliente"];
 
-    $stmt_insert->execute();
-    $novo_cliente = $stmt_insert->fetch(PDO::FETCH_ASSOC);
+    // 2. Inserir Endereço (Associado ao id_cliente)
+    $sql_insert_endereco = "
+        INSERT INTO public.endereco (
+            id_cliente, cep, endereco, numero, complemento, bairro, cidade, estado
+        ) VALUES (
+            :id_cliente, :cep, :endereco, :numero, :complemento, :bairro, :cidade, :estado
+        )
+    ";
+
+    $stmt_endereco = $conexao->prepare($sql_insert_endereco);
+    $stmt_endereco->bindValue(":id_cliente", $id_cliente);
+    $stmt_endereco->bindValue(":cep", $cep);
+    $stmt_endereco->bindValue(":endereco", $rua); 
+    $stmt_endereco->bindValue(":numero", $numero);
+    $stmt_endereco->bindValue(":complemento", $complemento);
+    $stmt_endereco->bindValue(":bairro", $bairro);
+    $stmt_endereco->bindValue(":cidade", $cidade);
+    $stmt_endereco->bindValue(":estado", $uf); 
+    $stmt_endereco->execute();
+
+    // Confirma a transação (salva tudo na base de dados)
+    $conexao->commit();
 
     echo json_encode([
         "sucesso" => true,
         "mensagem" => "Registo efetuado com sucesso!",
-        "id_cliente" => $novo_cliente["id_cliente"] ?? null
+        "id_cliente" => $id_cliente
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $erro) {
+    // Se der erro em qualquer parte, desfaz a transação para não salvar dados pela metade
+    if (isset($conexao) && $conexao->inTransaction()) {
+        $conexao->rollBack();
+    }
+
     http_response_code(500);
     echo json_encode([
         "sucesso" => false,
