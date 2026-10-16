@@ -1,5 +1,5 @@
 /* =========================================================
-   ZORA - LOGIN & CADASTRO
+   ZORA - LOGIN & CADASTRO (Versão Corrigida LocalStorage)
    ========================================================= */
 
 function mudarAba(aba) {
@@ -214,6 +214,9 @@ async function enviarRequisicaoPHP(rotas, dados) {
     return { ok: false, mensagem: ultimoErro || "Nenhuma rota respondeu." };
 }
 
+// =====================================================
+// FORMULÁRIO DE CADASTRO
+// =====================================================
 const formCadastro = document.getElementById("formCadastro");
 if (formCadastro) {
     formCadastro.addEventListener("submit", async function (event) {
@@ -222,12 +225,14 @@ if (formCadastro) {
         try {
             const elNome = document.getElementById("nomeCadastro");
             const elEmail = document.getElementById("emailCadastro");
+            const elCpf = document.getElementById("cpfCadastro"); // Captura o CPF se existir
             const elTelefone = document.getElementById("telefoneCadastro");
             const elSenha = document.getElementById("senhaCadastro");
             const elConfirmarSenha = document.getElementById("confirmarSenhaCadastro");
 
             const nome = elNome ? elNome.value.trim() : "";
             const email = elEmail ? normalizarEmail(elEmail.value) : "";
+            const cpf = elCpf ? elCpf.value.replace(/\D/g, "") : "";
             const telefone = elTelefone ? elTelefone.value.trim() : "";
             const senha = elSenha ? elSenha.value : "";
             const confirmarSenha = elConfirmarSenha ? elConfirmarSenha.value : "";
@@ -238,7 +243,7 @@ if (formCadastro) {
             }
 
             if (senha.length < 6 || senha !== confirmarSenha) {
-                alert("Verifique a senha informada.");
+                alert("Verifique a senha informada (mínimo de 6 caracteres).");
                 return;
             }
 
@@ -253,18 +258,30 @@ if (formCadastro) {
             };
 
             const rotasCadastro = ["/cadastro.php", "/cadastrar_cliente.php", "../cadastro.php", "../cadastrar_cliente.php"];
-            const resultadoReq = await enviarRequisicaoPHP(rotasCadastro, { nome, email, telefone, senha, endereco });
+            
+            // Enviamos o CPF no bloco raiz dos dados
+            const resultadoReq = await enviarRequisicaoPHP(rotasCadastro, { nome, email, cpf, telefone, senha, ...endereco });
 
             if (!resultadoReq.ok || !resultadoReq.dados.sucesso) {
                 alert(resultadoReq.dados?.mensagem || resultadoReq.mensagem || "Erro ao cadastrar.");
                 return;
             }
 
-            alert("Cadastro realizado com sucesso! Faça login para continuar.");
-            mudarAba("login");
+            // GRAVAR O LOCALSTORAGE APÓS O CADASTRO!
+            localStorage.setItem("usuarioLogado", JSON.stringify({
+                id_cliente: resultadoReq.dados.id_cliente,
+                nome: nome,
+                email: email,
+                is_admin: false // Cadastro novo é sempre cliente padrão
+            }));
 
+            alert("Cadastro realizado com sucesso! Você será redirecionado para o seu perfil.");
+            
             formCadastro.reset();
             limparCamposEndereco();
+            
+            // Redireciona logo para o perfil após sucesso
+            window.location.replace("/TelaCliente/cliente.html");
 
         } catch (erroFatal) {
             alert("Erro: " + erroFatal.message);
@@ -272,6 +289,9 @@ if (formCadastro) {
     });
 }
 
+// =====================================================
+// FORMULÁRIO DE LOGIN
+// =====================================================
 const formLogin = document.getElementById("formLogin");
 if (formLogin) {
     formLogin.addEventListener("submit", async function (event) {
@@ -302,18 +322,16 @@ if (formLogin) {
 
             const ehAdmin = dadosUsuario.is_admin === true || dadosUsuario.is_admin === 1 || dadosUsuario.is_admin === "1" || dadosUsuario.nivel === "admin";
 
+            // GRAVA O LOCALSTORAGE APÓS O LOGIN COM A CHAVE "email" CORRETA
             localStorage.setItem("usuarioLogado", JSON.stringify({
                 id_cliente: dadosUsuario.id_cliente || dadosUsuario.id,
                 nome: dadosUsuario.nome || "Usuário",
-                email: dadosUsuario.email || email,
+                email: dadosUsuario.e_mail || dadosUsuario.email || email,
                 is_admin: ehAdmin
             }));
 
-            alert("Login realizado com sucesso!");
-
             let destino = respostaServidor.redirecionar;
             if (!destino) {
-                // CORRIGIDO: Removido o "/src/" do início dos caminhos
                 destino = ehAdmin ? "/TelaAdmin/admin.html" : "/TelaCliente/cliente.html";
             }
 
