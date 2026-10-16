@@ -1346,10 +1346,84 @@ button:focus-visible,
 }
 
 nav {
-    z-index: auto; /* não cria contexto de empilhamento */
+    z-index: auto;
+}
+
+.overlay {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 
 .sidebar {
-    justify-content: flex-start; /* itens no topo */
+    justify-content: flex-start;
+    width: min(82vw, 320px);
+    padding: 0 0 max(24px, env(safe-area-inset-bottom));
+    border-radius: 24px 0 0 24px;
+    background: var(--zora-bg);
     z-index: 3000;
+}
+
+/* Topo com o botão fechar */
+.sidebar .sidebar-fechar {
+    margin: 0;
+    padding: 12px 14px;
+    background: var(--zora-beige);
+    border-bottom: 1px solid var(--zora-border);
+}
+
+.sidebar .sidebar-fechar a {
+    width: 44px;
+    min-height: 0;
+    height: 44px;
+    margin-left: auto;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 22px;
+}
+
+/* Links */
+.sidebar li {
+    margin: 0;
+    padding: 0 20px;
+}
+
+.sidebar .sidebar-fechar {
+    padding: 12px 14px;
+}
+
+.sidebar li:not(.sidebar-fechar) {
+    border-bottom: 1px solid var(--zora-border);
+}
+
+.sidebar li:not(.sidebar-fechar) a {
+    padding: 20px 4px;
+    border-radius: 0;
+    font-size: 17px;
+    letter-spacing: .3px;
+}
+
+.sidebar li:not(.sidebar-fechar) a:hover {
+    background: transparent;
+    color: var(--zora-gold);
+}
+
+/* Login / Dashboard como botão */
+.sidebar li:last-child {
+    margin-top: 24px;
+    border-bottom: none;
+}
+
+.sidebar li:last-child a {
+    justify-content: center;
+    padding: 15px;
+    border-radius: 99px;
+    background: #000;
+    color: #fff;
+    font-weight: 700;
+}
+
+.sidebar li:last-child a:hover {
+    background: #333;
+    color: #fff;
 }
