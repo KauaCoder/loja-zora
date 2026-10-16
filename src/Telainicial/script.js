@@ -1,17 +1,12 @@
 // =====================================================
 // ZORA - TELA INICIAL, CATÁLOGO E CARRINHO
-// Versão atualizada
+// Versão sem menu lateral
 // =====================================================
 
 
 // =====================================================
-// 1. MENU LATERAL, OVERLAY E PERFIL
+// 1. OVERLAY E PERFIL
 // =====================================================
-
-function obterSidebar() {
-    return document.getElementById("sidebar")
-        || document.querySelector(".sidebar");
-}
 
 function obterOverlay() {
     return document.getElementById("overlay")
@@ -19,68 +14,21 @@ function obterOverlay() {
 }
 
 function sincronizarOverlay() {
-    const sidebar = obterSidebar();
     const overlay = obterOverlay();
     const pedidos = document.getElementById("Pedidos");
 
-    const menuAberto = sidebar && (
-        sidebar.classList.contains("ativo")
-        || sidebar.classList.contains("active")
-    );
-
-    const pedidosAberto = pedidos
-        && pedidos.classList.contains("ativo");
-
-    const algumPainelAberto = Boolean(
-        menuAberto || pedidosAberto
-    );
+    const pedidosAberto = pedidos && pedidos.classList.contains("ativo");
 
     if (overlay) {
-        overlay.classList.toggle(
-            "ativo",
-            algumPainelAberto
-        );
+        overlay.classList.toggle("ativo", Boolean(pedidosAberto));
     }
 
-    // Impede a rolagem da página quando um painel está aberto.
-    document.body.classList.toggle(
-        "painel-aberto",
-        algumPainelAberto
-    );
-}
-
-function showSidebar() {
-    const sidebar = obterSidebar();
-
-    if (!sidebar) {
-        console.warn("ZORA: menu lateral não encontrado.");
-        return;
-    }
-
-    // Não usar style.display.
-    // A animação é controlada pelo CSS.
-    sidebar.classList.add("ativo", "active");
-
-    sincronizarOverlay();
-}
-
-function hideSidebar() {
-    const sidebar = obterSidebar();
-
-    if (sidebar) {
-        sidebar.classList.remove("ativo", "active");
-    }
-
-    sincronizarOverlay();
+    // Impede a rolagem da página quando o carrinho está aberto.
+    document.body.classList.toggle("painel-aberto", Boolean(pedidosAberto));
 }
 
 function fecharTudo() {
-    const sidebar = obterSidebar();
     const pedidos = document.getElementById("Pedidos");
-
-    if (sidebar) {
-        sidebar.classList.remove("ativo", "active");
-    }
 
     if (pedidos) {
         pedidos.classList.remove("ativo");
@@ -149,7 +97,6 @@ async function checarEAtualizarMenu() {
     }
 
     const menuDesktop = document.getElementById("menuUsuario");
-    const menuMobile = document.getElementById("menuUsuarioMobile");
 
     let texto = "Login";
 
@@ -172,7 +119,6 @@ async function checarEAtualizarMenu() {
     }
 
     if (menuDesktop) menuDesktop.textContent = texto;
-    if (menuMobile) menuMobile.textContent = texto;
 }
 
 
@@ -735,13 +681,6 @@ function abrirPedidos() {
         return;
     }
 
-    // Evita que o menu e o carrinho fiquem abertos simultaneamente.
-    const sidebar = obterSidebar();
-
-    if (sidebar) {
-        sidebar.classList.remove("ativo", "active");
-    }
-
     pedidos.classList.add("ativo");
 
     sincronizarOverlay();
@@ -774,25 +713,22 @@ async function pagarPedido() {
 
     for (let i = pedidosArray.length - 1; i >= 0; i--) {
         const item = pedidosArray[i];
-        const estoque = await obterEstoqueBD(item.id_produto);
+        const estoqueBD = await obterEstoqueBD(item.id_produto);
 
-        if (estoque === null) {
+        if (estoqueBD === null) {
             alert(
-                `Não foi possível confirmar o estoque de "${item.nome}". ` +
-                "Tente novamente antes de continuar."
+                "Não foi possível validar o estoque de todos os itens. " +
+                "Por favor, tente novamente."
             );
             return;
         }
 
-        if (estoque === 0) {
+        if (estoqueBD <= 0) {
             produtosSemEstoque.push(item.nome);
             pedidosArray.splice(i, 1);
             houveAjuste = true;
-            continue;
-        }
-
-        if (item.quantidade > estoque) {
-            item.quantidade = estoque;
+        } else if (item.quantidade > estoqueBD) {
+            item.quantidade = estoqueBD;
             houveAjuste = true;
         }
     }
@@ -800,223 +736,23 @@ async function pagarPedido() {
     if (houveAjuste) {
         salvarCarrinho();
         renderizarPedidos();
-        atualizarBadge();
 
         if (produtosSemEstoque.length > 0) {
             alert(
-                "Os seguintes produtos esgotaram e foram removidos: " +
-                produtosSemEstoque.join(", ")
+                "Alguns itens no seu carrinho esgotaram e foram removidos:\n- " +
+                produtosSemEstoque.join("\n- ")
             );
         } else {
             alert(
-                "Algumas quantidades foram ajustadas ao estoque disponível. " +
-                "Confira o carrinho antes de continuar."
+                "A quantidade de alguns itens foi ajustada de acordo com o estoque disponível."
             );
         }
 
-        return;
-    }
-
-    if (pedidosArray.length === 0) {
-        alert("Não há produtos disponíveis para finalizar o pedido.");
-        return;
-    }
-
-    // Verifica o login, caso a função exista no sistema.
-    if (typeof estaLogado === "function") {
-        try {
-            const logado = await estaLogado();
-
-            if (!logado) {
-                alert("Você precisa estar logado para fazer um pedido!");
-                window.location.href = "/TelaLogin/login.html";
-                return;
-            }
-        } catch (erro) {
-            console.error("Erro ao verificar login:", erro);
-
-            alert(
-                "Não foi possível verificar seu login. " +
-                "Tente novamente."
-            );
+        if (pedidosArray.length === 0) {
             return;
         }
     }
 
-    const total = calcularTotal();
-
-    try {
-        localStorage.setItem("totalPedido", total.toFixed(2));
-        localStorage.setItem(
-            "pedidos",
-            JSON.stringify(pedidosArray)
-        );
-    } catch (erro) {
-        console.error("Erro ao preparar pedido:", erro);
-
-        alert("Não foi possível preparar o pedido.");
-        return;
-    }
-
-    window.location.href = "/TelaEntrega/entrega.html";
-}
-
-
-// =====================================================
-// 6. CARROSSEL DE PROMOÇÕES
-// =====================================================
-
-let slideAtual = 0;
-let carrosselTimer = null;
-
-function obterSlides() {
-    return Array.from(
-        document.querySelectorAll(".promocao-slide")
-    );
-}
-
-function obterIndicadores() {
-    return Array.from(
-        document.querySelectorAll(".indicador")
-    );
-}
-
-function mostrarSlide(numero) {
-    const slides = obterSlides();
-    const indicadores = obterIndicadores();
-
-    if (slides.length === 0) return;
-
-    if (numero < 0 || numero >= slides.length) {
-        return;
-    }
-
-    slides.forEach((slide, indice) => {
-        slide.classList.toggle("ativo", indice === numero);
-    });
-
-    indicadores.forEach((indicador, indice) => {
-        indicador.classList.toggle("ativo", indice === numero);
-    });
-
-    slideAtual = numero;
-}
-
-function proximoSlide() {
-    const slides = obterSlides();
-
-    if (slides.length === 0) return;
-
-    mostrarSlide((slideAtual + 1) % slides.length);
-}
-
-function slideAnterior() {
-    const slides = obterSlides();
-
-    if (slides.length === 0) return;
-
-    mostrarSlide(
-        (slideAtual - 1 + slides.length) % slides.length
-    );
-}
-
-function irParaSlide(numero) {
-    mostrarSlide(Number(numero));
-}
-
-function iniciarCarrosselAuto() {
-    const slides = obterSlides();
-
-    if (slides.length <= 1 || carrosselTimer !== null) {
-        return;
-    }
-
-    carrosselTimer = setInterval(proximoSlide, 5000);
-}
-
-function pausarCarrosselAuto() {
-    if (carrosselTimer !== null) {
-        clearInterval(carrosselTimer);
-        carrosselTimer = null;
-    }
-}
-
-
-// =====================================================
-// 7. INICIALIZAÇÃO E EVENTOS
-// =====================================================
-
-function inicializarZora() {
-    // Atualiza o carrinho e os dados iniciais.
-    carregarCarrinho();
-
-    // Carrega o catálogo.
-    carregarCatalogo();
-
-    // Atualiza os links de perfil.
-    checarEAtualizarMenu();
-
-    // Overlay: toque fora dos painéis fecha tudo.
-    const overlay = obterOverlay();
-
-    if (overlay) {
-        overlay.addEventListener("click", function () {
-            fecharTudo();
-        });
-    }
-
-    // Tecla Escape fecha menu e carrinho.
-    document.addEventListener("keydown", function (evento) {
-        if (evento.key === "Escape") {
-            fecharTudo();
-        }
-    });
-
-    // Carrossel de promoções.
-    const slides = obterSlides();
-
-    if (slides.length > 0) {
-        mostrarSlide(0);
-        iniciarCarrosselAuto();
-
-        const containerCarrossel =
-            document.querySelector(".carousel-promocoes");
-
-        if (containerCarrossel) {
-            containerCarrossel.addEventListener(
-                "mouseenter",
-                pausarCarrosselAuto
-            );
-
-            containerCarrossel.addEventListener(
-                "mouseleave",
-                iniciarCarrosselAuto
-            );
-
-            containerCarrossel.addEventListener(
-                "touchstart",
-                pausarCarrosselAuto,
-                { passive: true }
-            );
-
-            containerCarrossel.addEventListener(
-                "touchend",
-                iniciarCarrosselAuto,
-                { passive: true }
-            );
-        }
-    }
-
-    // Estado visual inicial consistente.
-    sincronizarOverlay();
-}
-
-if (document.readyState === "loading") {
-    document.addEventListener(
-        "DOMContentLoaded",
-        inicializarZora,
-        { once: true }
-    );
-} else {
-    inicializarZora();
+    // Redireciona para a tela de checkout / pagamento
+    window.location.href = "/TelaPagamento/pagamento.html";
 }
