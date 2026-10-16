@@ -1344,3 +1344,12 @@ button:focus-visible,
         transition-duration: .01ms !important;
     }
 }
+
+nav {
+    z-index: auto; /* não cria contexto de empilhamento */
+}
+
+.sidebar {
+    justify-content: flex-start; /* itens no topo */
+    z-index: 3000;
+}
