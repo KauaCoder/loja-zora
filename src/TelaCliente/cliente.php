@@ -81,7 +81,7 @@ try {
         exit;
     }
 
-    // Consulta SQL com suporte resiliente para colunas 'rua' ou 'endereco'
+    // Consulta SQL blindada utilizando a chave estrangeira id_cliente com COALESCE resiliente
     $sql = "
         SELECT 
             c.id_cliente,
@@ -95,7 +95,7 @@ try {
             e.bairro,
             e.cidade,
             e.estado,
-            COALESCE(e.rua, e.endereco) as rua
+            COALESCE(e.rua, e.endereco, e.logradouro, '-') as rua
         FROM cliente c
         LEFT JOIN endereco e ON e.id_cliente = c.id_cliente
         WHERE c.id_cliente = :id_cliente
