@@ -588,3 +588,100 @@ button:disabled{
     }
 
 }
+
+/* =========================
+   CONTROLE DE ETAPAS E PAGAMENTO
+========================= */
+
+.etapa-form {
+    display: none;
+}
+
+.etapa-form.ativa {
+    display: block;
+}
+
+/* Indicador de passo concluído */
+.passo.concluido .passo-numero {
+    background: #2e7d32;
+    color: white;
+}
+
+.passo.concluido .passo-label {
+    color: #2e7d32;
+}
+
+.passo-linha.ativo {
+    background: #111;
+}
+
+/* Caixa de resumo dos dados preenchidos na Etapa 2 */
+.resumo-dados-fornecidos {
+    background: #f8f6f2;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 22px;
+    border: 1px solid #e2ddd4;
+}
+
+.resumo-dados-fornecidos h4 {
+    font-size: 14.5px;
+    color: #222;
+    margin-bottom: 8px;
+}
+
+.resumo-dados-fornecidos p {
+    font-size: 13.5px;
+    color: #555;
+    line-height: 1.5;
+}
+
+/* Opções de Pagamento */
+.opcoes-pagamento {
+    margin-bottom: 22px;
+}
+
+.opcoes-pagamento label.opcao-radio {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #f8f6f2;
+    border: 1px solid #e2ddd4;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-size: 14.5px;
+    color: #333;
+    font-weight: normal;
+    transition: .2s;
+}
+
+.opcoes-pagamento label.opcao-radio:hover {
+    border-color: #111;
+}
+
+.opcoes-pagamento input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #111;
+}
+
+/* Botões em dupla na Etapa 2 */
+.botoes-duplos {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.botoes-duplos button {
+    margin-top: 0;
+}
+
+.btn-voltar {
+    background: #6c757d;
+}
+
+.btn-voltar:hover {
+    background: #5a6268;
+}
