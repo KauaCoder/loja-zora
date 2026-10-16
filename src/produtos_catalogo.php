@@ -50,18 +50,11 @@ try {
     }
 
     // =============================================
-    // CONSULTA AO POSTGRESQL (SUPABASE - ESTRUTURA REAL)
+    // CONSULTA RESILIENTE AO POSTGRESQL (SUPABASE)
     // =============================================
 
     $sql = "
-        SELECT
-            id_produto,
-            nm_produto,
-            preco,
-            item_qtd,
-            categoria,
-            imagem,
-            descricao
+        SELECT *
         FROM public.produto
         ORDER BY id_produto ASC
     ";
@@ -74,15 +67,24 @@ try {
     $produtos = [];
 
     foreach ($dados as $produto) {
+        // Mapeamento dinâmico e seguro das colunas da tabela
+        $id        = $produto["id_produto"] ?? $produto["id"] ?? 0;
+        $nome      = $produto["nm_produto"] ?? $produto["nome"] ?? $produto["nome_produto"] ?? "Produto ZORA";
+        $preco     = $produto["preco"] ?? $produto["valor"] ?? 0;
+        $estoque   = $produto["estoque"] ?? $produto["qtd_item"] ?? $produto["quantidade"] ?? $produto["qtd"] ?? 99;
+        $categoria = $produto["categoria"] ?? "Geral";
+        $imagem    = $produto["imagem"] ?? $produto["foto"] ?? "Logo 1.png";
+        $descricao = $produto["descricao"] ?? "";
+
         $produtos[] = [
-            "id_produto" => (int) $produto["id_produto"],
-            "nome"        => $produto["nm_produto"] ?? "Produto ZORA",
-            "preco"       => round((float) ($produto["preco"] ?? 0), 2),
-            "estoque"     => (int) ($produto["item_qtd"] ?? 0),
-            "qtd_item"    => (int) ($produto["item_qtd"] ?? 0),
-            "categoria"   => $produto["categoria"] ?? "Geral",
-            "imagem"      => $produto["imagem"] ?? "Logo 1.png",
-            "descricao"   => $produto["descricao"] ?? ""
+            "id_produto" => (int) $id,
+            "nome"        => (string) $nome,
+            "preco"       => round((float) $preco, 2),
+            "estoque"     => (int) $estoque,
+            "qtd_item"    => (int) $estoque,
+            "categoria"   => (string) $categoria,
+            "imagem"      => (string) $imagem,
+            "descricao"   => (string) $descricao
         ];
     }
 
