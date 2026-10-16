@@ -552,3 +552,265 @@ nav a:hover {
         width: 100%;
     }
 }
+
+/* =========================================================
+   SEÇÃO DE AVALIAÇÕES E PUBLICAÇÕES
+   ========================================================= */
+
+.avaliacoes {
+    width: min(1200px, 92%);
+    margin: 35px auto 70px;
+    padding: 35px;
+    background: var(--branco);
+    border-radius: 20px;
+    box-shadow: var(--sombra);
+    animation: avaliacaoEntrar 0.7s ease;
+}
+
+@keyframes avaliacaoEntrar {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header de Avaliações & Média */
+.titulo-avaliacoes {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid var(--cinza-claro);
+}
+
+.titulo-avaliacoes h2 {
+    font-size: 25px;
+    color: var(--preto);
+}
+
+.media-avaliacao {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#mediaNota {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--rosa-escuro);
+}
+
+.estrelas {
+    color: var(--dourado);
+    font-size: 23px;
+    letter-spacing: 2px;
+}
+
+#quantidadeAvaliacoes {
+    color: var(--cinza);
+    font-size: 14px;
+}
+
+/* Formulário de Nova Avaliação */
+.nova-avaliacao {
+    margin-top: 30px;
+    padding: 25px;
+    background: var(--fundo);
+    border: 1px solid #f1e6e9;
+    border-radius: 14px;
+    transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+
+.nova-avaliacao:hover {
+    border-color: #e7bdc9;
+    box-shadow: 0 8px 25px rgba(200, 92, 120, 0.06);
+}
+
+.nova-avaliacao h3 {
+    margin-bottom: 8px;
+    color: var(--preto);
+}
+
+.nova-avaliacao p {
+    color: var(--cinza);
+    margin-bottom: 12px;
+}
+
+/* Botões de Estrelas (Seleção) */
+.estrelas-escolha {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 18px;
+}
+
+.estrelas-escolha button {
+    border: none;
+    background: transparent;
+    color: var(--dourado);
+    font-size: 35px;
+    cursor: pointer;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.estrelas-escolha button:hover {
+    transform: scale(1.2);
+}
+
+.estrelas-escolha button:active {
+    transform: scale(0.95);
+}
+
+/* Campo de Comentário Textarea */
+#comentario {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--preto);
+    background: var(--branco);
+    outline: none;
+    transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+
+#comentario::placeholder {
+    color: #aaa;
+}
+
+#comentario:focus {
+    border-color: var(--rosa);
+    box-shadow: 0 0 0 3px rgba(200, 92, 120, 0.12);
+}
+
+/* Botão Publicar */
+.botao-avaliar {
+    margin-top: 15px;
+    padding: 14px 25px;
+    border: none;
+    border-radius: 9px;
+    background: var(--preto);
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--transicao), transform var(--transicao), box-shadow var(--transicao);
+}
+
+.botao-avaliar:hover {
+    background: var(--rosa-escuro);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(169, 68, 96, 0.20);
+}
+
+.botao-avaliar:active {
+    transform: scale(0.97);
+}
+
+/* Lista de Avaliações / Publicações */
+.lista-avaliacoes {
+    margin-top: 35px;
+}
+
+.lista-avaliacoes h3 {
+    margin-bottom: 20px;
+    color: var(--preto);
+}
+
+/* Item de Avaliação Publicada */
+.avaliacao {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--cinza-claro);
+    animation: comentarioEntrar 0.4s ease;
+}
+
+@keyframes comentarioEntrar {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.avaliacao-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 8px;
+}
+
+.avaliacao-nome {
+    font-weight: 700;
+    color: var(--preto);
+}
+
+.avaliacao-data {
+    color: var(--cinza-medio);
+    font-size: 12px;
+}
+
+.avaliacao-estrelas {
+    color: var(--dourado);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.avaliacao-texto {
+    color: #555;
+    line-height: 1.6;
+}
+
+.sem-avaliacoes {
+    color: #888;
+    padding: 20px 0;
+}
+
+/* Responsividade das Avaliações */
+@media (max-width: 800px) {
+    .avaliacoes {
+        width: 94%;
+        padding: 25px;
+        border-radius: 14px;
+    }
+
+    .titulo-avaliacoes {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .avaliacoes {
+        width: 100%;
+        margin: 20px 0 40px;
+        padding: 20px;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .titulo-avaliacoes h2 {
+        font-size: 21px;
+    }
+
+    .media-avaliacao {
+        flex-wrap: wrap;
+    }
+
+    .nova-avaliacao {
+        padding: 18px;
+    }
+
+    .botao-avaliar {
+        width: 100%;
+    }
+}
