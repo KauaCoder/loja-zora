@@ -69,10 +69,10 @@ async function verificarLogin() {
             } catch (err) {}
         }
 
-        const texto = logado ? nomeTexto : "Login";
+        const textoMenu = logado ? nomeTexto : "Login";
 
-        if (menuUsuario) menuUsuario.textContent = texto;
-        if (menuUsuarioMobile) menuUsuarioMobile.textContent = texto;
+        if (menuUsuario) menuUsuario.textContent = textoMenu;
+        if (menuUsuarioMobile) menuUsuarioMobile.textContent = textoMenu;
 
         return logado;
 
@@ -171,7 +171,8 @@ function renderizarResumo() {
     if (valorTotalEl) valorTotalEl.textContent = formatado;
     if (valorTotalPagamentoEl) valorTotalPagamentoEl.textContent = formatado;
 
-    const lista = document.getElementById("listaResumo");
+    // Busca o elemento da lista por ID ou pela classe do resumo
+    const lista = document.getElementById("listaResumo") || document.querySelector(".resumo-itens") || document.querySelector(".Resumo-do-Pedido");
 
     if (!lista) return;
 
@@ -181,12 +182,16 @@ function renderizarResumo() {
         const quantidade = Number(produto.quantidade || produto.qtd) || 1;
         const preco = Number(produto.preco || produto.valor_unitario) || 0;
         const nomeProd = produto.nome || produto.nm_produto || "Produto ZORA";
+        const tamanhoTexto = produto.tamanho ? ` (${produto.tamanho})` : "";
 
         const item = document.createElement("li");
+        item.style.display = "flex";
+        item.style.justifyContent = "space-between";
+        item.style.marginBottom = "8px";
 
         item.innerHTML = `
-            <span>${quantidade}x ${nomeProd}</span>
-            <span>R$ ${(preco * quantidade).toFixed(2).replace(".", ",")}</span>
+            <span>${quantidade}x ${nomeProd}${tamanhoTexto}</span>
+            <strong>R$ ${(preco * quantidade).toFixed(2).replace(".", ",")}</strong>
         `;
 
         lista.appendChild(item);
@@ -388,30 +393,30 @@ const linhaPasso = document.getElementById("linhaPasso");
 
 if (btnIrParaPagamento) {
     btnIrParaPagamento.addEventListener("click", () => {
-        const nome = document.getElementById("nome").value.trim();
-        const cpfValor = document.getElementById("cpf").value.trim();
-        const cepValor = document.getElementById("cep").value.trim();
-        const rua = document.getElementById("rua").value.trim();
-        const numero = document.getElementById("numero").value.trim();
-        const bairro = document.getElementById("bairro").value.trim();
-        const cidade = document.getElementById("cidade").value.trim();
-        const estado = document.getElementById("estado").value.trim();
+        const nome = document.getElementById("nome") ? document.getElementById("nome").value.trim() : "";
+        const cpfValor = document.getElementById("cpf") ? document.getElementById("cpf").value.trim() : "";
+        const cepValor = document.getElementById("cep") ? document.getElementById("cep").value.trim() : "";
+        const rua = document.getElementById("rua") ? document.getElementById("rua").value.trim() : "";
+        const numero = document.getElementById("numero") ? document.getElementById("numero").value.trim() : "";
+        const bairro = document.getElementById("bairro") ? document.getElementById("bairro").value.trim() : "";
+        const cidade = document.getElementById("cidade") ? document.getElementById("cidade").value.trim() : "";
+        const estado = document.getElementById("estado") ? document.getElementById("estado").value.trim() : "";
 
-        if (!nome) { alert("Informe seu nome completo."); document.getElementById("nome").focus(); return; }
-        if (cpfValor.replace(/\D/g, "").length !== 11) { alert("Informe um CPF válido."); document.getElementById("cpf").focus(); return; }
-        if (cepValor.replace(/\D/g, "").length !== 8) { alert("Informe um CEP válido."); document.getElementById("cep").focus(); return; }
+        if (!nome) { alert("Informe seu nome completo."); if (document.getElementById("nome")) document.getElementById("nome").focus(); return; }
+        if (cpfValor.replace(/\D/g, "").length !== 11) { alert("Informe um CPF válido."); if (document.getElementById("cpf")) document.getElementById("cpf").focus(); return; }
+        if (cepValor.replace(/\D/g, "").length !== 8) { alert("Informe um CEP válido."); if (document.getElementById("cep")) document.getElementById("cep").focus(); return; }
         if (!rua || !bairro || !cidade || !estado) { 
             alert("Preencha os dados do endereço (rua, bairro, cidade e estado)."); 
             liberarCamposManual();
-            document.getElementById("rua").focus(); 
+            if (document.getElementById("rua")) document.getElementById("rua").focus(); 
             return; 
         }
-        if (!numero) { alert("Informe o número do endereço."); document.getElementById("numero").focus(); return; }
+        if (!numero) { alert("Informe o número do endereço."); if (document.getElementById("numero")) document.getElementById("numero").focus(); return; }
 
         // Exibe os dados recolhidos na Etapa 2
         const resumoClienteEl = document.getElementById("resumoClienteExibicao");
         const resumoEnderecoEl = document.getElementById("resumoEnderecoExibicao");
-        const complementoVal = document.getElementById("complemento").value.trim();
+        const complementoVal = document.getElementById("complemento") ? document.getElementById("complemento").value.trim() : "";
         const compTexto = complementoVal ? `, ${complementoVal}` : "";
 
         if (resumoClienteEl) {
@@ -476,15 +481,15 @@ if (formEntrega) {
             return;
         }
 
-        const nome = document.getElementById("nome").value.trim();
-        const cpfValor = document.getElementById("cpf").value.trim();
-        const cepValor = document.getElementById("cep").value.trim();
-        const rua = document.getElementById("rua").value.trim();
-        const numero = document.getElementById("numero").value.trim();
-        const bairro = document.getElementById("bairro").value.trim();
-        const cidade = document.getElementById("cidade").value.trim();
-        const estado = document.getElementById("estado").value.trim();
-        const complemento = document.getElementById("complemento").value.trim();
+        const nome = document.getElementById("nome") ? document.getElementById("nome").value.trim() : "";
+        const cpfValor = document.getElementById("cpf") ? document.getElementById("cpf").value.trim() : "";
+        const cepValor = document.getElementById("cep") ? document.getElementById("cep").value.trim() : "";
+        const rua = document.getElementById("rua") ? document.getElementById("rua").value.trim() : "";
+        const numero = document.getElementById("numero") ? document.getElementById("numero").value.trim() : "";
+        const bairro = document.getElementById("bairro") ? document.getElementById("bairro").value.trim() : "";
+        const cidade = document.getElementById("cidade") ? document.getElementById("cidade").value.trim() : "";
+        const estado = document.getElementById("estado") ? document.getElementById("estado").value.trim() : "";
+        const complemento = document.getElementById("complemento") ? document.getElementById("complemento").value.trim() : "";
 
         const formaPagamentoEl = document.querySelector('input[name="formaPagamento"]:checked');
         const formaPagamento = formaPagamentoEl ? formaPagamentoEl.value : "pix";
@@ -495,7 +500,7 @@ if (formEntrega) {
             return;
         }
 
-        const btn = document.getElementById("btnContinuar");
+        const btn = document.getElementById("btnContinuar") || document.getElementById("btnFinalizarPedido");
 
         if (btn) {
             btn.disabled = true;
@@ -544,50 +549,47 @@ if (formEntrega) {
                             cidade: cidade,
                             estado: estado
                         },
-                        itens: itens
+                        itens: itens,
+                        valor_total: totalPedido
                     })
                 }
             );
 
-            const texto = await resposta.text();
-            let resultado;
-            try {
-                resultado = JSON.parse(texto);
-            } catch (erroJSON) {
-                throw new Error("O servidor retornou uma resposta inválida.");
-            }
+            const resultado = await resposta.json();
 
-            if (!resposta.ok || !resultado.sucesso) {
-                if (resposta.status === 401 || (resultado.mensagem && resultado.mensagem.toLowerCase().includes("sessão"))) {
-                    alert("Sua sessão expirou. Faça login novamente.");
-                    window.location.href = "/TelaLogin/login.html";
-                    return;
+            if (resposta.ok && resultado.sucesso) {
+                // Limpa o carrinho local
+                localStorage.removeItem("carrinho");
+                localStorage.removeItem("pedidos");
+                localStorage.removeItem("totalPedido");
+
+                alert("Pedido realizado com sucesso!");
+                window.location.href = "/TelaCliente/cliente.html";
+            } else {
+                alert(resultado.mensagem || "Não foi possível finalizar o pedido. Tente novamente.");
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "Finalizar Pedido";
                 }
-                throw new Error(resultado.mensagem || "Não foi possível finalizar o pedido.");
             }
-
-            // Sucesso total: Limpa carrinho e dados temporários
-            localStorage.removeItem("carrinho");
-            localStorage.removeItem("pedidos");
-            localStorage.removeItem("totalPedido");
-
-            alert("Pedido e pagamento realizados com sucesso!");
-            window.location.href = "/Telainicial/index.html";
 
         } catch (erro) {
             console.error("Erro ao finalizar pedido:", erro);
-            alert(erro.message || "Erro ao conectar ao servidor.");
-
+            alert("Ocorreu um erro ao processar seu pedido. Verifique sua conexão.");
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = "Finalizar Compra";
+                btn.textContent = "Finalizar Pedido";
             }
         }
     });
 }
 
-// Inicialização automática ao carregar a página
-document.addEventListener("DOMContentLoaded", () => {
+
+// =====================================================
+// INICIALIZAÇÃO DA TELA
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", function () {
     renderizarResumo();
     carregarDadosClienteAutomatico();
 });
