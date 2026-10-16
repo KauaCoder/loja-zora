@@ -38,7 +38,21 @@ async function carregarDadosAdmin() {
     const tabela = document.getElementById("tabelaProdutos");
 
     try {
-        const resposta = await fetch("/admin_dados.php", {
+        // Recupera o ID do cliente logado no navegador para garantir a sessão no Render
+        let idClienteUrl = "";
+        const dadosLocais = localStorage.getItem("usuarioLogado");
+        if (dadosLocais) {
+            try {
+                const usuario = JSON.parse(dadosLocais);
+                if (usuario && usuario.id_cliente) {
+                    idClienteUrl = `?id_cliente=${usuario.id_cliente}`;
+                }
+            } catch (e) {
+                console.error("Erro ao ler usuarioLogado do localStorage:", e);
+            }
+        }
+
+        const resposta = await fetch(`/admin_dados.php${idClienteUrl}`, {
             method: "GET",
             cache: "no-store",
             credentials: "include"
