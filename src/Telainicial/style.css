@@ -14,7 +14,7 @@ body {
     color: #333;
 }
 
-/* Fundo Escuro para Modais/Carrinho (Overlay) */
+/* Fundo Escuro para Modais/Menus/Carrinho (Overlay) */
 .overlay {
     position: fixed;
     top: 0;
@@ -98,9 +98,93 @@ nav a:hover {
     object-fit: contain;
 }
 
+
+/* =========================
+   MENU MOBILE / SIDEBAR
+========================= */
+
+.menu-button {
+    display: none;
+    align-items: center;
+    padding-right: 15px;
+}
+
+.menu-button a {
+    font-size: 26px;
+    color: #333;
+    text-decoration: none;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -350px; /* Escondido por padrão */
+    width: min(84vw, 340px);
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    background: #fffaf5;
+    box-shadow: -12px 0 35px rgba(0, 0, 0, 0.16);
+    display: flex;
+    flex-direction: column;
+    padding: 14px 18px max(24px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    transition: right 260ms cubic-bezier(.2, .8, .2, 1);
+    z-index: 3000;
+}
+
+.sidebar.ativo,
+.sidebar.active {
+    right: 0;
+}
+
+.sidebar li {
+    list-style: none;
+    width: 100%;
+    margin: 4px 0;
+}
+
+.sidebar .sidebar-fechar {
+    margin-bottom: 14px;
+    border-bottom: 1px solid #e8ded2;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sidebar .sidebar-fechar a {
+    min-height: 48px;
+    font-size: 27px;
+    padding: 8px 10px;
+    justify-content: flex-end;
+}
+
+.sidebar a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 50px;
+    padding: 14px 12px;
+    border-radius: 10px;
+    color: #211d19;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background 200ms ease, color 200ms ease;
+}
+
+.sidebar a:hover {
+    background: #eee2d3;
+    color: #85552f;
+}
+
 @media (max-width: 800px) {
     .hideOnMobile {
         display: none !important;
+    }
+
+    .menu-button {
+        display: flex;
     }
 
     .logo-menu img {
