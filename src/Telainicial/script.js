@@ -1,70 +1,128 @@
 // =====================================================
-// ZORA - TELA INICIAL & CARRINHO DE PEDIDOS (INDEX)
+// ZORA - TELA INICIAL, CATÁLOGO E CARRINHO
+// Versão atualizada
 // =====================================================
 
+
 // =====================================================
-// 1. MENU LATERAL & OVERLAY (MOBILE)
+// 1. MENU LATERAL, OVERLAY E PERFIL
 // =====================================================
+
+function obterSidebar() {
+    return document.getElementById("sidebar")
+        || document.querySelector(".sidebar");
+}
+
+function obterOverlay() {
+    return document.getElementById("overlay")
+        || document.querySelector(".overlay");
+}
+
+function sincronizarOverlay() {
+    const sidebar = obterSidebar();
+    const overlay = obterOverlay();
+    const pedidos = document.getElementById("Pedidos");
+
+    const menuAberto = sidebar && (
+        sidebar.classList.contains("ativo")
+        || sidebar.classList.contains("active")
+    );
+
+    const pedidosAberto = pedidos
+        && pedidos.classList.contains("ativo");
+
+    const algumPainelAberto = Boolean(
+        menuAberto || pedidosAberto
+    );
+
+    if (overlay) {
+        overlay.classList.toggle(
+            "ativo",
+            algumPainelAberto
+        );
+    }
+
+    // Impede a rolagem da página quando um painel está aberto.
+    document.body.classList.toggle(
+        "painel-aberto",
+        algumPainelAberto
+    );
+}
 
 function showSidebar() {
-    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
-    const overlay = document.getElementById("overlay");
+    const sidebar = obterSidebar();
 
-    if (sidebar) {
-        sidebar.style.display = "flex";
-        sidebar.classList.add("ativo", "active");
+    if (!sidebar) {
+        console.warn("ZORA: menu lateral não encontrado.");
+        return;
     }
-    if (overlay) {
-        overlay.classList.add("ativo");
-    }
+
+    // Não usar style.display.
+    // A animação é controlada pelo CSS.
+    sidebar.classList.add("ativo", "active");
+
+    sincronizarOverlay();
 }
 
 function hideSidebar() {
-    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
-    const overlay = document.getElementById("overlay");
+    const sidebar = obterSidebar();
 
     if (sidebar) {
-        sidebar.style.display = "none";
         sidebar.classList.remove("ativo", "active");
     }
 
-    const pedidos = document.getElementById("Pedidos");
-    if (overlay && (!pedidos || !pedidos.classList.contains("ativo"))) {
-        overlay.classList.remove("ativo");
-    }
+    sincronizarOverlay();
 }
 
 function fecharTudo() {
-    hideSidebar();
-    fecharPedidos();
-    const overlay = document.getElementById("overlay");
-    if (overlay) overlay.classList.remove("ativo");
+    const sidebar = obterSidebar();
+    const pedidos = document.getElementById("Pedidos");
+
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
+
+    if (pedidos) {
+        pedidos.classList.remove("ativo");
+    }
+
+    sincronizarOverlay();
 }
 
 async function abrirPerfil() {
     let usuario = null;
 
     if (typeof obterUsuarioLogado === "function") {
-        usuario = await obterUsuarioLogado();
+        try {
+            usuario = await obterUsuarioLogado();
+        } catch (erro) {
+            console.error("Erro ao obter usuário:", erro);
+        }
     } else {
-        const dadosLocais = localStorage.getItem("usuarioLogado");
-        if (dadosLocais) {
-            try {
-                usuario = JSON.parse(dadosLocais);
-            } catch (e) {
-                usuario = null;
-            }
+        try {
+            usuario = JSON.parse(
+                localStorage.getItem("usuarioLogado") || "null"
+            );
+        } catch (erro) {
+            usuario = null;
         }
     }
 
-    if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
-        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+    if (usuario && (
+        usuario.nome
+        || usuario.email
+        || usuario.id_cliente
+    )) {
+        const ehAdmin =
+            usuario.is_admin === true
+            || usuario.is_admin === 1
+            || usuario.is_admin === "1"
+            || usuario.nivel === "admin";
 
-        if (ehAdmin) {
-            window.location.href = "/TelaAdmin/admin.html";
-        } else {
-            window.location.href = "/TelaCliente/cliente.html";
-        }
+        window.location.href = ehAdmin
+            ? "/TelaAdmin/admin.html"
+            : "/TelaCliente/cliente.html";
+
     } else {
         window.location.href = "/TelaLogin/login.html";
     }
@@ -72,95 +130,164 @@ async function abrirPerfil() {
 
 async function checarEAtualizarMenu() {
     if (typeof atualizarMenuUsuario === "function") {
-        await atualizarMenuUsuario();
-        return;
+        try {
+            await atualizarMenuUsuario();
+            return;
+        } catch (erro) {
+            console.error("Erro ao atualizar menu:", erro);
+        }
     }
 
     let usuario = null;
-    const dadosLocais = localStorage.getItem("usuarioLogado");
-    if (dadosLocais) {
-        try {
-            usuario = JSON.parse(dadosLocais);
-        } catch (e) {
-            usuario = null;
-        }
+
+    try {
+        usuario = JSON.parse(
+            localStorage.getItem("usuarioLogado") || "null"
+        );
+    } catch (erro) {
+        usuario = null;
     }
 
     const menuDesktop = document.getElementById("menuUsuario");
     const menuMobile = document.getElementById("menuUsuarioMobile");
 
+    let texto = "Login";
+
     if (usuario && (usuario.nome || usuario.email)) {
-        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+        const ehAdmin =
+            usuario.is_admin === true
+            || usuario.is_admin === 1
+            || usuario.is_admin === "1"
+            || usuario.nivel === "admin";
 
         if (ehAdmin) {
-            if (menuDesktop) menuDesktop.textContent = "📊 Dashboard Adm";
-            if (menuMobile) menuMobile.textContent = "📊 Dashboard Adm";
+            texto = "📊 Dashboard Adm";
         } else {
-            const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
-            if (menuDesktop) menuDesktop.textContent = `Olá, ${primeiroNome}`;
-            if (menuMobile) menuMobile.textContent = `Olá, ${primeiroNome}`;
+            const primeiroNome = usuario.nome
+                ? usuario.nome.split(" ")[0]
+                : "Perfil";
+
+            texto = `Olá, ${primeiroNome}`;
         }
-    } else {
-        if (menuDesktop) menuDesktop.textContent = "Login";
-        if (menuMobile) menuMobile.textContent = "Login";
     }
+
+    if (menuDesktop) menuDesktop.textContent = texto;
+    if (menuMobile) menuMobile.textContent = texto;
 }
 
+
 // =====================================================
-// 2. CATÁLOGO DO POSTGRESQL (TELA INICIAL)
+// 2. CATÁLOGO DE PRODUTOS
 // =====================================================
 
 async function carregarCatalogo() {
     const container = document.getElementById("catalogoProdutos");
+
     if (!container) return;
 
-    container.innerHTML = "<p class='carregando'>Carregando produtos...</p>";
+    container.innerHTML =
+        "<p class='carregando'>Carregando produtos...</p>";
 
     try {
-        const resposta = await fetch("/produtos_catalogo.php");
+        const resposta = await fetch("/produtos_catalogo.php", {
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+
         const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(resultado.mensagem || "Não foi possível carregar os produtos.");
+            throw new Error(
+                resultado.mensagem
+                || "Não foi possível carregar os produtos."
+            );
         }
 
         renderizarCatalogo(resultado.produtos);
+
     } catch (erro) {
         console.error("Erro ao carregar catálogo:", erro);
-        container.innerHTML = "<p class='carregando'>Não foi possível carregar os produtos no momento.</p>";
+
+        container.innerHTML =
+            "<p class='carregando'>" +
+            "Não foi possível carregar os produtos no momento." +
+            "</p>";
     }
+}
+
+function formatarPreco(valor) {
+    const numero = Number(valor);
+
+    return (Number.isFinite(numero) ? numero : 0)
+        .toFixed(2)
+        .replace(".", ",");
+}
+
+function obterImagemProduto(imagem) {
+    if (!imagem) {
+        return "/img/Logo%201.png";
+    }
+
+    // Preserva URLs completas e caminhos já definidos.
+    if (/^(https?:\/\/|\/)/i.test(imagem)) {
+        return imagem;
+    }
+
+    return "/img/" + encodeURIComponent(imagem);
 }
 
 function renderizarCatalogo(produtos) {
     const container = document.getElementById("catalogoProdutos");
+
     if (!container) return;
 
-    container.innerHTML = "";
+    container.replaceChildren();
 
     if (!Array.isArray(produtos) || produtos.length === 0) {
-        container.innerHTML = "<p class='carregando'>Nenhum produto disponível no momento.</p>";
+        container.innerHTML =
+            "<p class='carregando'>" +
+            "Nenhum produto disponível no momento." +
+            "</p>";
         return;
     }
 
     produtos.forEach(produto => {
         const id = Number(produto.id_produto);
-        const nome = produto.nome || "Produto ZORA";
-        const preco = Number(produto.preco) || 0;
-        const estoque = Number(produto.estoque) || 0;
-        const imagemSrc = produto.imagem ? `/img/${produto.imagem}` : "/img/Logo 1.png";
+        const nome = String(produto.nome || "Produto ZORA");
+        const preco = Number(produto.preco);
+        const estoque = Number(produto.estoque);
+
+        if (!Number.isInteger(id) || id <= 0) {
+            return;
+        }
+
+        const precoValido =
+            Number.isFinite(preco) && preco >= 0
+                ? preco
+                : 0;
+
+        const estoqueValido =
+            Number.isFinite(estoque) ? estoque : 0;
+
+        const imagemSrc = obterImagemProduto(produto.imagem);
 
         const card = document.createElement("div");
         card.className = "produto";
 
         const link = document.createElement("a");
-        link.href = `/TelaProdutos/produtos.html?id=${id}`;
+        link.href =
+            "/TelaProdutos/produtos.html?id=" +
+            encodeURIComponent(id);
 
         const imagem = document.createElement("img");
         imagem.src = imagemSrc;
         imagem.alt = nome;
+        imagem.loading = "lazy";
+
         imagem.onerror = function () {
             this.onerror = null;
-            this.src = "/img/Logo 1.png";
+            this.src = "/img/Logo%201.png";
         };
 
         link.appendChild(imagem);
@@ -169,20 +296,33 @@ function renderizarCatalogo(produtos) {
         titulo.textContent = nome;
 
         const precoElemento = document.createElement("p");
-        precoElemento.textContent = `R$ ${preco.toFixed(2).replace(".", ",")}`;
+        precoElemento.textContent =
+            `R$ ${formatarPreco(precoValido)}`;
 
         const botao = document.createElement("button");
         botao.type = "button";
 
-        if (estoque <= 0) {
+        if (estoqueValido <= 0) {
             botao.textContent = "Esgotado";
             botao.disabled = true;
             botao.style.opacity = "0.6";
             botao.style.cursor = "not-allowed";
         } else {
             botao.textContent = "Comprar";
-            botao.addEventListener("click", function () {
-                adicionarPedidos(id, nome, preco, imagemSrc);
+
+            botao.addEventListener("click", async function () {
+                botao.disabled = true;
+
+                try {
+                    await adicionarPedidos(
+                        id,
+                        nome,
+                        precoValido,
+                        imagemSrc
+                    );
+                } finally {
+                    botao.disabled = false;
+                }
             });
         }
 
@@ -197,65 +337,153 @@ function renderizarCatalogo(produtos) {
 
 async function obterEstoqueBD(idProduto) {
     try {
-        const resposta = await fetch(`/consultar_estoque.php?id=${idProduto}`);
+        const resposta = await fetch(
+            `/consultar_estoque.php?id=${encodeURIComponent(idProduto)}`,
+            {
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
+
         const resultado = await resposta.json();
-        if (resposta.ok && resultado.sucesso) {
-            return Number(resultado.estoque);
+
+        if (!resposta.ok || !resultado.sucesso) {
+            throw new Error(
+                resultado.mensagem || "Falha ao consultar estoque."
+            );
         }
+
+        const estoque = Number(resultado.estoque);
+
+        if (!Number.isFinite(estoque) || estoque < 0) {
+            throw new Error("Estoque retornado inválido.");
+        }
+
+        return estoque;
+
     } catch (erro) {
-        console.error("Erro ao verificar estoque do produto:", idProduto, erro);
+        console.error(
+            "Erro ao verificar estoque do produto:",
+            idProduto,
+            erro
+        );
+
+        // null significa que não foi possível confirmar o estoque.
+        return null;
     }
-    return null;
 }
 
+
 // =====================================================
-// 3. CARRINHO DE PEDIDOS (UNIFICADO COM O RESTO DO SITE)
+// 3. CARRINHO DE COMPRAS
 // =====================================================
 
 let pedidosArray = [];
 
 function carregarCarrinho() {
-    const carrinhoSalvo = localStorage.getItem("carrinho");
-    if (!carrinhoSalvo) {
-        pedidosArray = [];
-        atualizarTotal();
-        atualizarBadge();
-        renderizarPedidos();
-        return;
-    }
-
     try {
-        pedidosArray = JSON.parse(carrinhoSalvo);
-        if (!Array.isArray(pedidosArray)) pedidosArray = [];
+        const carrinhoSalvo = localStorage.getItem("carrinho");
+
+        if (!carrinhoSalvo) {
+            pedidosArray = [];
+        } else {
+            const dados = JSON.parse(carrinhoSalvo);
+
+            pedidosArray = Array.isArray(dados)
+                ? dados.filter(produto => (
+                    produto
+                    && Number.isInteger(Number(produto.id_produto))
+                    && Number(produto.id_produto) > 0
+                )).map(produto => ({
+                    ...produto,
+                    id_produto: Number(produto.id_produto),
+                    preco: Math.max(0, Number(produto.preco) || 0),
+                    quantidade: Math.max(
+                        1,
+                        Math.floor(Number(produto.quantidade) || 1)
+                    ),
+                    nome: String(produto.nome || "Produto ZORA"),
+                    imagem: produto.imagem || "/img/Logo%201.png"
+                }))
+                : [];
+        }
+
     } catch (erro) {
         console.error("Erro ao carregar carrinho:", erro);
         pedidosArray = [];
     }
 
+    salvarCarrinho();
     renderizarPedidos();
     atualizarBadge();
 }
 
 function salvarCarrinho() {
-    localStorage.setItem("carrinho", JSON.stringify(pedidosArray));
+    try {
+        localStorage.setItem(
+            "carrinho",
+            JSON.stringify(pedidosArray)
+        );
+        return true;
+
+    } catch (erro) {
+        console.error("Erro ao salvar carrinho:", erro);
+
+        alert(
+            "Não foi possível salvar o carrinho neste dispositivo."
+        );
+
+        return false;
+    }
 }
 
 function calcularTotal() {
-    return pedidosArray.reduce((total, p) => {
-        const preco = Number(p.preco) || 0;
-        const quantidade = Number(p.quantidade) || 1;
-        return total + (preco * quantidade);
+    return pedidosArray.reduce((total, produto) => {
+        const preco = Number(produto.preco) || 0;
+        const quantidade = Number(produto.quantidade) || 0;
+
+        return total + preco * quantidade;
     }, 0);
+}
+
+function atualizarTotal() {
+    const elemento = document.getElementById("total");
+
+    if (elemento) {
+        elemento.textContent = formatarPreco(calcularTotal());
+    }
+}
+
+function atualizarBadge() {
+    const quantidadeTotal = pedidosArray.reduce(
+        (soma, produto) =>
+            soma + (Number(produto.quantidade) || 0),
+        0
+    );
+
+    document.querySelectorAll(".badge-carrinho").forEach(badge => {
+        badge.textContent =
+            quantidadeTotal > 0 ? quantidadeTotal : "";
+
+        badge.classList.toggle("show", quantidadeTotal > 0);
+    });
 }
 
 function renderizarPedidos() {
     const lista = document.getElementById("listaPedidos");
-    if (!lista) return;
 
-    lista.innerHTML = "";
+    atualizarTotal();
+
+    if (!lista) {
+        atualizarBadge();
+        return;
+    }
+
+    lista.replaceChildren();
 
     if (pedidosArray.length === 0) {
-        atualizarTotal();
+        atualizarBadge();
         return;
     }
 
@@ -263,45 +491,60 @@ function renderizarPedidos() {
         const id = Number(produto.id_produto);
         const preco = Number(produto.preco) || 0;
         const quantidade = Number(produto.quantidade) || 1;
-        const imagemSrc = produto.imagem || "/img/Logo 1.png";
+        const imagemSrc = obterImagemProduto(produto.imagem);
 
         const item = document.createElement("li");
         item.className = "item-carrinho";
 
+        // Imagem do produto
         const linkFoto = document.createElement("a");
-        linkFoto.href = `/TelaProdutos/produtos.html?id=${id}`;
+        linkFoto.href =
+            `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
         linkFoto.className = "carrinho-foto-link";
 
         const foto = document.createElement("img");
         foto.src = imagemSrc;
         foto.alt = produto.nome;
         foto.className = "carrinho-foto";
+        foto.loading = "lazy";
+
         foto.onerror = function () {
             this.onerror = null;
-            this.src = "/img/Logo 1.png";
+            this.src = "/img/Logo%201.png";
         };
+
         linkFoto.appendChild(foto);
 
+        // Informações do produto
         const detalhes = document.createElement("div");
         detalhes.className = "carrinho-detalhes";
 
         const linkNome = document.createElement("a");
-        linkNome.href = `/TelaProdutos/produtos.html?id=${id}`;
+        linkNome.href =
+            `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
         linkNome.className = "carrinho-nome";
-        linkNome.textContent = produto.tamanho ? `${produto.nome} (${produto.tamanho})` : produto.nome;
+
+        linkNome.textContent = produto.tamanho
+            ? `${produto.nome} (${produto.tamanho})`
+            : produto.nome;
 
         const precoUnitario = document.createElement("span");
         precoUnitario.className = "carrinho-preco-unitario";
-        precoUnitario.textContent = `R$ ${preco.toFixed(2).replace(".", ",")}`;
+        precoUnitario.textContent = `R$ ${formatarPreco(preco)}`;
 
+        // Controles de quantidade
         const qtdContainer = document.createElement("div");
         qtdContainer.className = "qtd-controle";
 
         const btnMenos = document.createElement("button");
         btnMenos.type = "button";
         btnMenos.className = "qtd-btn";
-        btnMenos.textContent = "-";
-        btnMenos.addEventListener("click", () => alterarQuantidade(indice, -1));
+        btnMenos.textContent = "−";
+        btnMenos.setAttribute("aria-label", "Diminuir quantidade");
+
+        btnMenos.addEventListener("click", () => {
+            alterarQuantidade(indice, -1);
+        });
 
         const numQtd = document.createElement("span");
         numQtd.className = "qtd-numero";
@@ -311,75 +554,115 @@ function renderizarPedidos() {
         btnMais.type = "button";
         btnMais.className = "qtd-btn";
         btnMais.textContent = "+";
-        btnMais.addEventListener("click", () => alterarQuantidade(indice, 1));
+        btnMais.setAttribute("aria-label", "Aumentar quantidade");
 
-        qtdContainer.appendChild(btnMenos);
-        qtdContainer.appendChild(numQtd);
-        qtdContainer.appendChild(btnMais);
+        btnMais.addEventListener("click", () => {
+            alterarQuantidade(indice, 1);
+        });
 
-        detalhes.appendChild(linkNome);
-        detalhes.appendChild(precoUnitario);
-        detalhes.appendChild(qtdContainer);
+        qtdContainer.append(
+            btnMenos,
+            numQtd,
+            btnMais
+        );
 
+        detalhes.append(
+            linkNome,
+            precoUnitario,
+            qtdContainer
+        );
+
+        // Subtotal e remoção
         const acoes = document.createElement("div");
         acoes.className = "carrinho-acoes";
 
         const subtotal = document.createElement("span");
         subtotal.className = "carrinho-subtotal";
-        subtotal.textContent = `R$ ${(preco * quantidade).toFixed(2).replace(".", ",")}`;
+        subtotal.textContent =
+            `R$ ${formatarPreco(preco * quantidade)}`;
 
         const btnRemover = document.createElement("button");
         btnRemover.type = "button";
         btnRemover.className = "remover-item";
-        btnRemover.innerHTML = "🗑";
+        btnRemover.textContent = "🗑";
         btnRemover.title = "Remover produto";
-        btnRemover.addEventListener("click", () => removerPedido(indice));
+        btnRemover.setAttribute("aria-label", "Remover produto");
 
-        acoes.appendChild(subtotal);
-        acoes.appendChild(btnRemover);
+        btnRemover.addEventListener("click", () => {
+            removerPedido(indice);
+        });
 
-        item.appendChild(linkFoto);
-        item.appendChild(detalhes);
-        item.appendChild(acoes);
+        acoes.append(subtotal, btnRemover);
+
+        item.append(
+            linkFoto,
+            detalhes,
+            acoes
+        );
 
         lista.appendChild(item);
     });
 
     atualizarTotal();
+    atualizarBadge();
 }
 
 async function adicionarPedidos(idProduto, nome, preco, imagem) {
     const id = Number(idProduto);
     const valor = Number(preco);
 
-    if (!Number.isInteger(id) || id <= 0) {
+    if (
+        !Number.isInteger(id)
+        || id <= 0
+        || !Number.isFinite(valor)
+        || valor < 0
+    ) {
         alert("Não foi possível adicionar este produto.");
         return;
     }
 
-    const produtoExistente = pedidosArray.find(p => Number(p.id_produto) === id);
-    const qtdAtual = produtoExistente ? Number(produtoExistente.quantidade) : 0;
+    const produtoExistente = pedidosArray.find(
+        produto => Number(produto.id_produto) === id
+    );
 
-    const estoqueDisponivel = await obterEstoqueBD(id);
+    const quantidadeAtual = produtoExistente
+        ? Number(produtoExistente.quantidade) || 0
+        : 0;
 
-    if (estoqueDisponivel !== null && (qtdAtual + 1) > estoqueDisponivel) {
-        alert(`Desculpe, apenas ${estoqueDisponivel} unidade(s) disponível(is) em estoque.`);
+    // Não permite adicionar sem conseguir confirmar o estoque.
+    const estoque = await obterEstoqueBD(id);
+
+    if (estoque === null) {
+        alert(
+            "Não foi possível verificar o estoque. " +
+            "Tente novamente em instantes."
+        );
+        return;
+    }
+
+    if (quantidadeAtual + 1 > estoque) {
+        alert(
+            `Estoque insuficiente. Disponíveis: ${estoque} unidade(s).`
+        );
         return;
     }
 
     if (produtoExistente) {
-        produtoExistente.quantidade = qtdAtual + 1;
+        produtoExistente.quantidade = quantidadeAtual + 1;
     } else {
         pedidosArray.push({
             id_produto: id,
-            nome: nome,
+            nome: String(nome || "Produto ZORA"),
             preco: valor,
-            imagem: imagem || "/img/Logo 1.png",
+            imagem: imagem || "/img/Logo%201.png",
             quantidade: 1
         });
     }
 
-    salvarCarrinho();
+    if (!salvarCarrinho()) {
+        return;
+    }
+
     renderizarPedidos();
     atualizarBadge();
     abrirPedidos();
@@ -387,206 +670,353 @@ async function adicionarPedidos(idProduto, nome, preco, imagem) {
 
 async function alterarQuantidade(indice, delta) {
     const produto = pedidosArray[indice];
+
     if (!produto) return;
 
-    const novaQuantidade = (Number(produto.quantidade) || 1) + delta;
+    const quantidadeAtual = Number(produto.quantidade) || 1;
+    const novaQuantidade = quantidadeAtual + delta;
+
+    if (novaQuantidade <= 0) {
+        removerPedido(indice);
+        return;
+    }
 
     if (delta > 0) {
-        const estoqueDisponivel = await obterEstoqueBD(produto.id_produto);
+        const estoque = await obterEstoqueBD(produto.id_produto);
 
-        if (estoqueDisponivel !== null && novaQuantidade > estoqueDisponivel) {
-            alert(`Quantidade máxima em estoque atingida (${estoqueDisponivel} unidades disponíveis).`);
+        if (estoque === null) {
+            alert(
+                "Não foi possível verificar o estoque. " +
+                "Tente novamente."
+            );
+            return;
+        }
+
+        if (novaQuantidade > estoque) {
+            alert(
+                `Quantidade máxima atingida. ` +
+                `Disponíveis: ${estoque} unidade(s).`
+            );
             return;
         }
     }
 
     produto.quantidade = novaQuantidade;
 
-    if (produto.quantidade <= 0) {
-        pedidosArray.splice(indice, 1);
-    }
+    if (!salvarCarrinho()) return;
 
-    salvarCarrinho();
     renderizarPedidos();
     atualizarBadge();
 }
 
 function removerPedido(indice) {
-    if (indice < 0 || indice >= pedidosArray.length) return;
+    if (indice < 0 || indice >= pedidosArray.length) {
+        return;
+    }
 
     pedidosArray.splice(indice, 1);
-    salvarCarrinho();
+
+    if (!salvarCarrinho()) return;
+
     renderizarPedidos();
     atualizarBadge();
 }
 
-function atualizarTotal() {
-    const total = calcularTotal();
-    const elemento = document.getElementById("total");
-    if (elemento) {
-        elemento.textContent = total.toFixed(2).replace(".", ",");
-    }
-}
 
-function atualizarBadge() {
-    const quantidadeTotal = pedidosArray.reduce(
-        (soma, p) => soma + (Number(p.quantidade) || 0), 0
-    );
-
-    document.querySelectorAll(".badge-carrinho").forEach(badge => {
-        if (quantidadeTotal > 0) {
-            badge.textContent = quantidadeTotal;
-            badge.classList.add("show");
-        } else {
-            badge.textContent = "";
-            badge.classList.remove("show");
-        }
-    });
-}
+// =====================================================
+// 4. ABERTURA E FECHAMENTO DO CARRINHO
+// =====================================================
 
 function abrirPedidos() {
     const pedidos = document.getElementById("Pedidos");
-    if (pedidos) {
-        pedidos.classList.add("ativo");
+
+    if (!pedidos) {
+        console.warn("ZORA: painel de pedidos não encontrado.");
+        return;
     }
-    const overlay = document.getElementById("overlay");
-    if (overlay) overlay.classList.add("ativo");
+
+    // Evita que o menu e o carrinho fiquem abertos simultaneamente.
+    const sidebar = obterSidebar();
+
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
+
+    pedidos.classList.add("ativo");
+
+    sincronizarOverlay();
 }
 
 function fecharPedidos() {
     const pedidos = document.getElementById("Pedidos");
+
     if (pedidos) {
         pedidos.classList.remove("ativo");
     }
-    const overlay = document.getElementById("overlay");
-    const sidebar = document.getElementById("sidebar") || document.querySelector(".sidebar");
-    if (overlay && (!sidebar || sidebar.style.display !== "flex")) {
-        overlay.classList.remove("ativo");
-    }
+
+    sincronizarOverlay();
 }
 
-function scrollProdutos(direcao) {
-    const container = document.getElementById("catalogoProdutos");
-    if (container) {
-        const scrollAmount = container.clientWidth * 0.6;
-        container.scrollBy({ left: direcao * scrollAmount, behavior: "smooth" });
-    }
-}
+
+// =====================================================
+// 5. FINALIZAÇÃO DO PEDIDO
+// =====================================================
 
 async function pagarPedido() {
-    if (!pedidosArray || pedidosArray.length === 0) {
+    if (pedidosArray.length === 0) {
         alert("Seu carrinho está vazio.");
         return;
     }
 
-    let estoqueInvalido = false;
+    // Verifica novamente o estoque de cada produto.
+    const produtosSemEstoque = [];
+    let houveAjuste = false;
 
-    for (let i = 0; i < pedidosArray.length; i++) {
+    for (let i = pedidosArray.length - 1; i >= 0; i--) {
         const item = pedidosArray[i];
-        const estoqueBD = await obterEstoqueBD(item.id_produto);
+        const estoque = await obterEstoqueBD(item.id_produto);
 
-        if (estoqueBD !== null && item.quantidade > estoqueBD) {
-            if (estoqueBD === 0) {
-                alert(`O produto "${item.nome}" esgotou no estoque.`);
-            } else {
-                alert(`A quantidade solicitada para "${item.nome}" (${item.quantidade}) excede o estoque disponível (${estoqueBD}). A quantidade foi ajustada.`);
-                item.quantidade = estoqueBD;
-            }
-            estoqueInvalido = true;
+        if (estoque === null) {
+            alert(
+                `Não foi possível confirmar o estoque de "${item.nome}". ` +
+                "Tente novamente antes de continuar."
+            );
+            return;
+        }
+
+        if (estoque === 0) {
+            produtosSemEstoque.push(item.nome);
+            pedidosArray.splice(i, 1);
+            houveAjuste = true;
+            continue;
+        }
+
+        if (item.quantidade > estoque) {
+            item.quantidade = estoque;
+            houveAjuste = true;
         }
     }
 
-    if (estoqueInvalido) {
+    if (houveAjuste) {
         salvarCarrinho();
         renderizarPedidos();
         atualizarBadge();
+
+        if (produtosSemEstoque.length > 0) {
+            alert(
+                "Os seguintes produtos esgotaram e foram removidos: " +
+                produtosSemEstoque.join(", ")
+            );
+        } else {
+            alert(
+                "Algumas quantidades foram ajustadas ao estoque disponível. " +
+                "Confira o carrinho antes de continuar."
+            );
+        }
+
         return;
     }
 
+    if (pedidosArray.length === 0) {
+        alert("Não há produtos disponíveis para finalizar o pedido.");
+        return;
+    }
+
+    // Verifica o login, caso a função exista no sistema.
     if (typeof estaLogado === "function") {
-        const logado = await estaLogado();
-        if (!logado) {
-            alert("Você precisa estar logado para fazer um pedido!");
-            window.location.href = "/TelaLogin/login.html";
+        try {
+            const logado = await estaLogado();
+
+            if (!logado) {
+                alert("Você precisa estar logado para fazer um pedido!");
+                window.location.href = "/TelaLogin/login.html";
+                return;
+            }
+        } catch (erro) {
+            console.error("Erro ao verificar login:", erro);
+
+            alert(
+                "Não foi possível verificar seu login. " +
+                "Tente novamente."
+            );
             return;
         }
     }
 
     const total = calcularTotal();
-    localStorage.setItem("totalPedido", total.toFixed(2));
-    localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
+
+    try {
+        localStorage.setItem("totalPedido", total.toFixed(2));
+        localStorage.setItem(
+            "pedidos",
+            JSON.stringify(pedidosArray)
+        );
+    } catch (erro) {
+        console.error("Erro ao preparar pedido:", erro);
+
+        alert("Não foi possível preparar o pedido.");
+        return;
+    }
 
     window.location.href = "/TelaEntrega/entrega.html";
 }
 
+
 // =====================================================
-// 4. CARROSSEL DE PROMOÇÕES
+// 6. CARROSSEL DE PROMOÇÕES
 // =====================================================
 
-const slides = document.querySelectorAll(".promocao-slide");
-const indicadores = document.querySelectorAll(".indicador");
 let slideAtual = 0;
 let carrosselTimer = null;
 
+function obterSlides() {
+    return Array.from(
+        document.querySelectorAll(".promocao-slide")
+    );
+}
+
+function obterIndicadores() {
+    return Array.from(
+        document.querySelectorAll(".indicador")
+    );
+}
+
 function mostrarSlide(numero) {
-    if (!slides.length) return;
+    const slides = obterSlides();
+    const indicadores = obterIndicadores();
 
-    slides.forEach(slide => slide.classList.remove("ativo"));
-    indicadores.forEach(indicador => indicador.classList.remove("ativo"));
+    if (slides.length === 0) return;
 
-    if (slides[numero]) slides[numero].classList.add("ativo");
-    if (indicadores[numero]) indicadores[numero].classList.add("ativo");
+    if (numero < 0 || numero >= slides.length) {
+        return;
+    }
+
+    slides.forEach((slide, indice) => {
+        slide.classList.toggle("ativo", indice === numero);
+    });
+
+    indicadores.forEach((indicador, indice) => {
+        indicador.classList.toggle("ativo", indice === numero);
+    });
 
     slideAtual = numero;
 }
 
 function proximoSlide() {
-    if (!slides.length) return;
-    let proximo = slideAtual + 1;
-    if (proximo >= slides.length) proximo = 0;
-    mostrarSlide(proximo);
+    const slides = obterSlides();
+
+    if (slides.length === 0) return;
+
+    mostrarSlide((slideAtual + 1) % slides.length);
 }
 
 function slideAnterior() {
-    if (!slides.length) return;
-    let anterior = slideAtual - 1;
-    if (anterior < 0) anterior = slides.length - 1;
-    mostrarSlide(anterior);
+    const slides = obterSlides();
+
+    if (slides.length === 0) return;
+
+    mostrarSlide(
+        (slideAtual - 1 + slides.length) % slides.length
+    );
 }
 
 function irParaSlide(numero) {
-    if (numero < 0 || numero >= slides.length) return;
-    mostrarSlide(numero);
+    mostrarSlide(Number(numero));
 }
 
 function iniciarCarrosselAuto() {
-    if (slides.length > 0 && !carrosselTimer) {
-        carrosselTimer = setInterval(proximoSlide, 5000);
+    const slides = obterSlides();
+
+    if (slides.length <= 1 || carrosselTimer !== null) {
+        return;
     }
+
+    carrosselTimer = setInterval(proximoSlide, 5000);
 }
 
 function pausarCarrosselAuto() {
-    if (carrosselTimer) {
+    if (carrosselTimer !== null) {
         clearInterval(carrosselTimer);
         carrosselTimer = null;
     }
 }
 
+
 // =====================================================
-// 5. INICIALIZAÇÃO
+// 7. INICIALIZAÇÃO E EVENTOS
 // =====================================================
 
-document.addEventListener("DOMContentLoaded", async function () {
-    await checarEAtualizarMenu();
+function inicializarZora() {
+    // Atualiza o carrinho e os dados iniciais.
     carregarCarrinho();
+
+    // Carrega o catálogo.
     carregarCatalogo();
 
+    // Atualiza os links de perfil.
+    checarEAtualizarMenu();
+
+    // Overlay: toque fora dos painéis fecha tudo.
+    const overlay = obterOverlay();
+
+    if (overlay) {
+        overlay.addEventListener("click", function () {
+            fecharTudo();
+        });
+    }
+
+    // Tecla Escape fecha menu e carrinho.
+    document.addEventListener("keydown", function (evento) {
+        if (evento.key === "Escape") {
+            fecharTudo();
+        }
+    });
+
+    // Carrossel de promoções.
+    const slides = obterSlides();
+
     if (slides.length > 0) {
+        mostrarSlide(0);
         iniciarCarrosselAuto();
-        const containerCarrossel = document.querySelector(".carousel-promocoes");
+
+        const containerCarrossel =
+            document.querySelector(".carousel-promocoes");
+
         if (containerCarrossel) {
-            containerCarrossel.addEventListener("mouseenter", pausarCarrosselAuto);
-            containerCarrossel.addEventListener("mouseleave", iniciarCarrosselAuto);
+            containerCarrossel.addEventListener(
+                "mouseenter",
+                pausarCarrosselAuto
+            );
+
+            containerCarrossel.addEventListener(
+                "mouseleave",
+                iniciarCarrosselAuto
+            );
+
+            containerCarrossel.addEventListener(
+                "touchstart",
+                pausarCarrosselAuto,
+                { passive: true }
+            );
+
+            containerCarrossel.addEventListener(
+                "touchend",
+                iniciarCarrosselAuto,
+                { passive: true }
+            );
         }
     }
-});
+
+    // Estado visual inicial consistente.
+    sincronizarOverlay();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener(
+        "DOMContentLoaded",
+        inicializarZora,
+        { once: true }
+    );
+} else {
+    inicializarZora();
+}
