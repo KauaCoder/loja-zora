@@ -82,30 +82,10 @@ try {
 
     $idInt = (int) $idCliente;
 
-    // Consulta do perfil e endereço com compatibilidade de colunas (nm_cliente / nome / email / e_mail)
-    $sql = "
-        SELECT 
-            c.id_cliente,
-            COALESCE(c.nm_cliente, c.nome, 'Usuário') as nome,
-            COALESCE(c.email, c.e_mail, '-') as email,
-            COALESCE(c.telefone, '-') as telefone,
-            e.id_endereco,
-            e.cep,
-            e.numero,
-            e.complemento,
-            e.bairro,
-            e.cidade,
-            e.estado,
-            COALESCE(e.rua, e.endereco, e.logradouro, '-') as rua
-        FROM public.cliente c
-        LEFT JOIN public.endereco e ON e.id_cliente = c.id_cliente
-        WHERE c.id_cliente = :id_cliente
-        LIMIT 1
-    ";
-
-    $stmt = $conexao->prepare($sql);
-    $stmt->execute([":id_cliente" => $idInt]);
-    $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
+    // 1. Consulta dados do cliente utilizando os nomes reais de colunas (nome, e_mail, telefone)
+    $stmtCliente = $conexao->prepare("SELECT id_cliente, nome, e_mail, telefone FROM public.cliente WHERE id_cliente = :id_cliente LIMIT 1");
+    $stmtCliente->execute([":id_cliente" => $idInt]);
+    $cliente = $stmtCliente->fetch(PDO::FETCH_ASSOC);
 
     if (!$cliente) {
         http_response_code(404);
@@ -116,23 +96,28 @@ try {
         exit;
     }
 
+    // 2. Consulta o endereço vinculado ao id_cliente
+    $stmtEnd = $conexao->prepare("SELECT id_endereco, cep, endereco, numero, complemento, bairro, cidade, estado FROM public.endereco WHERE id_cliente = :id_cliente ORDER BY id_endereco DESC LIMIT 1");
+    $stmtEnd->execute([":id_cliente" => $idInt]);
+    $endereco = $stmtEnd->fetch(PDO::FETCH_ASSOC);
+
     echo json_encode([
         "sucesso" => true,
         "cliente" => [
             "id_cliente" => (int) $cliente["id_cliente"],
-            "nome"       => $cliente["nome"],
-            "email"      => $cliente["email"],
-            "telefone"   => $cliente["telefone"]
+            "nome"       => $cliente["nome"] ?? "Usuário",
+            "email"      => $cliente["e_mail"] ?? "-",
+            "telefone"   => $cliente["telefone"] ?? "-"
         ],
         "endereco" => [
-            "id_endereco" => $cliente["id_endereco"] ? (int) $cliente["id_endereco"] : null,
-            "cep"         => $cliente["cep"] ?? "-",
-            "rua"         => $cliente["rua"] ?? "-",
-            "numero"      => $cliente["numero"] ?? "-",
-            "complemento" => $cliente["complemento"] ?? "-",
-            "bairro"      => $cliente["bairro"] ?? "-",
-            "cidade"      => $cliente["cidade"] ?? "-",
-            "estado"      => $cliente["estado"] ?? "-"
+            "id_endereco" => $endereco ? (int) $endereco["id_endereco"] : null,
+            "cep"         => $endereco["cep"] ?? "-",
+            "rua"         => $endereco["endereco"] ?? "-",
+            "numero"      => $endereco["numero"] ?? "-",
+            "complemento" => $endereco["complemento"] ?? "-",
+            "bairro"      => $endereco["bairro"] ?? "-",
+            "cidade"      => $endereco["cidade"] ?? "-",
+            "estado"      => $endereco["estado"] ?? "-"
         ]
     ], JSON_UNESCAPED_UNICODE);
 
