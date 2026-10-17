@@ -192,7 +192,11 @@ try {
     http_response_code(500);
     echo json_encode([
         "sucesso"  => false,
-        "mensagem" => "Erro ao carregar histórico: " . $erro->getMessage()
+        "mensagem" => "Erro ao carregar histórico: " . $erro->getMessage(),
+        "detalhes" => [
+            "arquivo" => $erro->getFile(),
+            "linha" => $erro->getLine()
+        ]
     ], JSON_UNESCAPED_UNICODE);
 
 }
