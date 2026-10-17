@@ -374,11 +374,15 @@ async function salvarReposicao(evento) {
         });
 
         const textoBruto = await resposta.text();
+        
+        // Exibe o erro exato no Console do navegador para diagnóstico
+        console.log("RESPOSTA DO PHP:", textoBruto);
+
         let resultado;
         try {
             resultado = JSON.parse(textoBruto);
         } catch (e) {
-            throw new Error("Erro no servidor (resposta inválida ao adicionar estoque).");
+            throw new Error("Erro bruto do PHP: " + textoBruto);
         }
 
         if (!resposta.ok || !resultado.sucesso) throw new Error(resultado.mensagem);
