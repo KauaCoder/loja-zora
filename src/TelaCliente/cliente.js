@@ -41,13 +41,19 @@ function obterIdClienteLocal() {
     return null;
 }
 
-// Requisitor universal direto para a raiz (evita erros 404 em subpastas)
+// Requisitor universal inteligente que direciona cada arquivo para a sua pasta correta
 async function fazerFetchComID(endpoint, opcoes = {}) {
     const idCliente = obterIdClienteLocal();
     const nomeArquivo = endpoint.replace(/^\//, "");
 
-    // Aponta diretamente para a raiz do servidor onde os arquivos PHP estão hospedados
-    let urlFinal = `/${nomeArquivo}`;
+    // Direciona para a pasta correta com base no arquivo solicitado
+    let urlFinal = "";
+    if (nomeArquivo === "cliente.php" || nomeArquivo === "atualizar_perfil.php" || nomeArquivo === "atualizar_endereco.php") {
+        urlFinal = `/TelaCliente/${nomeArquivo}`;
+    } else {
+        // historico_pedidos.php, logout.php, solicitar_devolucao.php, etc., estão na raiz
+        urlFinal = `/${nomeArquivo}`;
+    }
     
     if (idCliente) {
         urlFinal += `?id_cliente=${encodeURIComponent(idCliente)}`;
