@@ -25,118 +25,62 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
-// =====================================================
-// NAVEGAÇÃO E MENU SIDEBAR
-// =====================================================
-
-function showSidebar() {
-    const sidebar = document.querySelector(".sidebar");
-    if (sidebar) sidebar.classList.add("active");
-}
-
-function hideSidebar() {
-    const sidebar = document.querySelector(".sidebar");
-    if (sidebar) sidebar.classList.remove("active");
-}
-
-// =====================================================
-// REQUISIÇÕES RESILIENTES COM FALLBACK
-// =====================================================
-
-async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
-    let idClienteParam = "";
-    const dadosLocais = localStorage.getItem("usuarioLogado");
-    if (dadosLocais) {
-        try {
+// Helper para obter o ID do cliente armazenado no navegador
+function obterIdClienteLocal() {
+    try {
+        const dadosLocais = localStorage.getItem("usuarioLogado");
+        if (dadosLocais) {
             const usuario = JSON.parse(dadosLocais);
             if (usuario && usuario.id_cliente) {
-                idClienteParam = `id_cliente=${usuario.id_cliente}`;
+                return usuario.id_cliente;
             }
-        } catch (e) {
-            console.error("Erro ao ler localStorage:", e);
         }
+    } catch (e) {
+        console.error("Erro ao ler id_cliente do localStorage:", e);
     }
-
-    const rotasPossiveis = [
-        `/${nomeArquivo}`,
-        `./${nomeArquivo}`,
-        `../${nomeArquivo}`,
-        `/TelaCliente/${nomeArquivo}`
-    ];
-
-    let ultimoErro = null;
-
-    for (const rota of rotasPossiveis) {
-        try {
-            let urlFinal = rota;
-            if (idClienteParam) {
-                urlFinal += (rota.includes("?") ? "&" : "?") + idClienteParam;
-            }
-
-            const resposta = await fetch(urlFinal, {
-                credentials: "include",
-                ...opcoes
-            });
-
-            if (resposta.status === 404) {
-                continue;
-            }
-
-            return resposta;
-        } catch (erro) {
-            ultimoErro = erro;
-        }
-    }
-
-    throw ultimoErro || new Error(`Não foi possível conectar ao endpoint ${nomeArquivo}`);
+    return null;
 }
 
-async function verificarLogin() {
+// Requisitor universal com injeção automática de id_cliente
+async function fazerFetchComID(endpoint, opcoes = {}) {
+    const idCliente = obterIdClienteLocal();
+    let urlFinal = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
+    if (idCliente) {
+        const separador = urlFinal.includes("?") ? "&" : "?";
+        urlFinal += `${separador}id_cliente=${encodeURIComponent(idCliente)}`;
+    }
+
+    return await fetch(urlFinal, {
+        credentials: "include",
+        ...opcoes
+    });
+}
+
+// =====================================================
+// CARREGAR DADOS DO PERFIL E ENDEREÇO
+// =====================================================
+
+async function carregarDadosPerfil() {
     try {
-        const resposta = await fazerFetchResiliente("usuario_logado.php", { method: "GET" });
+        const resposta = await fazerFetchComID("cliente.php", { method: "GET" });
         const texto = await resposta.text();
-        
+
         let resultado;
         try {
             resultado = JSON.parse(texto);
         } catch (e) {
-            if (localStorage.getItem("usuarioLogado")) return true;
-            window.location.replace("/TelaLogin/login.html");
-            return false;
+            console.error("Erro no JSON de cliente.php:", texto);
+            return;
         }
-
-        if (!resultado.sucesso || !resultado.logado) {
-            if (localStorage.getItem("usuarioLogado")) return true;
-            window.location.replace("/TelaLogin/login.html");
-            return false;
-        }
-
-        return true;
-    } catch (erro) {
-        console.error("Erro ao verificar sessão:", erro);
-        if (localStorage.getItem("usuarioLogado")) return true;
-        window.location.replace("/TelaLogin/login.html");
-        return false;
-    }
-}
-
-// =====================================================
-// CARREGAR DADOS DO PERFIL
-// =====================================================
-
-async function carregarDadosPerfil() {
-    const logado = await verificarLogin();
-    if (!logado) return;
-
-    try {
-        const resposta = await fazerFetchResiliente("cliente.php", { method: "GET" });
-        const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(resultado.mensagem || "Não foi possível carregar os dados.");
+            console.error("Erro ao carregar cliente:", resultado.mensagem);
+            return;
         }
 
         const cliente = resultado.cliente || {};
+        const endereco = resultado.endereco || {};
 
         if (document.getElementById("nomeUsuario")) document.getElementById("nomeUsuario").textContent = cliente.nome || "Usuário";
         if (document.getElementById("emailUsuario")) document.getElementById("emailUsuario").textContent = cliente.email || "-";
@@ -144,25 +88,133 @@ async function carregarDadosPerfil() {
         if (document.getElementById("emailPerfil")) document.getElementById("emailPerfil").textContent = cliente.email || "-";
         if (document.getElementById("telefonePerfil")) document.getElementById("telefonePerfil").textContent = cliente.telefone || "-";
 
-        carregarEndereco(resultado.endereco);
+        preencherEnderecoTela(endereco);
 
     } catch (erro) {
-        console.error("Erro ao carregar perfil:", erro);
-        
-        const dadosLocais = localStorage.getItem("usuarioLogado");
-        if (dadosLocais) {
-            try {
-                const usuario = JSON.parse(dadosLocais);
-                if (document.getElementById("nomeUsuario")) document.getElementById("nomeUsuario").textContent = usuario.nome || "Usuário";
-                if (document.getElementById("emailUsuario")) document.getElementById("emailUsuario").textContent = usuario.email || "-";
-                if (document.getElementById("nomePerfil")) document.getElementById("nomePerfil").textContent = usuario.nome || "-";
-                if (document.getElementById("emailPerfil")) document.getElementById("emailPerfil").textContent = usuario.email || "-";
-            } catch (err) {}
-        }
+        console.error("Erro no fetch de perfil:", erro);
     }
 }
 
-// EDITAR NOME
+function preencherEnderecoTela(endereco) {
+    if (!endereco) return;
+
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (val && val !== "-" && val !== "") ? val : "-";
+    };
+
+    setVal("cepPerfil", endereco.cep);
+    setVal("ruaPerfil", endereco.rua || endereco.endereco);
+    setVal("numeroPerfil", endereco.numero);
+    setVal("complementoPerfil", endereco.complemento);
+    setVal("bairroPerfil", endereco.bairro);
+    setVal("cidadePerfil", endereco.cidade);
+    setVal("estadoPerfil", endereco.estado);
+}
+
+// =====================================================
+// CARREGAR HISTÓRICO DE COMPRAS
+// =====================================================
+
+async function carregarCompras() {
+    const comprasVazio = document.getElementById("compras-vazio");
+    const comprasLista = document.getElementById("compras-lista");
+
+    if (!comprasVazio || !comprasLista) return;
+
+    try {
+        const resposta = await fazerFetchComID("historico_pedidos.php", { method: "GET" });
+        const resultado = await resposta.json();
+
+        if (!resposta.ok || !resultado.sucesso) {
+            comprasVazio.style.display = "block";
+            comprasLista.style.display = "none";
+            return;
+        }
+
+        const compras = resultado.pedidos || [];
+
+        if (compras.length === 0) {
+            comprasVazio.style.display = "block";
+            comprasLista.style.display = "none";
+            return;
+        }
+
+        comprasVazio.style.display = "none";
+        comprasLista.style.display = "block";
+        comprasLista.innerHTML = "";
+
+        compras.forEach(compra => {
+            const compraCard = document.createElement("div");
+            compraCard.className = "compra-card";
+            compraCard.style.cssText = "background:#fff; border:1px solid #e2e2e2; border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04);";
+
+            const dataFormatada = compra.data || "-";
+
+            const produtosHTML = (compra.produtos || []).map(produto => {
+                const qtd = Number(produto.quantidade) || 1;
+                const precoNum = Number(produto.preco) || 0;
+                const preco = precoNum.toFixed(2).replace(".", ",");
+                const subtotal = (precoNum * qtd).toFixed(2).replace(".", ",");
+
+                const statusGlobal = (compra.status || "").toLowerCase();
+                const podeDevolver = !["devolvido", "cancelado"].includes(statusGlobal);
+
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                        <div>
+                            <p style="margin:0; font-size:14px; color:#222;"><strong>${qtd}x ${produto.nome || 'Produto ZORA'}</strong></p>
+                            <small style="color:#777;">R$ ${preco} unit. | Subtotal: R$ ${subtotal}</small>
+                        </div>
+                        <div>
+                            ${podeDevolver ? 
+                                `<button type="button" onclick="abrirModalDevolucao(${compra.id_pedido}, ${produto.id_produto}, '${(produto.nome || 'Produto').replace(/'/g, "\\'")}')" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">
+                                    Solicitar Devolução
+                                 </button>` : 
+                                `<span style="color:#888; font-size:12px; font-weight:bold;">Devolução Solicitada</span>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join("");
+
+            const total = Number(compra.total || 0).toFixed(2).replace(".", ",");
+
+            compraCard.innerHTML = `
+                <div class="compra-header" style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px;">
+                    <div>
+                        <h4 style="margin:0; font-size:15px; color:#111;">Pedido #${String(compra.id_pedido).padStart(4, "0")}</h4>
+                        <p class="data" style="margin:4px 0 0; color:#888; font-size:12px;">Data: ${dataFormatada}</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <p style="margin:0; color:#888; font-size:11px;">Total do Pedido</p>
+                        <p style="margin:0; font-weight:bold; color:#a94460; font-size:16px;">R$ ${total}</p>
+                    </div>
+                </div>
+
+                <div class="compra-produtos" style="margin-top:10px;">
+                    ${produtosHTML}
+                </div>
+
+                <div class="compra-footer" style="margin-top:12px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+                    <p style="margin:0;"><strong>Status:</strong> <span style="color:#28a745; font-weight:bold;">${compra.status || 'Aprovado'}</span></p>
+                </div>
+            `;
+
+            comprasLista.appendChild(compraCard);
+        });
+
+    } catch (erro) {
+        console.error("Erro ao carregar compras:", erro);
+        comprasVazio.style.display = "block";
+        comprasLista.style.display = "none";
+    }
+}
+
+// =====================================================
+// EDIÇÃO E BOTÕES DE AÇÃO
+// =====================================================
+
 function mostrarEdicaoNome() {
     const displayGroup = document.getElementById("nomeDisplayGroup");
     const edicaoGroup = document.getElementById("nomeEdicaoGroup");
@@ -196,7 +248,7 @@ async function salvarNovoNome() {
     }
 
     try {
-        const resposta = await fazerFetchResiliente("atualizar_perfil.php", {
+        const resposta = await fazerFetchComID("atualizar_perfil.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ nome: novoNome })
@@ -225,27 +277,6 @@ async function salvarNovoNome() {
         console.error("Erro ao atualizar nome:", erro);
         alert("Erro ao conectar ao servidor.");
     }
-}
-
-// =====================================================
-// CARREGAR E EDITAR ENDEREÇO
-// =====================================================
-
-function carregarEndereco(endereco) {
-    if (!endereco) return;
-
-    const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = (val && val !== "-") ? val : "-";
-    };
-
-    setVal("cepPerfil", endereco.cep);
-    setVal("ruaPerfil", endereco.rua);
-    setVal("numeroPerfil", endereco.numero);
-    setVal("complementoPerfil", endereco.complemento);
-    setVal("bairroPerfil", endereco.bairro);
-    setVal("cidadePerfil", endereco.cidade);
-    setVal("estadoPerfil", endereco.estado);
 }
 
 function mostrarEdicaoEndereco() {
@@ -282,7 +313,6 @@ async function buscarCEPEdicao() {
     if (!cepInput) return;
 
     const valor = cepInput.value.replace(/\D/g, "");
-
     if (valor.length !== 8) return;
 
     try {
@@ -298,9 +328,6 @@ async function buscarCEPEdicao() {
         if (document.getElementById("bairroEdicao")) document.getElementById("bairroEdicao").value = dados.bairro || "";
         if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = dados.localidade || "";
         if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = dados.uf || "";
-        if (document.getElementById("complementoEdicao") && dados.complemento) {
-            document.getElementById("complementoEdicao").value = dados.complemento;
-        }
 
         const numInput = document.getElementById("numeroEdicao");
         if (numInput) numInput.focus();
@@ -325,12 +352,10 @@ async function salvarEndereco() {
     }
 
     try {
-        const resposta = await fazerFetchResiliente("atualizar_endereco.php", {
+        const resposta = await fazerFetchComID("atualizar_endereco.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                cep, rua, numero, complemento, bairro, cidade, estado
-            })
+            body: JSON.stringify({ cep, rua, numero, complemento, bairro, cidade, estado })
         });
 
         const resultado = await resposta.json();
@@ -347,104 +372,6 @@ async function salvarEndereco() {
     } catch (erro) {
         console.error("Erro ao atualizar endereço:", erro);
         alert("Não foi possível conectar ao servidor.");
-    }
-}
-
-// =====================================================
-// CARREGAR COMPRAS E HISTÓRICO
-// =====================================================
-
-async function carregarCompras() {
-    const comprasVazio = document.getElementById("compras-vazio");
-    const comprasLista = document.getElementById("compras-lista");
-
-    if (!comprasVazio || !comprasLista) return;
-
-    try {
-        const resposta = await fazerFetchResiliente("historico_pedidos.php", { method: "GET" });
-        const resultado = await resposta.json();
-
-        if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(resultado.mensagem || "Não foi possível carregar as compras.");
-        }
-
-        const compras = resultado.pedidos || [];
-
-        if (compras.length === 0) {
-            comprasVazio.style.display = "block";
-            comprasLista.style.display = "none";
-            return;
-        }
-
-        comprasVazio.style.display = "none";
-        comprasLista.style.display = "block";
-        comprasLista.innerHTML = "";
-
-        compras.forEach(compra => {
-            const compraCard = document.createElement("div");
-            compraCard.className = "compra-card";
-
-            const data = new Date(compra.data || compra.data_pedido);
-            const dataFormatada = isNaN(data.getTime()) ? (compra.data || "-") : data.toLocaleDateString("pt-BR");
-
-            const produtosHTML = (compra.produtos || compra.itens || []).map(produto => {
-                const qtd = Number(produto.quantidade || produto.qtd) || 1;
-                const precoNum = Number(produto.preco || produto.preco_unitario || 0);
-                const preco = precoNum.toFixed(2).replace(".", ",");
-                const subtotal = (precoNum * qtd).toFixed(2).replace(".", ",");
-                
-                const statusGlobal = (compra.status || "").toLowerCase();
-                const statusProd = (produto.status || "").toLowerCase();
-                const podeDevolver = !["devolvido", "cancelado"].includes(statusGlobal) && !["devolvido", "cancelado"].includes(statusProd);
-
-                return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
-                        <div>
-                            <p style="margin:0; font-size:14px;"><strong>${qtd}x ${produto.nome || 'Produto ZORA'}</strong></p>
-                            <small style="color:#666;">R$ ${preco} unit. | Subtotal: R$ ${subtotal}</small>
-                        </div>
-                        <div>
-                            ${podeDevolver ? 
-                                `<button type="button" onclick="abrirModalDevolucao(${compra.id_pedido}, ${produto.id_produto}, '${(produto.nome || 'Produto').replace(/'/g, "\\'")}')" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">
-                                    Solicitar Devolução
-                                 </button>` : 
-                                `<span style="color:#888; font-size:12px; font-weight:bold;">Devolução Solicitada</span>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join("");
-
-            const total = Number(compra.total || compra.valor_total || 0).toFixed(2).replace(".", ",");
-
-            compraCard.innerHTML = `
-                <div class="compra-header" style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px;">
-                    <div class="compra-info">
-                        <h4 style="margin:0; font-size:16px;">Pedido #${String(compra.id_pedido).padStart(4, "0")}</h4>
-                        <p class="data" style="margin:4px 0 0; color:#777; font-size:13px;">${dataFormatada}</p>
-                    </div>
-                    <div class="compra-total" style="text-align:right;">
-                        <p class="label" style="margin:0; color:#777; font-size:12px;">Total</p>
-                        <p class="preco" style="margin:0; font-weight:bold; color:#a94460;">R$ ${total}</p>
-                    </div>
-                </div>
-
-                <div class="compra-produtos" style="margin-top:10px;">
-                    ${produtosHTML}
-                </div>
-
-                <div class="compra-footer" style="margin-top:10px; font-size:13px;">
-                    <p style="margin:0;"><strong>Status:</strong> <span style="color:#28a745; font-weight:bold;">${compra.status || 'Aprovado'}</span></p>
-                </div>
-            `;
-
-            comprasLista.appendChild(compraCard);
-        });
-
-    } catch (erro) {
-        console.error("Erro ao carregar compras:", erro);
-        comprasVazio.style.display = "block";
-        comprasLista.style.display = "none";
     }
 }
 
@@ -468,18 +395,15 @@ function abrirModalDevolucao(idPedido, idProduto, nomeProduto) {
 
 function fecharModalDevolucao() {
     const modal = document.getElementById("modalDevolucao");
-    if (modal) {
-        modal.style.display = "none";
-    }
+    if (modal) modal.style.display = "none";
 }
 
 async function confirmarDevolucao(evento) {
     if (evento) evento.preventDefault();
 
-    const idPedido = document.getElementById("devolucaoIdPedido") ? document.getElementById("devolucaoIdPedido").value : null;
-    const idProduto = document.getElementById("devolucaoIdProduto") ? document.getElementById("devolucaoIdProduto").value : null;
-    const motivoEl = document.getElementById("motivoDevolucao");
-    const motivo = motivoEl ? motivoEl.value : "";
+    const idPedido = document.getElementById("devolucaoIdPedido").value;
+    const idProduto = document.getElementById("devolucaoIdProduto").value;
+    const motivo = document.getElementById("motivoDevolucao").value;
 
     if (!motivo) {
         alert("Selecione o motivo da devolução.");
@@ -487,14 +411,10 @@ async function confirmarDevolucao(evento) {
     }
 
     try {
-        const resposta = await fazerFetchResiliente("solicitar_devolucao.php", {
+        const resposta = await fazerFetchComID("solicitar_devolucao.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id_pedido: Number(idPedido),
-                id_produto: Number(idProduto),
-                motivo: motivo
-            })
+            body: JSON.stringify({ id_pedido: Number(idPedido), id_produto: Number(idProduto), motivo: motivo })
         });
 
         const resultado = await resposta.json();
@@ -505,7 +425,6 @@ async function confirmarDevolucao(evento) {
         }
 
         alert("Solicitação de devolução registrada com sucesso!");
-        if (motivoEl) motivoEl.value = "";
         fecharModalDevolucao();
         await carregarCompras();
 
@@ -516,16 +435,23 @@ async function confirmarDevolucao(evento) {
 }
 
 async function logout() {
-    if (!confirm("Você tem certeza que deseja sair?")) {
-        return;
-    }
+    if (!confirm("Você tem certeza que deseja sair?")) return;
 
     try {
-        await fazerFetchResiliente("logout.php", { method: "POST" });
+        await fazerFetchComID("logout.php", { method: "POST" });
     } catch (e) {
-        console.error("Erro no logout PHP:", e);
     } finally {
         localStorage.removeItem("usuarioLogado");
         window.location.replace("/TelaLogin/login.html");
     }
+}
+
+function showSidebar() {
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) sidebar.classList.add("active");
+}
+
+function hideSidebar() {
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) sidebar.classList.remove("active");
 }
