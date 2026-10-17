@@ -41,16 +41,16 @@ function obterIdClienteLocal() {
     return null;
 }
 
-// Requisitor universal que injeta o id_cliente automaticamente na URL e no Corpo JSON (POST)
+// Requisitor universal que tenta primeiro na raiz e injeta o id_cliente na URL e no Corpo JSON (POST)
 async function fazerFetchComID(endpoint, opcoes = {}) {
     const idCliente = obterIdClienteLocal();
     const nomeArquivo = endpoint.replace(/^\//, "");
 
     const rotas = [
-        nomeArquivo,                   // Tenta caminho relativo (ex: 'cliente.php' dentro de /TelaCliente/)
+        `/${nomeArquivo}`,             // 1º Tenta diretamente na raiz (ex: /historico_pedidos.php)
+        nomeArquivo,                   // 2º Tenta caminho relativo
         `./${nomeArquivo}`,
-        `/${nomeArquivo}`,             // Tenta na raiz
-        `/TelaCliente/${nomeArquivo}`  // Tenta com caminho absoluto da pasta
+        `/TelaCliente/${nomeArquivo}`  // 3º Tenta na pasta TelaCliente
     ];
 
     const idParam = idCliente ? `id_cliente=${encodeURIComponent(idCliente)}` : "";
