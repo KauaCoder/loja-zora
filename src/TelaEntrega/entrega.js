@@ -35,6 +35,22 @@ if (!totalPedido || !itensPedido || itensPedido.length === 0) {
     window.location.href = "/Telainicial/index.html";
 }
 
+// Helper para obter o ID do cliente armazenado no navegador
+function obterIdClienteLocal() {
+    try {
+        const dadosLocais = localStorage.getItem("usuarioLogado");
+        if (dadosLocais) {
+            const usuario = JSON.parse(dadosLocais);
+            if (usuario && usuario.id_cliente) {
+                return usuario.id_cliente;
+            }
+        }
+    } catch (e) {
+        console.error("Erro ao ler id_cliente do localStorage:", e);
+    }
+    return null;
+}
+
 // =====================================================
 // 2. VERIFICAR LOGIN E MENU MOBILE
 // =====================================================
@@ -51,13 +67,19 @@ function hideSidebar() {
 
 async function verificarLogin() {
     try {
-        const resposta = await fetch("/usuario_logado.php", {
+        const idCliente = obterIdClienteLocal();
+        let url = "/usuario_logado.php";
+        if (idCliente) {
+            url += `?id_cliente=${encodeURIComponent(idCliente)}`;
+        }
+
+        const resposta = await fetch(url, {
             method: "GET",
             credentials: "include"
         });
 
         const resultado = await resposta.json();
-        const logado = resultado.sucesso === true && resultado.logado === true;
+        const logado = (resultado.sucesso === true && resultado.logado === true) || Boolean(idCliente);
 
         const menuUsuario = document.getElementById("menuUsuario");
         const menuUsuarioMobile = document.getElementById("menuUsuarioMobile");
@@ -70,7 +92,7 @@ async function verificarLogin() {
         return logado;
     } catch (erro) {
         console.error("Erro ao verificar login:", erro);
-        return false;
+        return Boolean(obterIdClienteLocal());
     }
 }
 
@@ -342,8 +364,10 @@ document.addEventListener("DOMContentLoaded", function () {
         formEntrega.addEventListener("submit", async function (event) {
             event.preventDefault();
 
+            const idCliente = obterIdClienteLocal();
             const logado = await verificarLogin();
-            if (!logado) {
+
+            if (!logado && !idCliente) {
                 alert("Sua sessão expirou. Faça login novamente.");
                 window.location.href = "/TelaLogin/login.html";
                 return;
@@ -380,6 +404,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     headers: { "Content-Type": "application/json" },
                     credentials: "include",
                     body: JSON.stringify({
+                        id_cliente: idCliente ? Number(idCliente) : null,
                         cpf: cpfValor,
                         nome: nome,
                         forma_pagamento: formaPagamento,
