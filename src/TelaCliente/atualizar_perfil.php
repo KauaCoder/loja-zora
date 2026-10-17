@@ -35,7 +35,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 header("Content-Type: application/json; charset=UTF-8");
 
-// Localiza dinamicamente o conexao.php
+// Localiza conexao.php
 $caminhos_conexao = [
     __DIR__ . '/conexao.php',
     __DIR__ . '/src/conexao.php',
@@ -72,11 +72,13 @@ try {
         exit;
     }
 
+    // Leitura do corpo JSON recebido no POST
     $conteudo = file_get_contents("php://input");
-    $dados = json_decode($conteudo, true);
+    $dados = json_decode($conteudo, true) ?? [];
 
-    // Resgata o id_cliente da Sessão, GET ou Body JSON
+    // Busca o id_cliente na Sessão PHP, no GET ou no Corpo JSON do POST
     $idCliente = $_SESSION["id_cliente"] ?? $_SESSION["cliente_id"] ?? $_SESSION["usuario_id"] ?? null;
+    
     if (!$idCliente && isset($_GET['id_cliente'])) {
         $idCliente = $_GET['id_cliente'];
     }
@@ -106,7 +108,7 @@ try {
 
     $idInt = (int) $idCliente;
 
-    // Atualiza o nome na tabela public.cliente
+    // Atualiza a coluna nome na tabela public.cliente
     $sql = "UPDATE public.cliente SET nome = :nome WHERE id_cliente = :id_cliente";
     $stmt = $conexao->prepare($sql);
     $stmt->execute([
@@ -126,4 +128,4 @@ try {
         "sucesso"  => false,
         "mensagem" => "Erro no servidor: " . $erro->getMessage()
     ], JSON_UNESCAPED_UNICODE);
-}
+} 
