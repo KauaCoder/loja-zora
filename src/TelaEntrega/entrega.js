@@ -1,25 +1,20 @@
 // =====================================================
-// ZORA - TELA DE ENTREGA
+// ZORA - TELA DE ENTREGA E PAGAMENTO UNIFICADAS
 // PostgreSQL + Sessão PHP
 // =====================================================
 
-
 // =====================================================
-// MENU
+// MENU MOBILE
 // =====================================================
 
 const sidebar = document.querySelector(".sidebar");
 
 function showSidebar() {
-    if (sidebar) {
-        sidebar.classList.add("active");
-    }
+    if (sidebar) sidebar.classList.add("active");
 }
 
 function hideSidebar() {
-    if (sidebar) {
-        sidebar.classList.remove("active");
-    }
+    if (sidebar) sidebar.classList.remove("active");
 }
 
 
@@ -29,38 +24,23 @@ function hideSidebar() {
 
 async function verificarLogin() {
     try {
-        const resposta = await fetch(
-            "/usuario_logado.php",
-            {
-                method: "GET",
-                credentials: "include"
-            }
-        );
+        const resposta = await fetch("/usuario_logado.php", {
+            method: "GET",
+            credentials: "include"
+        });
 
         const resultado = await resposta.json();
+        const logado = resultado.sucesso === true && resultado.logado === true;
 
-        const logado =
-            resultado.sucesso === true &&
-            resultado.logado === true;
-
-        const menuUsuario =
-            document.getElementById("menuUsuario");
-
-        const menuUsuarioMobile =
-            document.getElementById("menuUsuarioMobile");
+        const menuUsuario = document.getElementById("menuUsuario");
+        const menuUsuarioMobile = document.getElementById("menuUsuarioMobile");
 
         const texto = logado ? "Perfil" : "Login";
 
-        if (menuUsuario) {
-            menuUsuario.textContent = texto;
-        }
-
-        if (menuUsuarioMobile) {
-            menuUsuarioMobile.textContent = texto;
-        }
+        if (menuUsuario) menuUsuario.textContent = texto;
+        if (menuUsuarioMobile) menuUsuarioMobile.textContent = texto;
 
         return logado;
-
     } catch (erro) {
         console.error("Erro ao verificar login:", erro);
         return false;
@@ -69,7 +49,6 @@ async function verificarLogin() {
 
 async function abrirPerfil() {
     const logado = await verificarLogin();
-
     if (logado) {
         window.location.href = "/TelaCliente/cliente.html";
     } else {
@@ -77,7 +56,6 @@ async function abrirPerfil() {
     }
 }
 
-// Verifica o login ao carregar
 verificarLogin();
 
 
@@ -100,7 +78,6 @@ if (pedidosSalvos) {
     }
 }
 
-// Recalcula o total se necessário
 if ((!totalPedido || Number(totalPedido) <= 0) && itensPedido.length > 0) {
     totalPedido = itensPedido.reduce((acc, item) => {
         return acc + ((Number(item.preco) || 0) * (Number(item.quantidade) || 1));
@@ -122,22 +99,20 @@ if (!totalPedido || !itensPedido || itensPedido.length === 0) {
 
 
 // =====================================================
-// RENDERIZAR RESUMO DO PEDIDO NA TELA
+// RENDERIZAR RESUMO DO PEDIDO
 // =====================================================
 
 function renderizarResumo() {
     const valorTotalEl = document.getElementById("valorTotal");
+    const valorTotalPagamentoEl = document.getElementById("valorTotalPagamento");
 
-    if (valorTotalEl) {
-        valorTotalEl.textContent =
-            "R$ " + Number(totalPedido).toFixed(2).replace(".", ",");
-    }
+    const textoTotal = "R$ " + Number(totalPedido).toFixed(2).replace(".", ",");
+
+    if (valorTotalEl) valorTotalEl.textContent = textoTotal;
+    if (valorTotalPagamentoEl) valorTotalPagamentoEl.textContent = textoTotal;
 
     const lista = document.getElementById("listaResumo");
-
-    if (!lista) {
-        return;
-    }
+    if (!lista) return;
 
     lista.innerHTML = "";
 
@@ -153,12 +128,8 @@ function renderizarResumo() {
         item.style.borderBottom = "1px solid #eee";
 
         item.innerHTML = `
-            <span>
-                ${quantidade}x ${nome}
-            </span>
-            <strong>
-                R$ ${(preco * quantidade).toFixed(2).replace(".", ",")}
-            </strong>
+            <span>${quantidade}x ${nome}</span>
+            <strong>R$ ${(preco * quantidade).toFixed(2).replace(".", ",")}</strong>
         `;
 
         lista.appendChild(item);
@@ -167,7 +138,7 @@ function renderizarResumo() {
 
 
 // =====================================================
-// MÁSCARA CPF E CEP
+// MÁSCARAS E CEP
 // =====================================================
 
 const cpf = document.getElementById("cpf");
@@ -200,11 +171,6 @@ if (cepInput) {
 
     cepInput.addEventListener("blur", buscarCEP);
 }
-
-
-// =====================================================
-// BUSCAR CEP (VIACEP)
-// =====================================================
 
 async function buscarCEP() {
     if (!cepInput) return;
@@ -277,7 +243,62 @@ function limparEndereco() {
 
 
 // =====================================================
-// FINALIZAR PEDIDO
+// BOTÃO "CONTINUAR PARA PAGAMENTO" (AVANÇAR ETAPA)
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", function () {
+    const btnIrParaPagamento = document.getElementById("btnIrParaPagamento") || document.querySelector(".btn-pagamento");
+    const blocoEtapa1 = document.getElementById("blocoEtapa1");
+    const blocoEtapa2 = document.getElementById("blocoEtapa2");
+
+    if (btnIrParaPagamento) {
+        btnIrParaPagamento.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            const nome = document.getElementById("nome") ? document.getElementById("nome").value.trim() : "";
+            const cpfValor = document.getElementById("cpf") ? document.getElementById("cpf").value.trim() : "";
+            const cepValor = document.getElementById("cep") ? document.getElementById("cep").value.trim() : "";
+            const rua = document.getElementById("rua") ? document.getElementById("rua").value.trim() : "";
+            const numero = document.getElementById("numero") ? document.getElementById("numero").value.trim() : "";
+
+            if (!nome) {
+                alert("Informe seu nome completo.");
+                document.getElementById("nome").focus();
+                return;
+            }
+            if (cpfValor.replace(/\D/g, "").length !== 11) {
+                alert("Informe um CPF válido.");
+                document.getElementById("cpf").focus();
+                return;
+            }
+            if (cepValor.replace(/\D/g, "").length !== 8 || !rua) {
+                alert("Informe um CEP e endereço válidos.");
+                document.getElementById("cep").focus();
+                return;
+            }
+            if (!numero) {
+                alert("Informe o número da residência.");
+                document.getElementById("numero").focus();
+                return;
+            }
+
+            // Alterna blocos visuais se existirem na tela
+            if (blocoEtapa1 && blocoEtapa2) {
+                blocoEtapa1.style.display = "none";
+                blocoEtapa2.style.display = "block";
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            } else {
+                // Se for formulário de envio direto
+                const form = document.getElementById("formEntrega");
+                if (form) form.requestSubmit();
+            }
+        });
+    }
+});
+
+
+// =====================================================
+// FINALIZAR PEDIDO (SUBMIT FORMULÁRIO)
 // =====================================================
 
 const formEntrega = document.getElementById("formEntrega");
@@ -303,12 +324,10 @@ if (formEntrega) {
         const estado = document.getElementById("estado").value.trim();
         const complemento = document.getElementById("complemento") ? document.getElementById("complemento").value.trim() : "";
 
-        if (!nome || cpfValor.replace(/\D/g, "").length !== 11 || cepValor.replace(/\D/g, "").length !== 8 || !rua || !numero) {
-            alert("Preencha todos os campos obrigatórios corretamente.");
-            return;
-        }
+        const formaPagamentoEl = document.querySelector('input[name="formaPagamento"]:checked');
+        const formaPagamento = formaPagamentoEl ? formaPagamentoEl.value : "pix";
 
-        const btn = document.getElementById("btnContinuar");
+        const btn = document.getElementById("btnContinuar") || document.getElementById("btnIrParaPagamento");
         if (btn) {
             btn.disabled = true;
             btn.textContent = "Finalizando pedido...";
@@ -328,6 +347,7 @@ if (formEntrega) {
                 body: JSON.stringify({
                     cpf: cpfValor,
                     nome: nome,
+                    forma_pagamento: formaPagamento,
                     endereco: {
                         cep: cepValor,
                         rua: rua,
@@ -359,7 +379,7 @@ if (formEntrega) {
 
         } catch (erro) {
             console.error("Erro ao finalizar:", erro);
-            alert("Resposta inválida do servidor.");
+            alert("Não foi possível conectar ao servidor.");
             if (btn) {
                 btn.disabled = false;
                 btn.textContent = "Finalizar Pedido";
