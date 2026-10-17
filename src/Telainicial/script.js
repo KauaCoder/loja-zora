@@ -1,6 +1,6 @@
 // =====================================================
-// ZORA - TELA INICIAL, CATÁLOGO E CARRINHO
-// Versão Completa & Sincronizada com o HTML
+// ZORA - TELA INICIAL, CATÁLOGO, SLIDES E CARRINHO
+// Versão Completa & Definitiva
 // =====================================================
 
 
@@ -9,11 +9,13 @@
 // =====================================================
 
 function obterSidebar() {
-    return document.getElementById("sidebar") || document.querySelector(".sidebar");
+    return document.getElementById("sidebar")
+        || document.querySelector(".sidebar");
 }
 
 function obterOverlay() {
-    return document.getElementById("overlay") || document.querySelector(".overlay");
+    return document.getElementById("overlay")
+        || document.querySelector(".overlay");
 }
 
 function sincronizarOverlay() {
@@ -21,29 +23,51 @@ function sincronizarOverlay() {
     const overlay = obterOverlay();
     const pedidos = document.getElementById("Pedidos");
 
-    const menuAberto = sidebar && (sidebar.classList.contains("ativo") || sidebar.classList.contains("active"));
-    const pedidosAberto = pedidos && pedidos.classList.contains("ativo");
-    const algumPainelAberto = Boolean(menuAberto || pedidosAberto);
+    const menuAberto = sidebar && (
+        sidebar.classList.contains("ativo")
+        || sidebar.classList.contains("active")
+    );
+
+    const pedidosAberto = pedidos
+        && pedidos.classList.contains("ativo");
+
+    const algumPainelAberto = Boolean(
+        menuAberto || pedidosAberto
+    );
 
     if (overlay) {
-        overlay.classList.toggle("ativo", algumPainelAberto);
+        overlay.classList.toggle(
+            "ativo",
+            algumPainelAberto
+        );
     }
 
-    document.body.classList.toggle("painel-aberto", algumPainelAberto);
+    // Impede a rolagem da página quando um painel está aberto.
+    document.body.classList.toggle(
+        "painel-aberto",
+        algumPainelAberto
+    );
 }
 
 function showSidebar() {
     const sidebar = obterSidebar();
-    if (!sidebar) return;
+
+    if (!sidebar) {
+        console.warn("ZORA: menu lateral não encontrado.");
+        return;
+    }
+
     sidebar.classList.add("ativo", "active");
     sincronizarOverlay();
 }
 
 function hideSidebar() {
     const sidebar = obterSidebar();
+
     if (sidebar) {
         sidebar.classList.remove("ativo", "active");
     }
+
     sincronizarOverlay();
 }
 
@@ -51,8 +75,13 @@ function fecharTudo() {
     const sidebar = obterSidebar();
     const pedidos = document.getElementById("Pedidos");
 
-    if (sidebar) sidebar.classList.remove("ativo", "active");
-    if (pedidos) pedidos.classList.remove("ativo");
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
+
+    if (pedidos) {
+        pedidos.classList.remove("ativo");
+    }
 
     sincronizarOverlay();
 }
@@ -68,15 +97,29 @@ async function abrirPerfil() {
         }
     } else {
         try {
-            usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
+            usuario = JSON.parse(
+                localStorage.getItem("usuarioLogado") || "null"
+            );
         } catch (erro) {
             usuario = null;
         }
     }
 
-    if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
-        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
-        window.location.href = ehAdmin ? "/TelaAdmin/admin.html" : "/TelaCliente/cliente.html";
+    if (usuario && (
+        usuario.nome
+        || usuario.email
+        || usuario.id_cliente
+    )) {
+        const ehAdmin =
+            usuario.is_admin === true
+            || usuario.is_admin === 1
+            || usuario.is_admin === "1"
+            || usuario.nivel === "admin";
+
+        window.location.href = ehAdmin
+            ? "/TelaAdmin/admin.html"
+            : "/TelaCliente/cliente.html";
+
     } else {
         window.location.href = "/TelaLogin/login.html";
     }
@@ -93,8 +136,11 @@ async function checarEAtualizarMenu() {
     }
 
     let usuario = null;
+
     try {
-        usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
+        usuario = JSON.parse(
+            localStorage.getItem("usuarioLogado") || "null"
+        );
     } catch (erro) {
         usuario = null;
     }
@@ -105,11 +151,19 @@ async function checarEAtualizarMenu() {
     let texto = "Login";
 
     if (usuario && (usuario.nome || usuario.email)) {
-        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+        const ehAdmin =
+            usuario.is_admin === true
+            || usuario.is_admin === 1
+            || usuario.is_admin === "1"
+            || usuario.nivel === "admin";
+
         if (ehAdmin) {
             texto = "📊 Dashboard Adm";
         } else {
-            const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+            const primeiroNome = usuario.nome
+                ? usuario.nome.split(" ")[0]
+                : "Perfil";
+
             texto = `Olá, ${primeiroNome}`;
         }
     }
@@ -120,7 +174,7 @@ async function checarEAtualizarMenu() {
 
 
 // =====================================================
-// 2. CARROSSEL DE PROMOÇÕES (BANNER PRINCIPAL)
+// 2. CARROSSEL DE PROMOÇÕES (SLIDE PRINCIPAL)
 // =====================================================
 
 let slideIndiceAtual = 0;
@@ -170,7 +224,7 @@ function reiniciarTemporizadorSlide() {
     if (temporizadorSlide) clearInterval(temporizadorSlide);
     temporizadorSlide = setInterval(() => {
         mostrarSlide(slideIndiceAtual + 1);
-    }, 6000); // Roda a cada 6 segundos
+    }, 6000); // Passa de slide automaticamente a cada 6 segundos
 }
 
 
@@ -180,48 +234,72 @@ function reiniciarTemporizadorSlide() {
 
 async function carregarCatalogo() {
     const container = document.getElementById("catalogoProdutos");
+
     if (!container) return;
 
-    container.innerHTML = "<p class='carregando'>Carregando produtos...</p>";
+    container.innerHTML =
+        "<p class='carregando'>Carregando produtos...</p>";
 
     try {
         const resposta = await fetch("/produtos_catalogo.php", {
-            headers: { "Accept": "application/json" }
+            headers: {
+                "Accept": "application/json"
+            }
         });
 
         const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(resultado.mensagem || "Não foi possível carregar os produtos.");
+            throw new Error(
+                resultado.mensagem
+                || "Não foi possível carregar os produtos."
+            );
         }
 
         renderizarCatalogo(resultado.produtos);
 
     } catch (erro) {
         console.error("Erro ao carregar catálogo:", erro);
-        container.innerHTML = "<p class='carregando'>Não foi possível carregar os produtos no momento.</p>";
+
+        container.innerHTML =
+            "<p class='carregando'>" +
+            "Não foi possível carregar os produtos no momento." +
+            "</p>";
     }
 }
 
 function formatarPreco(valor) {
     const numero = Number(valor);
-    return (Number.isFinite(numero) ? numero : 0).toFixed(2).replace(".", ",");
+
+    return (Number.isFinite(numero) ? numero : 0)
+        .toFixed(2)
+        .replace(".", ",");
 }
 
 function obterImagemProduto(imagem) {
-    if (!imagem) return "/img/Logo%201.png";
-    if (/^(https?:\/\/|\/)/i.test(imagem)) return imagem;
+    if (!imagem) {
+        return "/img/Logo%201.png";
+    }
+
+    if (/^(https?:\/\/|\/)/i.test(imagem)) {
+        return imagem;
+    }
+
     return "/img/" + encodeURIComponent(imagem);
 }
 
 function renderizarCatalogo(produtos) {
     const container = document.getElementById("catalogoProdutos");
+
     if (!container) return;
 
     container.replaceChildren();
 
     if (!Array.isArray(produtos) || produtos.length === 0) {
-        container.innerHTML = "<p class='carregando'>Nenhum produto disponível no momento.</p>";
+        container.innerHTML =
+            "<p class='carregando'>" +
+            "Nenhum produto disponível no momento." +
+            "</p>";
         return;
     }
 
@@ -231,7 +309,9 @@ function renderizarCatalogo(produtos) {
         const preco = Number(produto.preco);
         const estoque = Number(produto.estoque);
 
-        if (!Number.isInteger(id) || id <= 0) return;
+        if (!Number.isInteger(id) || id <= 0) {
+            return;
+        }
 
         const precoValido = Number.isFinite(preco) && preco >= 0 ? preco : 0;
         const estoqueValido = Number.isFinite(estoque) ? estoque : 0;
@@ -247,6 +327,7 @@ function renderizarCatalogo(produtos) {
         imagem.src = imagemSrc;
         imagem.alt = nome;
         imagem.loading = "lazy";
+
         imagem.onerror = function () {
             this.onerror = null;
             this.src = "/img/Logo%201.png";
@@ -270,8 +351,15 @@ function renderizarCatalogo(produtos) {
             botao.style.cursor = "not-allowed";
         } else {
             botao.textContent = "Comprar";
-            botao.addEventListener("click", () => {
-                adicionarPedidos(id, nome, precoValido, imagemSrc, estoqueValido);
+
+            botao.addEventListener("click", function () {
+                adicionarPedidos(
+                    id,
+                    nome,
+                    precoValido,
+                    imagemSrc,
+                    estoqueValido
+                );
             });
         }
 
@@ -287,7 +375,7 @@ function renderizarCatalogo(produtos) {
 function scrollProdutos(direcao) {
     const container = document.getElementById("catalogoProdutos");
     if (!container) return;
-    const larguraItem = 280; // Largura aproximada do card de produto + gap
+    const larguraItem = 280; // Largura do card + gap
     container.scrollBy({
         left: direcao * larguraItem * 2,
         behavior: "smooth"
@@ -304,21 +392,34 @@ let pedidosArray = [];
 function carregarCarrinho() {
     try {
         const carrinhoSalvo = localStorage.getItem("carrinho");
+
         if (!carrinhoSalvo) {
             pedidosArray = [];
         } else {
             const dados = JSON.parse(carrinhoSalvo);
-            pedidosArray = Array.isArray(dados) ? dados.filter(p => p && Number(p.id_produto) > 0).map(p => ({
-                ...p,
-                id_produto: Number(p.id_produto),
-                preco: Math.max(0, Number(p.preco) || 0),
-                quantidade: Math.max(1, Math.floor(Number(p.quantidade) || 1)),
-                nome: String(p.nome || "Produto ZORA"),
-                imagem: p.imagem || "/img/Logo%201.png",
-                estoque: Number.isFinite(Number(p.estoque)) ? Number(p.estoque) : Infinity
-            })) : [];
+
+            pedidosArray = Array.isArray(dados)
+                ? dados.filter(produto => (
+                    produto
+                    && Number.isInteger(Number(produto.id_produto))
+                    && Number(produto.id_produto) > 0
+                )).map(produto => ({
+                    ...produto,
+                    id_produto: Number(produto.id_produto),
+                    preco: Math.max(0, Number(produto.preco) || 0),
+                    quantidade: Math.max(
+                        1,
+                        Math.floor(Number(produto.quantidade) || 1)
+                    ),
+                    nome: String(produto.nome || "Produto ZORA"),
+                    imagem: produto.imagem || "/img/Logo%201.png",
+                    estoque: Number.isFinite(Number(produto.estoque)) ? Number(produto.estoque) : Infinity
+                }))
+                : [];
         }
-    } catch (e) {
+
+    } catch (erro) {
+        console.error("Erro ao carregar carrinho:", erro);
         pedidosArray = [];
     }
 
@@ -329,33 +430,60 @@ function carregarCarrinho() {
 
 function salvarCarrinho() {
     try {
-        localStorage.setItem("carrinho", JSON.stringify(pedidosArray));
+        localStorage.setItem(
+            "carrinho",
+            JSON.stringify(pedidosArray)
+        );
         return true;
-    } catch (e) {
+
+    } catch (erro) {
+        console.error("Erro ao salvar carrinho:", erro);
+
+        alert(
+            "Não foi possível salvar o carrinho neste dispositivo."
+        );
+
         return false;
     }
 }
 
 function calcularTotal() {
-    return pedidosArray.reduce((total, p) => total + (Number(p.preco) || 0) * (Number(p.quantidade) || 0), 0);
+    return pedidosArray.reduce((total, produto) => {
+        const preco = Number(produto.preco) || 0;
+        const quantidade = Number(produto.quantidade) || 0;
+
+        return total + preco * quantidade;
+    }, 0);
 }
 
 function atualizarTotal() {
     const elemento = document.getElementById("total");
-    if (elemento) elemento.textContent = formatarPreco(calcularTotal());
+
+    if (elemento) {
+        elemento.textContent = formatarPreco(calcularTotal());
+    }
 }
 
 function atualizarBadge() {
-    const quantidadeTotal = pedidosArray.reduce((soma, p) => soma + (Number(p.quantidade) || 0), 0);
+    const quantidadeTotal = pedidosArray.reduce(
+        (soma, produto) =>
+            soma + (Number(produto.quantidade) || 0),
+        0
+    );
+
     document.querySelectorAll(".badge-carrinho").forEach(badge => {
-        badge.textContent = quantidadeTotal > 0 ? quantidadeTotal : "";
+        badge.textContent =
+            quantidadeTotal > 0 ? quantidadeTotal : "";
+
         badge.classList.toggle("show", quantidadeTotal > 0);
     });
 }
 
 function renderizarPedidos() {
     const lista = document.getElementById("listaPedidos");
+
     atualizarTotal();
+
     if (!lista) {
         atualizarBadge();
         return;
@@ -378,7 +506,8 @@ function renderizarPedidos() {
         item.className = "item-carrinho";
 
         const linkFoto = document.createElement("a");
-        linkFoto.href = `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
+        linkFoto.href =
+            `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
         linkFoto.className = "carrinho-foto-link";
 
         const foto = document.createElement("img");
@@ -386,19 +515,25 @@ function renderizarPedidos() {
         foto.alt = produto.nome;
         foto.className = "carrinho-foto";
         foto.loading = "lazy";
+
         foto.onerror = function () {
             this.onerror = null;
             this.src = "/img/Logo%201.png";
         };
+
         linkFoto.appendChild(foto);
 
         const detalhes = document.createElement("div");
         detalhes.className = "carrinho-detalhes";
 
         const linkNome = document.createElement("a");
-        linkNome.href = `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
+        linkNome.href =
+            `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
         linkNome.className = "carrinho-nome";
-        linkNome.textContent = produto.tamanho ? `${produto.nome} (${produto.tamanho})` : produto.nome;
+
+        linkNome.textContent = produto.tamanho
+            ? `${produto.nome} (${produto.tamanho})`
+            : produto.nome;
 
         const precoUnitario = document.createElement("span");
         precoUnitario.className = "carrinho-preco-unitario";
@@ -411,7 +546,11 @@ function renderizarPedidos() {
         btnMenos.type = "button";
         btnMenos.className = "qtd-btn";
         btnMenos.textContent = "−";
-        btnMenos.addEventListener("click", () => alterarQuantidade(indice, -1));
+        btnMenos.setAttribute("aria-label", "Diminuir quantidade");
+
+        btnMenos.addEventListener("click", () => {
+            alterarQuantidade(indice, -1);
+        });
 
         const numQtd = document.createElement("span");
         numQtd.className = "qtd-numero";
@@ -421,26 +560,51 @@ function renderizarPedidos() {
         btnMais.type = "button";
         btnMais.className = "qtd-btn";
         btnMais.textContent = "+";
-        btnMais.addEventListener("click", () => alterarQuantidade(indice, 1));
+        btnMais.setAttribute("aria-label", "Aumentar quantidade");
 
-        qtdContainer.append(btnMenos, numQtd, btnMais);
-        detalhes.append(linkNome, precoUnitario, qtdContainer);
+        btnMais.addEventListener("click", () => {
+            alterarQuantidade(indice, 1);
+        });
+
+        qtdContainer.append(
+            btnMenos,
+            numQtd,
+            btnMais
+        );
+
+        detalhes.append(
+            linkNome,
+            precoUnitario,
+            qtdContainer
+        );
 
         const acoes = document.createElement("div");
         acoes.className = "carrinho-acoes";
 
         const subtotal = document.createElement("span");
         subtotal.className = "carrinho-subtotal";
-        subtotal.textContent = `R$ ${formatarPreco(preco * quantidade)}`;
+        subtotal.textContent =
+            `R$ ${formatarPreco(preco * quantidade)}`;
 
         const btnRemover = document.createElement("button");
         btnRemover.type = "button";
         btnRemover.className = "remover-item";
         btnRemover.textContent = "🗑";
-        btnRemover.addEventListener("click", () => removerPedido(indice));
+        btnRemover.title = "Remover produto";
+        btnRemover.setAttribute("aria-label", "Remover produto");
+
+        btnRemover.addEventListener("click", () => {
+            removerPedido(indice);
+        });
 
         acoes.append(subtotal, btnRemover);
-        item.append(linkFoto, detalhes, acoes);
+
+        item.append(
+            linkFoto,
+            detalhes,
+            acoes
+        );
+
         lista.appendChild(item);
     });
 
@@ -452,11 +616,27 @@ function adicionarPedidos(idProduto, nome, preco, imagem, estoqueDisponivel) {
     const id = Number(idProduto);
     const valor = Number(preco);
 
-    if (!Number.isInteger(id) || id <= 0 || !Number.isFinite(valor) || valor < 0) return;
+    if (
+        !Number.isInteger(id)
+        || id <= 0
+        || !Number.isFinite(valor)
+        || valor < 0
+    ) {
+        alert("Não foi possível adicionar este produto.");
+        return;
+    }
 
-    const produtoExistente = pedidosArray.find(p => Number(p.id_produto) === id);
-    const quantidadeAtual = produtoExistente ? Number(produtoExistente.quantidade) || 0 : 0;
-    const limiteEstoque = Number.isFinite(Number(estoqueDisponivel)) ? Number(estoqueDisponivel) : Infinity;
+    const produtoExistente = pedidosArray.find(
+        produto => Number(produto.id_produto) === id
+    );
+
+    const quantidadeAtual = produtoExistente
+        ? Number(produtoExistente.quantidade) || 0
+        : 0;
+
+    const limiteEstoque = Number.isFinite(Number(estoqueDisponivel))
+        ? Number(estoqueDisponivel)
+        : (produtoExistente && Number.isFinite(Number(produtoExistente.estoque)) ? Number(produtoExistente.estoque) : Infinity);
 
     if (quantidadeAtual + 1 > limiteEstoque) {
         alert(`Estoque insuficiente. Disponíveis: ${limiteEstoque} unidade(s).`);
@@ -476,7 +656,9 @@ function adicionarPedidos(idProduto, nome, preco, imagem, estoqueDisponivel) {
         });
     }
 
-    if (!salvarCarrinho()) return;
+    if (!salvarCarrinho()) {
+        return;
+    }
 
     renderizarPedidos();
     atualizarBadge();
@@ -485,21 +667,26 @@ function adicionarPedidos(idProduto, nome, preco, imagem, estoqueDisponivel) {
 
 function alterarQuantidade(indice, delta) {
     const produto = pedidosArray[indice];
+
     if (!produto) return;
 
-    const novaQuantidade = (Number(produto.quantidade) || 1) + delta;
+    const quantidadeAtual = Number(produto.quantidade) || 1;
+    const novaQuantidade = quantidadeAtual + delta;
 
     if (novaQuantidade <= 0) {
         removerPedido(indice);
         return;
     }
 
-    if (delta > 0 && Number.isFinite(produto.estoque) && novaQuantidade > produto.estoque) {
-        alert(`Quantidade máxima atingida. Disponíveis: ${produto.estoque} unidade(s).`);
-        return;
+    if (delta > 0 && Number.isFinite(Number(produto.estoque))) {
+        if (novaQuantidade > produto.estoque) {
+            alert(`Quantidade máxima atingida. Disponíveis: ${produto.estoque} unidade(s).`);
+            return;
+        }
     }
 
     produto.quantidade = novaQuantidade;
+
     if (!salvarCarrinho()) return;
 
     renderizarPedidos();
@@ -507,29 +694,55 @@ function alterarQuantidade(indice, delta) {
 }
 
 function removerPedido(indice) {
-    if (indice < 0 || indice >= pedidosArray.length) return;
+    if (indice < 0 || indice >= pedidosArray.length) {
+        return;
+    }
+
     pedidosArray.splice(indice, 1);
+
     if (!salvarCarrinho()) return;
+
     renderizarPedidos();
     atualizarBadge();
 }
 
+
+// =====================================================
+// 5. ABERTURA E FECHAMENTO DO CARRINHO
+// =====================================================
+
 function abrirPedidos() {
     const pedidos = document.getElementById("Pedidos");
-    if (!pedidos) return;
+
+    if (!pedidos) {
+        console.warn("ZORA: painel de pedidos não encontrado.");
+        return;
+    }
 
     const sidebar = obterSidebar();
-    if (sidebar) sidebar.classList.remove("ativo", "active");
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
 
     pedidos.classList.add("ativo");
+
     sincronizarOverlay();
 }
 
 function fecharPedidos() {
     const pedidos = document.getElementById("Pedidos");
-    if (pedidos) pedidos.classList.remove("ativo");
+
+    if (pedidos) {
+        pedidos.classList.remove("ativo");
+    }
+
     sincronizarOverlay();
 }
+
+
+// =====================================================
+// 6. FINALIZAÇÃO DO PEDIDO
+// =====================================================
 
 function pagarPedido() {
     if (pedidosArray.length === 0) {
@@ -546,7 +759,7 @@ function pagarPedido() {
 
 
 // =====================================================
-// 5. INICIALIZAÇÃO DA PÁGINA
+// 7. INICIALIZAÇÃO DA PÁGINA
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", () => {
