@@ -18,6 +18,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         cepEdicao.addEventListener("blur", buscarCEPEdicao);
     }
+
+    const formDevolucao = document.getElementById("formDevolucao");
+    if (formDevolucao) {
+        formDevolucao.addEventListener("submit", confirmarDevolucao);
+    }
 });
 
 // =====================================================
@@ -131,7 +136,7 @@ async function carregarDadosPerfil() {
             throw new Error(resultado.mensagem || "Não foi possível carregar os dados.");
         }
 
-        const cliente = resultado.cliente;
+        const cliente = resultado.cliente || {};
 
         if (document.getElementById("nomeUsuario")) document.getElementById("nomeUsuario").textContent = cliente.nome || "Usuário";
         if (document.getElementById("emailUsuario")) document.getElementById("emailUsuario").textContent = cliente.email || "-";
@@ -206,7 +211,6 @@ async function salvarNovoNome() {
 
         alert("Nome atualizado com sucesso!");
         
-        // Atualiza na memória local
         const dadosLocais = localStorage.getItem("usuarioLogado");
         if (dadosLocais) {
             const usr = JSON.parse(dadosLocais);
@@ -251,7 +255,6 @@ function mostrarEdicaoEndereco() {
     if (existente) existente.style.display = "none";
     if (edicao) edicao.style.display = "block";
 
-    // Preenche os campos de input com os dados que estão exibidos atualmente
     const getVal = (id) => {
         const el = document.getElementById(id);
         return (el && el.textContent !== "-") ? el.textContent : "";
@@ -382,7 +385,7 @@ async function carregarCompras() {
             compraCard.className = "compra-card";
 
             const data = new Date(compra.data || compra.data_pedido);
-            const dataFormatada = isNaN(data.getTime()) ? "-" : data.toLocaleDateString("pt-BR");
+            const dataFormatada = isNaN(data.getTime()) ? (compra.data || "-") : data.toLocaleDateString("pt-BR");
 
             const produtosHTML = (compra.produtos || compra.itens || []).map(produto => {
                 const qtd = Number(produto.quantidade || produto.qtd) || 1;
@@ -446,7 +449,7 @@ async function carregarCompras() {
 }
 
 // =====================================================
-// MODAL DE DEVOLUÇÃO E SUBMIT
+// MODAL DE DEVOLUÇÃO E LOGOUT
 // =====================================================
 
 function abrirModalDevolucao(idPedido, idProduto, nomeProduto) {
@@ -512,10 +515,6 @@ async function confirmarDevolucao(evento) {
     }
 }
 
-// =====================================================
-// LOGOUT DA CONTA
-// =====================================================
-
 async function logout() {
     if (!confirm("Você tem certeza que deseja sair?")) {
         return;
@@ -524,7 +523,7 @@ async function logout() {
     try {
         await fazerFetchResiliente("logout.php", { method: "POST" });
     } catch (e) {
-        console.error("Erro ao efetuar logout no PHP:", e);
+        console.error("Erro no logout PHP:", e);
     } finally {
         localStorage.removeItem("usuarioLogado");
         window.location.replace("/TelaLogin/login.html");
