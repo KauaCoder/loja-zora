@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - TELA INICIAL, CATÁLOGO E CARRINHO
-// Versão Completa & Atualizada
+// Versão Completa & Atualizada com Carrossel Dinâmico
 // =====================================================
 
 
@@ -677,7 +677,7 @@ function fecharPedidos() {
 
 
 // =====================================================
-// 5. FINALIZAÇÃO DO PEDIDO (ATUALIZADO E SEGURO)
+// 5. FINALIZAÇÃO DO PEDIDO
 // =====================================================
 
 function pagarPedido() {
@@ -686,7 +686,6 @@ function pagarPedido() {
         return;
     }
 
-    // Salva explicitamente os itens e o valor total no localStorage antes de avançar
     localStorage.setItem("carrinho", JSON.stringify(pedidosArray));
     localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
     localStorage.setItem("totalPedido", calcularTotal());
@@ -696,13 +695,42 @@ function pagarPedido() {
 
 
 // =====================================================
-// 6. INICIALIZAÇÃO DA PÁGINA
+// 6. CONTROLE DINÂMICO DO CARROSSEL / SLIDE DE PRODUTOS
+// =====================================================
+
+function configurarCarrossel() {
+    const container = document.getElementById("catalogoProdutos");
+    const btnEsq = document.querySelector(".btn-esq, .carrossel-esq, [data-slide='prev']");
+    const btnDir = document.querySelector(".btn-dir, .carrossel-dir, [data-slide='next']");
+
+    if (!container) return;
+
+    // Rolagem suave ao clicar nos botões
+    const larguraDeslocamento = 300; // Pixels que rolam por clique
+
+    if (btnEsq) {
+        btnEsq.addEventListener("click", () => {
+            container.scrollBy({ left: -larguraDeslocamento, behavior: "smooth" });
+        });
+    }
+
+    if (btnDir) {
+        btnDir.addEventListener("click", () => {
+            container.scrollBy({ left: larguraDeslocamento, behavior: "smooth" });
+        });
+    }
+}
+
+
+// =====================================================
+// 7. INICIALIZAÇÃO DA PÁGINA
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", () => {
     carregarCatalogo();
     carregarCarrinho();
     checarEAtualizarMenu();
+    configurarCarrossel();
 
     const overlay = obterOverlay();
     if (overlay) {
