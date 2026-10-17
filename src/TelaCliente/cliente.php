@@ -82,12 +82,12 @@ try {
 
     $idInt = (int) $idCliente;
 
-    // 1. Consulta dados do cliente utilizando os nomes reais de colunas (nome, e_mail, telefone)
-    $stmtCliente = $conexao->prepare("SELECT id_cliente, nome, e_mail, telefone FROM public.cliente WHERE id_cliente = :id_cliente LIMIT 1");
+    // 1. Consulta dados do cliente com SELECT * para evitar erro de nomes de colunas
+    $stmtCliente = $conexao->prepare("SELECT * FROM public.cliente WHERE id_cliente = :id_cliente LIMIT 1");
     $stmtCliente->execute([":id_cliente" => $idInt]);
-    $cliente = $stmtCliente->fetch(PDO::FETCH_ASSOC);
+    $clienteRaw = $stmtCliente->fetch(PDO::FETCH_ASSOC);
 
-    if (!$cliente) {
+    if (!$clienteRaw) {
         http_response_code(404);
         echo json_encode([
             "sucesso"  => false,
@@ -96,28 +96,35 @@ try {
         exit;
     }
 
-    // 2. Consulta o endereço vinculado ao id_cliente
-    $stmtEnd = $conexao->prepare("SELECT id_endereco, cep, endereco, numero, complemento, bairro, cidade, estado FROM public.endereco WHERE id_cliente = :id_cliente ORDER BY id_endereco DESC LIMIT 1");
+    // Trata dinamicamente os campos de Nome, E-mail e Telefone
+    $nomeFinal = !empty($clienteRaw["nome"]) ? $clienteRaw["nome"] : (!empty($clienteRaw["nm_cliente"]) ? $clienteRaw["nm_cliente"] : "Usuário");
+    $emailFinal = !empty($clienteRaw["e_mail"]) ? $clienteRaw["e_mail"] : (!empty($clienteRaw["email"]) ? $clienteRaw["email"] : "-");
+    $telefoneFinal = !empty($clienteRaw["telefone"]) ? $clienteRaw["telefone"] : (!empty($clienteRaw["tel"]) ? $clienteRaw["tel"] : "-");
+
+    // 2. Consulta o endereço do cliente na tabela public.endereco
+    $stmtEnd = $conexao->prepare("SELECT * FROM public.endereco WHERE id_cliente = :id_cliente ORDER BY id_endereco DESC LIMIT 1");
     $stmtEnd->execute([":id_cliente" => $idInt]);
-    $endereco = $stmtEnd->fetch(PDO::FETCH_ASSOC);
+    $enderecoRaw = $stmtEnd->fetch(PDO::FETCH_ASSOC);
+
+    $ruaFinal = !empty($enderecoRaw["endereco"]) ? $enderecoRaw["endereco"] : (!empty($enderecoRaw["rua"]) ? $enderecoRaw["rua"] : (!empty($enderecoRaw["logradouro"]) ? $enderecoRaw["logradouro"] : "-"));
 
     echo json_encode([
         "sucesso" => true,
         "cliente" => [
-            "id_cliente" => (int) $cliente["id_cliente"],
-            "nome"       => $cliente["nome"] ?? "Usuário",
-            "email"      => $cliente["e_mail"] ?? "-",
-            "telefone"   => $cliente["telefone"] ?? "-"
+            "id_cliente" => $idInt,
+            "nome"       => $nomeFinal,
+            "email"      => $emailFinal,
+            "telefone"   => $telefoneFinal
         ],
         "endereco" => [
-            "id_endereco" => $endereco ? (int) $endereco["id_endereco"] : null,
-            "cep"         => $endereco["cep"] ?? "-",
-            "rua"         => $endereco["endereco"] ?? "-",
-            "numero"      => $endereco["numero"] ?? "-",
-            "complemento" => $endereco["complemento"] ?? "-",
-            "bairro"      => $endereco["bairro"] ?? "-",
-            "cidade"      => $endereco["cidade"] ?? "-",
-            "estado"      => $endereco["estado"] ?? "-"
+            "id_endereco" => $enderecoRaw ? (int) $enderecoRaw["id_endereco"] : null,
+            "cep"         => $enderecoRaw["cep"] ?? "-",
+            "rua"         => $ruaFinal,
+            "numero"      => $enderecoRaw["numero"] ?? "-",
+            "complemento" => $enderecoRaw["complemento"] ?? "-",
+            "bairro"      => $enderecoRaw["bairro"] ?? "-",
+            "cidade"      => $enderecoRaw["cidade"] ?? "-",
+            "estado"      => $enderecoRaw["estado"] ?? "-"
         ]
     ], JSON_UNESCAPED_UNICODE);
 
