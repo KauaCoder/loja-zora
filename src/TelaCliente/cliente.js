@@ -41,7 +41,7 @@ function obterIdClienteLocal() {
     return null;
 }
 
-// Requisitor universal que tenta tanto a pasta atual quanto a raiz para evitar 404
+// Requisitor universal que injeta o id_cliente automaticamente na URL e no Corpo JSON (POST)
 async function fazerFetchComID(endpoint, opcoes = {}) {
     const idCliente = obterIdClienteLocal();
     const nomeArquivo = endpoint.replace(/^\//, "");
@@ -55,6 +55,20 @@ async function fazerFetchComID(endpoint, opcoes = {}) {
 
     const idParam = idCliente ? `id_cliente=${encodeURIComponent(idCliente)}` : "";
 
+    // Se for uma requisição com body (como POST), garante que o id_cliente vai dentro do JSON
+    let opcoesAjustadas = { ...opcoes };
+    if (opcoesAjustadas.body && typeof opcoesAjustadas.body === "string" && idCliente) {
+        try {
+            const bodyObj = JSON.parse(opcoesAjustadas.body);
+            if (!bodyObj.id_cliente) {
+                bodyObj.id_cliente = Number(idCliente);
+                opcoesAjustadas.body = JSON.stringify(bodyObj);
+            }
+        } catch (e) {
+            // Se o body não for JSON, mantém como está
+        }
+    }
+
     let ultimoErro = null;
 
     for (const rota of rotas) {
@@ -66,7 +80,7 @@ async function fazerFetchComID(endpoint, opcoes = {}) {
 
             const resposta = await fetch(urlFinal, {
                 credentials: "include",
-                ...opcoes
+                ...opcoesAjustadas
             });
 
             if (resposta.status !== 404) {
