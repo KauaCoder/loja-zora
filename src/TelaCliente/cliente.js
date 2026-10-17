@@ -1,5 +1,5 @@
 // =====================================================
-// ZORA - PERFIL DO CLIENTE (Versão Completa & Atualizada)
+// ZORA - PERFIL DO CLIENTE & DEVOLUÇÕES
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -17,6 +17,12 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         cepEdicao.addEventListener("blur", buscarCEPEdicao);
+    }
+
+    // Evento para o formulário de devolução
+    const formDevolucao = document.getElementById("formDevolucao");
+    if (formDevolucao) {
+        formDevolucao.addEventListener("submit", confirmarDevolucao);
     }
 });
 
@@ -78,7 +84,6 @@ async function verificarLogin() {
         try {
             resultado = JSON.parse(texto);
         } catch (e) {
-            console.error("Resposta inválida do servidor:", texto);
             if (localStorage.getItem("usuarioLogado")) return true;
             window.location.replace("/TelaLogin/login.html");
             return false;
@@ -111,7 +116,7 @@ async function carregarDadosPerfil() {
         try {
             resultado = JSON.parse(texto);
         } catch (e) {
-            throw new Error(`Resposta inválida do cliente.php: ${texto.substring(0, 100)}`);
+            throw new Error(`Resposta inválida do cliente.php`);
         }
 
         if (!resposta.ok || !resultado.sucesso) {
@@ -120,7 +125,6 @@ async function carregarDadosPerfil() {
 
         const cliente = resultado.cliente;
 
-        // Preenche os campos do perfil com segurança
         if (document.getElementById("nomeUsuario")) document.getElementById("nomeUsuario").textContent = cliente.nome || "Usuário";
         if (document.getElementById("emailUsuario")) document.getElementById("emailUsuario").textContent = cliente.email || "-";
         if (document.getElementById("nomePerfil")) document.getElementById("nomePerfil").textContent = cliente.nome || "-";
@@ -132,7 +136,6 @@ async function carregarDadosPerfil() {
     } catch (erro) {
         console.error("Erro ao carregar perfil:", erro);
         
-        // Fallback de emergência usando o localStorage para nunca deixar a tela vazia
         const dadosLocais = localStorage.getItem("usuarioLogado");
         if (dadosLocais) {
             try {
@@ -146,66 +149,6 @@ async function carregarDadosPerfil() {
     }
 }
 
-function mostrarEdicaoNome() {
-    const displayGroup = document.getElementById("nomeDisplayGroup");
-    const edicaoGroup = document.getElementById("nomeEdicaoGroup");
-
-    if (displayGroup && edicaoGroup) {
-        displayGroup.style.display = "none";
-        edicaoGroup.style.display = "block";
-        const nomePerfil = document.getElementById("nomePerfil");
-        if (nomePerfil) {
-            document.getElementById("novoNomeInput").value = nomePerfil.textContent;
-        }
-    }
-}
-
-function cancelarEdicaoNome() {
-    const displayGroup = document.getElementById("nomeDisplayGroup");
-    const edicaoGroup = document.getElementById("nomeEdicaoGroup");
-
-    if (displayGroup && edicaoGroup) {
-        edicaoGroup.style.display = "none";
-        displayGroup.style.display = "block";
-    }
-}
-
-async function salvarNovoNome() {
-    const logado = await verificarLogin();
-    if (!logado) return;
-
-    const novoNome = document.getElementById("novoNomeInput").value.trim();
-
-    if (!novoNome) {
-        alert("Informe um nome válido.");
-        return;
-    }
-
-    try {
-        const resposta = await fazerFetchResiliente("atualizar_perfil.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nome: novoNome })
-        });
-
-        const resultado = await resposta.json();
-
-        if (!resposta.ok || !resultado.sucesso) {
-            alert(resultado.mensagem || "Não foi possível atualizar o nome.");
-            return;
-        }
-
-        alert("Nome atualizado com sucesso!");
-        cancelarEdicaoNome();
-        await carregarDadosPerfil();
-
-    } catch (erro) {
-        console.error("Erro ao atualizar nome:", erro);
-        alert("Erro ao conectar ao servidor.");
-    }
-}
-
-// FUNÇÃO DE ENDEREÇO UNIVERSAL (Suporta IDs como cep, cepPerfil ou cepEndereco)
 function carregarEndereco(endereco) {
     if (!endereco || !endereco.id_endereco) {
         const idsPossiveis = ["cep", "rua", "numero", "complemento", "bairro", "cidade", "estado"];
@@ -244,125 +187,9 @@ function carregarEndereco(endereco) {
     preencherCampo("estado", endereco.estado);
 }
 
-async function mostrarEdicaoEndereco() {
-    const logado = await verificarLogin();
-    if (!logado) return;
-
-    try {
-        const resposta = await fazerFetchResiliente("cliente.php", { method: "GET" });
-        const resultado = await resposta.json();
-
-        if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(resultado.mensagem || "Não foi possível carregar o endereço.");
-        }
-
-        const endereco = resultado.endereco || {};
-
-        const existente = document.getElementById("endereco-existente");
-        const edicao = document.getElementById("endereco-edicao");
-
-        if (existente) existente.style.display = "none";
-        if (edicao) edicao.style.display = "block";
-
-        if (document.getElementById("cepEdicao")) document.getElementById("cepEdicao").value = endereco.cep || "";
-        if (document.getElementById("ruaEdicao")) document.getElementById("ruaEdicao").value = endereco.rua || "";
-        if (document.getElementById("numeroEdicao")) document.getElementById("numeroEdicao").value = endereco.numero || "";
-        if (document.getElementById("complementoEdicao")) document.getElementById("complementoEdicao").value = endereco.complemento || "";
-        if (document.getElementById("bairroEdicao")) document.getElementById("bairroEdicao").value = endereco.bairro || "";
-        if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = endereco.cidade || "";
-        if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = endereco.estado || "";
-
-    } catch (erro) {
-        console.error("Erro ao carregar endereço:", erro);
-        alert("Não foi possível carregar o endereço.");
-    }
-}
-
-function cancelarEdicao() {
-    const existente = document.getElementById("endereco-existente");
-    const edicao = document.getElementById("endereco-edicao");
-
-    if (edicao) edicao.style.display = "none";
-    if (existente) existente.style.display = "block";
-}
-
-async function salvarEndereco() {
-    const logado = await verificarLogin();
-    if (!logado) return;
-
-    const cep = document.getElementById("cepEdicao").value.trim();
-    const rua = document.getElementById("ruaEdicao").value.trim();
-    const numero = document.getElementById("numeroEdicao").value.trim();
-    const complemento = document.getElementById("complementoEdicao").value.trim();
-    const bairro = document.getElementById("bairroEdicao").value.trim();
-    const cidade = document.getElementById("cidadeEdicao").value.trim();
-    const estado = document.getElementById("estadoEdicao").value.trim();
-
-    if (!cep || !rua || !numero || !bairro || !cidade || !estado) {
-        alert("Preencha todos os campos obrigatórios.");
-        return;
-    }
-
-    try {
-        const resposta = await fazerFetchResiliente("atualizar_endereco.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                cep, rua, numero, complemento, bairro, cidade, estado
-            })
-        });
-
-        const resultado = await resposta.json();
-
-        if (!resposta.ok || !resultado.sucesso) {
-            alert(resultado.mensagem || "Não foi possível atualizar o endereço.");
-            return;
-        }
-
-        alert("Endereço atualizado com sucesso!");
-        cancelarEdicao();
-        await carregarDadosPerfil();
-
-    } catch (erro) {
-        console.error("Erro ao atualizar endereço:", erro);
-        alert("Não foi possível conectar ao servidor.");
-    }
-}
-
-async function buscarCEPEdicao() {
-    const cep = document.getElementById("cepEdicao");
-    if (!cep) return;
-
-    const valor = cep.value.replace(/\D/g, "");
-
-    if (valor.length !== 8) {
-        alert("CEP inválido.");
-        return;
-    }
-
-    try {
-        const resposta = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
-        const dados = await resposta.json();
-
-        if (dados.erro) {
-            alert("CEP não encontrado.");
-            return;
-        }
-
-        if (document.getElementById("ruaEdicao")) document.getElementById("ruaEdicao").value = dados.logradouro || "";
-        if (document.getElementById("bairroEdicao")) document.getElementById("bairroEdicao").value = dados.bairro || "";
-        if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = dados.localidade || "";
-        if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = dados.uf || "";
-        if (document.getElementById("complementoEdicao")) document.getElementById("complementoEdicao").value = dados.complemento || "";
-
-        const numInput = document.getElementById("numeroEdicao");
-        if (numInput) numInput.focus();
-
-    } catch (erro) {
-        console.error("Erro ao consultar CEP:", erro);
-        alert("Erro ao consultar o CEP.");
-    }
-}
+// =====================================================
+// HISTÓRICO DE COMPRAS & DEVOLUÇÃO
+// =====================================================
 
 async function carregarCompras() {
     const comprasVazio = document.getElementById("compras-vazio");
@@ -393,54 +220,60 @@ async function carregarCompras() {
         compras.forEach(compra => {
             const compraCard = document.createElement("div");
             compraCard.className = "compra-card";
+            compraCard.style.cssText = "background:#fff; border:1px solid #ddd; border-radius:10px; padding:15px; margin-bottom:15px;";
 
             const data = new Date(compra.data || compra.data_pedido);
-            const dataFormatada = data.toLocaleDateString("pt-BR");
+            const dataFormatada = isNaN(data.getTime()) ? "-" : data.toLocaleDateString("pt-BR");
 
             const produtosHTML = (compra.produtos || compra.itens || []).map(produto => {
-                const preco = Number(produto.preco || produto.preco_unitario).toFixed(2).replace(".", ",");
-                const subtotal = Number(produto.subtotal || (produto.quantidade * produto.preco)).toFixed(2).replace(".", ",");
-                const podeDevolver = (compra.status !== "Devolvido" && produto.status !== "Devolvido");
+                const qtd = Number(produto.quantidade || produto.qtd) || 1;
+                const precoNum = Number(produto.preco || produto.preco_unitario || 0);
+                const preco = precoNum.toFixed(2).replace(".", ",");
+                const subtotal = (precoNum * qtd).toFixed(2).replace(".", ",");
+                
+                // Impede devolução se o pedido todo ou o produto estiver Devolvido ou Cancelado
+                const statusGlobal = (compra.status || "").toLowerCase();
+                const statusProd = (produto.status || "").toLowerCase();
+                const podeDevolver = !["devolvido", "cancelado"].includes(statusGlobal) && !["devolvido", "cancelado"].includes(statusProd);
 
                 return `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
                         <div>
-                            <p style="margin:0;"><strong>${produto.quantidade}x ${produto.nome}</strong></p>
-                            <small>R$ ${preco} unit. | Subtotal: R$ ${subtotal}</small>
+                            <p style="margin:0; font-size:14px;"><strong>${qtd}x ${produto.nome || produto.nm_produto || 'Produto ZORA'}</strong></p>
+                            <small style="color:#666;">R$ ${preco} unit. | Subtotal: R$ ${subtotal}</small>
                         </div>
                         <div>
                             ${podeDevolver ? 
-                                `<button type="button" onclick="abrirModalDevolucao(${compra.id_pedido}, ${produto.id_produto}, '${produto.nome}')" style="background:#dc3545; color:#fff; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">
+                                `<button type="button" onclick="abrirModalDevolucao(${compra.id_pedido}, ${produto.id_produto}, '${(produto.nome || produto.nm_produto || 'Produto').replace(/'/g, "\\'")}')" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">
                                     Solicitar Devolução
                                  </button>` : 
-                                `<span style="color:#888; font-size:12px;">Devolução Solicitada</span>`
+                                `<span style="color:#888; font-size:12px; font-weight:bold;">Devolução Solicitada</span>`
                             }
                         </div>
                     </div>
                 `;
             }).join("");
 
-            const total = Number(compra.total || compra.valor_total).toFixed(2).replace(".", ",");
+            const total = Number(compra.total || compra.valor_total || 0).toFixed(2).replace(".", ",");
 
             compraCard.innerHTML = `
-                <div class="compra-header">
+                <div class="compra-header" style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px;">
                     <div class="compra-info">
-                        <h4>Pedido #${String(compra.id_pedido).padStart(4, "0")}</h4>
-                        <p class="data">${dataFormatada}</p>
+                        <h4 style="margin:0; font-size:16px;">Pedido #${String(compra.id_pedido).padStart(4, "0")}</h4>
+                        <p class="data" style="margin:4px 0 0; color:#777; font-size:13px;">${dataFormatada}</p>
                     </div>
-                    <div class="compra-total">
-                        <p class="label">Total</p>
-                        <p class="preco">R$ ${total}</p>
+                    <div class="compra-total" style="text-align:right;">
+                        <p class="label" style="margin:0; color:#777; font-size:12px;">Total</p>
+                        <p class="preco" style="margin:0; font-weight:bold; color:#a94460;">R$ ${total}</p>
                     </div>
                 </div>
 
                 <div class="compra-produtos" style="margin-top:10px;">
-                    <h5>Produtos:</h5>
                     ${produtosHTML}
                 </div>
 
-                <div class="compra-footer" style="margin-top:10px;">
-                    <p><strong>Status:</strong> ${compra.status}</p>
+                <div class="compra-footer" style="margin-top:10px; font-size:13px;">
+                    <p style="margin:0;"><strong>Status:</strong> <span style="color:#28a745;">${compra.status || 'Aprovado'}</span></p>
                 </div>
             `;
 
@@ -453,6 +286,10 @@ async function carregarCompras() {
         comprasLista.style.display = "none";
     }
 }
+
+// =====================================================
+// CONTROLE DA MODAL DE DEVOLUÇÃO
+// =====================================================
 
 function abrirModalDevolucao(idPedido, idProduto, nomeProduto) {
     const elPedido = document.getElementById("devolucaoIdPedido");
@@ -476,11 +313,12 @@ function fecharModalDevolucao() {
 }
 
 async function confirmarDevolucao(evento) {
-    evento.preventDefault();
+    if (evento) evento.preventDefault();
 
-    const idPedido = document.getElementById("devolucaoIdPedido").value;
-    const idProduto = document.getElementById("devolucaoIdProduto").value;
-    const motivo = document.getElementById("motivoDevolucao").value;
+    const idPedido = document.getElementById("devolucaoIdPedido") ? document.getElementById("devolucaoIdPedido").value : null;
+    const idProduto = document.getElementById("devolucaoIdProduto") ? document.getElementById("devolucaoIdProduto").value : null;
+    const motivoEl = document.getElementById("motivoDevolucao");
+    const motivo = motivoEl ? motivoEl.value : "";
 
     if (!motivo) {
         alert("Selecione o motivo da devolução.");
@@ -506,6 +344,7 @@ async function confirmarDevolucao(evento) {
         }
 
         alert("Solicitação de devolução registrada com sucesso!");
+        if (motivoEl) motivoEl.value = "";
         fecharModalDevolucao();
         await carregarCompras();
 
