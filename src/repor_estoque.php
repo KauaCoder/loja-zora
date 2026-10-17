@@ -9,25 +9,12 @@ header("Content-Type: application/json; charset=UTF-8");
 // =============================================
 
 if (!in_array($_SERVER["REQUEST_METHOD"], ["POST", "PUT"])) {
-    http_response_code(405);
-    echo json_encode([
-        "sucesso" => false,
-        "mensagem" => "Método não permitido. Utilize POST ou PUT."
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-// =============================================
-// VERIFICAR PERMISSÃO DE ADMINISTRAÇÃO
-// =============================================
-
-if (!isset($_SESSION["id_cliente"]) || empty($_SESSION["is_admin"])) {
-    http_response_code(403);
-    echo json_encode([
-        "sucesso" => false,
-        "mensagem" => "Acesso negado. Apenas administradores podem atualizar o estoque."
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    http_response_code(405);
+    echo json_encode([
+        "sucesso" => false,
+        "mensagem" => "Método não permitido. Utilize POST ou PUT."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 // =============================================
@@ -37,136 +24,163 @@ if (!isset($_SESSION["id_cliente"]) || empty($_SESSION["is_admin"])) {
 $caminho_conexao = __DIR__ . '/src/conexao.php';
 
 if (!file_exists($caminho_conexao)) {
-    $caminho_conexao = __DIR__ . '/conexao.php';
+    $caminho_conexao = __DIR__ . '/conexao.php';
 }
 
 require_once $caminho_conexao;
 
 try {
 
-    // =============================================
-    // RECEBER JSON
-    // =============================================
+    // =============================================
+    // RECEBER JSON
+    // =============================================
 
-    $dados = json_decode(file_get_contents("php://input"), true);
+    $dados = json_decode(file_get_contents("php://input"), true);
 
-    if (!is_array($dados)) {
-        throw new Exception("Dados de requisição inválidos.");
-    }
+    if (!is_array($dados)) {
+        throw new Exception("Dados de requisição inválidos.");
+    }
 
-    $idProduto = (int) ($dados["id_produto"] ?? 0);
-    $quantidadeAdicionar = (int) ($dados["quantidade"] ?? $dados["qtd_item"] ?? 0);
+    // =============================================
+    // VERIFICAR PERMISSÃO DE ADMINISTRAÇÃO (Sessão ou Fallback)
+    // =============================================
+    $idCliente = $_SESSION["id_cliente"] ?? $_SESSION["cliente_id"] ?? $dados["id_cliente"] ?? null;
+    $isAdmin = $_SESSION["is_admin"] ?? false;
 
-    // =============================================
-    // VALIDAÇÕES
-    // =============================================
+    // Se a sessão não estiver ativa mas veio o ID, valida no banco se é admin
+    if (!$isAdmin && $idCliente) {
+        $stmtAdmin = $conexao->prepare("SELECT is_admin FROM cliente WHERE id_cliente = :id");
+        $stmtAdmin->execute([":id" => $idCliente]);
+        $resAdmin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
+        if ($resAdmin && !empty($resAdmin["is_admin"])) {
+            $isAdmin = true;
+            $_SESSION["id_cliente"] = $idCliente;
+            $_SESSION["is_admin"] = true;
+        }
+    }
 
-    if ($idProduto <= 0) {
-        throw new Exception("ID de produto inválido.");
-    }
+    if (!$idCliente || !$isAdmin) {
+        http_response_code(403);
+        echo json_encode([
+            "sucesso" => false,
+            "mensagem" => "Acesso negado. Apenas administradores podem atualizar o estoque."
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
-    if ($quantidadeAdicionar <= 0) {
-        throw new Exception("Informe uma quantidade maior que zero para adicionar.");
-    }
+    $idProduto = (int) ($dados["id_produto"] ?? 0);
+    $quantidadeAdicionar = (int) ($dados["quantidade"] ?? $dados["qtd_item"] ?? 0);
 
-    // =============================================
-    // TRANSAÇÃO COM O POSTGRESQL
-    // =============================================
+    // =============================================
+    // VALIDAÇÕES
+    // =============================================
 
-    $conexao->beginTransaction();
+    if ($idProduto <= 0) {
+        throw new Exception("ID de produto inválido.");
+    }
 
-    // Buscar produto e limite de estoque com bloqueio de linha (FOR UPDATE)
-    $sql = "
-        SELECT
-            p.id_produto,
-            p.nm_produto,
-            p.qtd_item,
-            p.id_item_estoque,
-            COALESCE(e.qtd_max_produto, 0) AS qtd_max_produto
-        FROM produto p
-        LEFT JOIN estoque e
-            ON e.id_item_estoque = p.id_item_estoque
-        WHERE p.id_produto = :id_produto
-        FOR UPDATE
-    ";
+    if ($quantidadeAdicionar <= 0) {
+        throw new Exception("Informe uma quantidade maior que zero para adicionar.");
+    }
 
-    $stmt = $conexao->prepare($sql);
-    $stmt->execute([
-        ":id_produto" => $idProduto
-    ]);
+    // =============================================
+    // TRANSAÇÃO COM O POSTGRESQL
+    // =============================================
 
-    $produto = $stmt->fetch(PDO::FETCH_ASSOC);
+    $conexao->beginTransaction();
 
-    if (!$produto) {
-        throw new Exception("Produto não encontrado no sistema.");
-    }
+    // Buscar produto e limite de estoque com bloqueio de linha (FOR UPDATE)
+    $sql = "
+        SELECT
+            p.id_produto,
+            p.nm_produto,
+            p.qtd_item,
+            p.id_item_estoque,
+            COALESCE(e.qtd_max_produto, 0) AS qtd_max_produto
+        FROM produto p
+        LEFT JOIN estoque e
+            ON e.id_item_estoque = p.id_item_estoque
+        WHERE p.id_produto = :id_produto
+        FOR UPDATE
+    ";
 
-    // =============================================
-    // VALIDAÇÃO DE LIMITES
-    // =============================================
+    $stmt = $conexao->prepare($sql);
+    $stmt->execute([
+        ":id_produto" => $idProduto
+    ]);
 
-    $quantidadeAtual = (int) $produto["qtd_item"];
-    $quantidadeMaxima = (int) $produto["qtd_max_produto"];
-    $novaQuantidade = $quantidadeAtual + $quantidadeAdicionar;
+    $produto = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($quantidadeMaxima > 0 && $novaQuantidade > $quantidadeMaxima) {
-        $disponivel = max(0, $quantidadeMaxima - $quantidadeAtual);
+    if (!$produto) {
+        throw new Exception("Produto não encontrado no sistema.");
+    }
 
-        throw new Exception(
-            "Não é possível adicionar {$quantidadeAdicionar} unidade(s). " .
-            "O limite deste estoque é {$quantidadeMaxima}. " .
-            "Você pode adicionar no máximo {$disponivel} unidade(s)."
-        );
-    }
+    // =============================================
+    // VALIDAÇÃO DE LIMITES
+    // =============================================
 
-    // =============================================
-    // ATUALIZAR ESTOQUE DO PRODUTO
-    // =============================================
+    $quantidadeAtual = (int) $produto["qtd_item"];
+    $quantidadeMaxima = (int) $produto["qtd_max_produto"];
+    $novaQuantidade = $quantidadeAtual + $quantidadeAdicionar;
 
-    $sqlUpdate = "
-        UPDATE produto
-        SET qtd_item = qtd_item + :quantidade
-        WHERE id_produto = :id_produto
-        RETURNING qtd_item
-    ";
+    if ($quantidadeMaxima > 0 && $novaQuantidade > $quantidadeMaxima) {
+        $disponivel = max(0, $quantidadeMaxima - $quantidadeAtual);
 
-    $stmtUpdate = $conexao->prepare($sqlUpdate);
-    $stmtUpdate->execute([
-        ":quantidade" => $quantidadeAdicionar,
-        ":id_produto" => $idProduto
-    ]);
+        throw new Exception(
+            "Não é possível adicionar {$quantidadeAdicionar} unidade(s). " .
+            "O limite deste estoque é {$quantidadeMaxima}. " .
+            "Você pode adicionar no máximo {$disponivel} unidade(s)."
+        );
+    }
 
-    $quantidadeFinal = (int) $stmtUpdate->fetchColumn();
+    // =============================================
+    // ATUALIZAR ESTOQUE DO PRODUTO
+    // =============================================
 
-    $conexao->commit();
+    $sqlUpdate = "
+        UPDATE produto
+        SET qtd_item = qtd_item + :quantidade
+        WHERE id_produto = :id_produto
+        RETURNING qtd_item
+    ";
 
-    // =============================================
-    // RESPOSTA SUCESSO
-    // =============================================
+    $stmtUpdate = $conexao->prepare($sqlUpdate);
+    $stmtUpdate->execute([
+        ":quantidade" => $quantidadeAdicionar,
+        ":id_produto" => $idProduto
+    ]);
 
-    echo json_encode([
-        "sucesso" => true,
-        "mensagem" => "Estoque atualizado com sucesso!",
-        "produto" => [
-            "id_produto" => $idProduto,
-            "nome" => $produto["nm_produto"],
-            "quantidade_anterior" => $quantidadeAtual,
-            "quantidade_adicionada" => $quantidadeAdicionar,
-            "quantidade_atual" => $quantidadeFinal,
-            "quantidade_maxima" => $quantidadeMaxima
-        ]
-    ], JSON_UNESCAPED_UNICODE);
+    $quantidadeFinal = (int) $stmtUpdate->fetchColumn();
+
+    $conexao->commit();
+
+    // =============================================
+    // RESPOSTA SUCESSO
+    // =============================================
+
+    echo json_encode([
+        "sucesso" => true,
+        "mensagem" => "Estoque atualizado com sucesso!",
+        "produto" => [
+            "id_produto" => $idProduto,
+            "nome" => $produto["nm_produto"],
+            "quantidade_anterior" => $quantidadeAtual,
+            "quantidade_adicionada" => $quantidadeAdicionar,
+            "quantidade_atual" => $quantidadeFinal,
+            "quantidade_maxima" => $quantidadeMaxima
+        ]
+    ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $erro) {
 
-    if (isset($conexao) && $conexao->inTransaction()) {
-        $conexao->rollBack();
-    }
+    if (isset($conexao) && $conexao->inTransaction()) {
+        $conexao->rollBack();
+    }
 
-    http_response_code(400);
+    http_response_code(400);
 
-    echo json_encode([
-        "sucesso" => false,
-        "mensagem" => $erro->getMessage()
-    ], JSON_UNESCAPED_UNICODE);
+    echo json_encode([
+        "sucesso" => false,
+        "mensagem" => $erro->getMessage()
+    ], JSON_UNESCAPED_UNICODE);
 }
