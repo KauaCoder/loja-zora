@@ -104,16 +104,41 @@ try {
             $existeEnd = $stmtVerificaEnd->fetch(PDO::FETCH_ASSOC);
 
             if ($existeEnd) {
-                $sqlUpEnd = "UPDATE endereco SET cep = :cep, endereco = :rua, rua = :rua, numero = :numero, complemento = :complemento, bairro = :bairro, cidade = :cidade, estado = :estado WHERE id_cliente = :id_cliente";
+                // Ajustado: alterado para gravar na coluna 'endereco' do Supabase
+                $sqlUpEnd = "UPDATE endereco SET 
+                                cep = :cep, 
+                                endereco = :rua, 
+                                numero = :numero, 
+                                complemento = :complemento, 
+                                bairro = :bairro, 
+                                cidade = :cidade, 
+                                estado = :estado 
+                             WHERE id_cliente = :id_cliente";
+
                 $conexao->prepare($sqlUpEnd)->execute([
-                    ":cep" => $cep, ":rua" => $rua, ":numero" => $numero, ":complemento" => $complemento,
-                    ":bairro" => $bairro, ":cidade" => $cidade, ":estado" => $estado, ":id_cliente" => $idCliente
+                    ":cep"         => $cep,
+                    ":rua"         => $rua,
+                    ":numero"      => $numero,
+                    ":complemento" => $complemento,
+                    ":bairro"      => $bairro,
+                    ":cidade"      => $cidade,
+                    ":estado"      => $estado,
+                    ":id_cliente"  => $idCliente
                 ]);
             } else {
-                $sqlInsEnd = "INSERT INTO endereco (id_cliente, cep, endereco, rua, numero, complemento, bairro, cidade, estado) VALUES (:id_cliente, :cep, :rua, :rua, :numero, :complemento, :bairro, :cidade, :estado)";
+                // Ajustado: inserção utilizando a coluna 'endereco'
+                $sqlInsEnd = "INSERT INTO endereco (id_cliente, cep, endereco, numero, complemento, bairro, cidade, estado) 
+                              VALUES (:id_cliente, :cep, :rua, :numero, :complemento, :bairro, :cidade, :estado)";
+
                 $conexao->prepare($sqlInsEnd)->execute([
-                    ":id_cliente" => $idCliente, ":cep" => $cep, ":rua" => $rua, ":numero" => $numero,
-                    ":complemento" => $complemento, ":bairro" => $bairro, ":cidade" => $cidade, ":estado" => $estado
+                    ":id_cliente"  => $idCliente,
+                    ":cep"         => $cep,
+                    ":rua"         => $rua,
+                    ":numero"      => $numero,
+                    ":complemento" => $complemento,
+                    ":bairro"      => $bairro,
+                    ":cidade"      => $cidade,
+                    ":estado"      => $estado
                 ]);
             }
         }
