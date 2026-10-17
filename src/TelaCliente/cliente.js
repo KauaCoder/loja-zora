@@ -41,20 +41,42 @@ function obterIdClienteLocal() {
     return null;
 }
 
-// Requisitor universal com injeção automática de id_cliente
+// Requisitor resiliente que testa a raiz e subpastas para evitar o erro 404
 async function fazerFetchComID(endpoint, opcoes = {}) {
     const idCliente = obterIdClienteLocal();
-    let urlFinal = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const nomeArquivo = endpoint.replace(/^\//, "");
 
-    if (idCliente) {
-        const separador = urlFinal.includes("?") ? "&" : "?";
-        urlFinal += `${separador}id_cliente=${encodeURIComponent(idCliente)}`;
+    const rotas = [
+        `/${nomeArquivo}`,
+        `/TelaCliente/${nomeArquivo}`,
+        `./${nomeArquivo}`
+    ];
+
+    const idParam = idCliente ? `id_cliente=${encodeURIComponent(idCliente)}` : "";
+
+    let ultimoErro = null;
+
+    for (const rota of rotas) {
+        try {
+            let urlFinal = rota;
+            if (idParam) {
+                urlFinal += (rota.includes("?") ? "&" : "?") + idParam;
+            }
+
+            const resposta = await fetch(urlFinal, {
+                credentials: "include",
+                ...opcoes
+            });
+
+            if (resposta.status !== 404) {
+                return resposta;
+            }
+        } catch (e) {
+            ultimoErro = e;
+        }
     }
 
-    return await fetch(urlFinal, {
-        credentials: "include",
-        ...opcoes
-    });
+    throw ultimoErro || new Error(`Não foi possível conectar ao endpoint ${nomeArquivo}`);
 }
 
 // =====================================================
