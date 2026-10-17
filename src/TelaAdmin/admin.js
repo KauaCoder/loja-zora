@@ -1,5 +1,5 @@
 // =====================================================
-// ZORA - PAINEL ADMINISTRATIVO INTEGRADO
+// ZORA - PAINEL ADMINISTRATIVO INTEGRADO (VERSÃO BLINDADA)
 // =====================================================
 
 let produtosAdmin = [];
@@ -64,8 +64,8 @@ async function carregarDadosAdmin() {
         try {
             resultado = JSON.parse(textoBruto);
         } catch (e) {
-            console.error("Erro ao converter JSON do admin_dados.php:", textoBruto);
-            throw new Error("O servidor retornou uma resposta inválida.");
+            console.error("Erro ao converter JSON do admin_dados.php. Resposta recebida:", textoBruto);
+            throw new Error("O servidor retornou uma resposta inválida (não é JSON). Verifique os logs do PHP.");
         }
 
         if (!resposta.ok || !resultado.sucesso) {
@@ -345,8 +345,10 @@ function abrirModalReposicao(produto) {
 
     document.getElementById("modalIdProduto").value = produto.id_produto;
     const campoQtd = document.getElementById("quantidadeReposicao");
-    campoQtd.value = "";
-    campoQtd.max = disponivel;
+    if (campoQtd) {
+        campoQtd.value = "";
+        campoQtd.max = disponivel;
+    }
 
     limparMensagemModal("mensagemReposicao");
     modal.classList.add("ativo");
@@ -371,7 +373,14 @@ async function salvarReposicao(evento) {
             body: JSON.stringify({ id_produto: idProduto, quantidade: quantidade })
         });
 
-        const resultado = await resposta.json();
+        const textoBruto = await resposta.text();
+        let resultado;
+        try {
+            resultado = JSON.parse(textoBruto);
+        } catch (e) {
+            throw new Error("Erro no servidor (resposta inválida ao adicionar estoque).");
+        }
+
         if (!resposta.ok || !resultado.sucesso) throw new Error(resultado.mensagem);
 
         exibirMensagemModal("mensagemReposicao", "Estoque atualizado com sucesso!", "sucesso");
@@ -425,7 +434,14 @@ async function salvarEdicaoProduto(evento) {
             body: JSON.stringify(dados)
         });
 
-        const resultado = await resposta.json();
+        const textoBruto = await resposta.text();
+        let resultado;
+        try {
+            resultado = JSON.parse(textoBruto);
+        } catch (e) {
+            throw new Error("Erro no servidor (resposta inválida ao editar produto).");
+        }
+
         if (!resposta.ok || !resultado.sucesso) throw new Error(resultado.mensagem);
 
         exibirMensagemModal("mensagemEdicao", "Produto atualizado com sucesso!", "sucesso");
@@ -482,7 +498,14 @@ async function salvarFornecedor(evento) {
             body: JSON.stringify(dados)
         });
 
-        const resultado = await resposta.json();
+        const textoBruto = await resposta.text();
+        let resultado;
+        try {
+            resultado = JSON.parse(textoBruto);
+        } catch (e) {
+            throw new Error("Erro no servidor (resposta inválida ao atualizar fornecedor).");
+        }
+
         if (!resposta.ok || !resultado.sucesso) throw new Error(resultado.mensagem);
 
         exibirMensagemModal("mensagemFornecedor", "Fornecedor salvo com sucesso!", "sucesso");
