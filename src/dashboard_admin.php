@@ -90,7 +90,7 @@ try {
 
 
     // ==========================================
-    // PEDIDOS RECENTES
+    // TODOS OS PEDIDOS (SEM LIMIT 10)
     // ==========================================
 
     $sqlPedidos = "
@@ -116,7 +116,6 @@ try {
         ORDER BY
             pe.data_pedido DESC,
             pe.id_pedido DESC
-        LIMIT 10
     ";
 
     $stmtPedidos = $conexao->query($sqlPedidos);
