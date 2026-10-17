@@ -36,7 +36,7 @@ if (session_status() === PHP_SESSION_NONE) {
 header("Content-Type: application/json; charset=UTF-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
 
-// Localiza o conexao.php na raiz ou nas pastas superiores
+// Localiza o conexao.php
 $caminhos_conexao = [
     __DIR__ . '/../../conexao.php',
     __DIR__ . '/../conexao.php',
@@ -64,10 +64,9 @@ if (!$caminho_conexao) {
 require_once $caminho_conexao;
 
 try {
-    // 1. Tenta pegar da sessão PHP
+    // Resgata o ID pela Sessão ou via parâmetro GET na URL
     $idCliente = $_SESSION["id_cliente"] ?? $_SESSION["cliente_id"] ?? $_SESSION["usuario_id"] ?? null;
 
-    // 2. Se a sessão falhou no Render, tenta resgatar pelo parâmetro GET da URL
     if (!$idCliente && isset($_GET['id_cliente'])) {
         $idCliente = $_GET['id_cliente'];
     }
@@ -81,13 +80,15 @@ try {
         exit;
     }
 
-    // Consulta SQL blindada utilizando a chave estrangeira id_cliente com COALESCE resiliente
+    $idInt = (int) $idCliente;
+
+    // Consulta do perfil e endereço com compatibilidade de colunas (nm_cliente / nome / email / e_mail)
     $sql = "
         SELECT 
             c.id_cliente,
-            c.nome,
-            c.e_mail,
-            c.telefone,
+            COALESCE(c.nm_cliente, c.nome, 'Usuário') as nome,
+            COALESCE(c.email, c.e_mail, '-') as email,
+            COALESCE(c.telefone, '-') as telefone,
             e.id_endereco,
             e.cep,
             e.numero,
@@ -96,22 +97,17 @@ try {
             e.cidade,
             e.estado,
             COALESCE(e.rua, e.endereco, e.logradouro, '-') as rua
-        FROM cliente c
-        LEFT JOIN endereco e ON e.id_cliente = c.id_cliente
+        FROM public.cliente c
+        LEFT JOIN public.endereco e ON e.id_cliente = c.id_cliente
         WHERE c.id_cliente = :id_cliente
         LIMIT 1
     ";
 
     $stmt = $conexao->prepare($sql);
-    $stmt->execute([":id_cliente" => (int) $idCliente]);
+    $stmt->execute([":id_cliente" => $idInt]);
     $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$cliente) {
-        $_SESSION = [];
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_destroy();
-        }
-
         http_response_code(404);
         echo json_encode([
             "sucesso"  => false,
@@ -124,9 +120,9 @@ try {
         "sucesso" => true,
         "cliente" => [
             "id_cliente" => (int) $cliente["id_cliente"],
-            "nome"       => $cliente["nome"] ?? "Usuário",
-            "email"      => $cliente["e_mail"] ?? "-",
-            "telefone"   => $cliente["telefone"] ?? "-"
+            "nome"       => $cliente["nome"],
+            "email"      => $cliente["email"],
+            "telefone"   => $cliente["telefone"]
         ],
         "endereco" => [
             "id_endereco" => $cliente["id_endereco"] ? (int) $cliente["id_endereco"] : null,
@@ -144,6 +140,6 @@ try {
     http_response_code(500);
     echo json_encode([
         "sucesso"  => false,
-        "mensagem" => "Erro de servidor: " . $erro->getMessage()
+        "mensagem" => "Erro no servidor: " . $erro->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
