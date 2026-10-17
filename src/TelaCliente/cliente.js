@@ -264,6 +264,7 @@ function cancelarEdicaoNome() {
 
 async function salvarNovoNome() {
     const novoNome = document.getElementById("novoNomeInput").value.trim();
+    const idCliente = obterIdClienteLocal();
 
     if (!novoNome) {
         alert("Informe um nome válido.");
@@ -274,7 +275,10 @@ async function salvarNovoNome() {
         const resposta = await fazerFetchComID("atualizar_perfil.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nome: novoNome })
+            body: JSON.stringify({ 
+                id_cliente: idCliente ? Number(idCliente) : null,
+                nome: novoNome 
+            })
         });
 
         const resultado = await resposta.json();
