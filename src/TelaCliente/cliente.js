@@ -1,5 +1,5 @@
 // =====================================================
-// ZORA - PERFIL DO CLIENTE & DEVOLUÇÕES
+// ZORA - PAINEL DO CLIENTE (PERFIL, ENDEREÇO E COMPRAS)
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -18,15 +18,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
         cepEdicao.addEventListener("blur", buscarCEPEdicao);
     }
-
-    // Evento para o formulário de devolução
-    const formDevolucao = document.getElementById("formDevolucao");
-    if (formDevolucao) {
-        formDevolucao.addEventListener("submit", confirmarDevolucao);
-    }
 });
 
-// FUNÇÃO RESILIENTE: Rotas otimizadas com injeção automática de id_cliente
+// =====================================================
+// NAVEGAÇÃO E MENU SIDEBAR
+// =====================================================
+
+function showSidebar() {
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) sidebar.classList.add("active");
+}
+
+function hideSidebar() {
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) sidebar.classList.remove("active");
+}
+
+// =====================================================
+// REQUISIÇÕES RESILIENTES COM FALLBACK
+// =====================================================
+
 async function fazerFetchResiliente(nomeArquivo, opcoes = {}) {
     let idClienteParam = "";
     const dadosLocais = localStorage.getItem("usuarioLogado");
@@ -104,20 +115,17 @@ async function verificarLogin() {
     }
 }
 
+// =====================================================
+// CARREGAR DADOS DO PERFIL
+// =====================================================
+
 async function carregarDadosPerfil() {
     const logado = await verificarLogin();
     if (!logado) return;
 
     try {
         const resposta = await fazerFetchResiliente("cliente.php", { method: "GET" });
-        const texto = await resposta.text();
-
-        let resultado;
-        try {
-            resultado = JSON.parse(texto);
-        } catch (e) {
-            throw new Error(`Resposta inválida do cliente.php`);
-        }
+        const resultado = await resposta.json();
 
         if (!resposta.ok || !resultado.sucesso) {
             throw new Error(resultado.mensagem || "Não foi possível carregar os dados.");
@@ -149,46 +157,198 @@ async function carregarDadosPerfil() {
     }
 }
 
-function carregarEndereco(endereco) {
-    if (!endereco || !endereco.id_endereco) {
-        const idsPossiveis = ["cep", "rua", "numero", "complemento", "bairro", "cidade", "estado"];
-        idsPossiveis.forEach(campo => {
-            [
-                document.getElementById(campo),
-                document.getElementById(campo + "Perfil"),
-                document.getElementById(campo + "Endereco")
-            ].forEach(el => {
-                if (el) el.textContent = "-";
-            });
-        });
+// EDITAR NOME
+function mostrarEdicaoNome() {
+    const displayGroup = document.getElementById("nomeDisplayGroup");
+    const edicaoGroup = document.getElementById("nomeEdicaoGroup");
+
+    if (displayGroup && edicaoGroup) {
+        displayGroup.style.display = "none";
+        edicaoGroup.style.display = "block";
+        const nomePerfil = document.getElementById("nomePerfil");
+        if (nomePerfil) {
+            document.getElementById("novoNomeInput").value = nomePerfil.textContent !== "-" ? nomePerfil.textContent : "";
+        }
+    }
+}
+
+function cancelarEdicaoNome() {
+    const displayGroup = document.getElementById("nomeDisplayGroup");
+    const edicaoGroup = document.getElementById("nomeEdicaoGroup");
+
+    if (displayGroup && edicaoGroup) {
+        edicaoGroup.style.display = "none";
+        displayGroup.style.display = "block";
+    }
+}
+
+async function salvarNovoNome() {
+    const novoNome = document.getElementById("novoNomeInput").value.trim();
+
+    if (!novoNome) {
+        alert("Informe um nome válido.");
         return;
     }
 
-    const preencherCampo = (chave, valor) => {
-        const texto = (valor !== null && valor !== undefined && valor !== "") ? valor : "-";
-        
-        const candidatos = [
-            document.getElementById(chave),
-            document.getElementById(chave + "Perfil"),
-            document.getElementById(chave + "Endereco")
-        ];
-
-        candidatos.forEach(el => {
-            if (el) el.textContent = texto;
+    try {
+        const resposta = await fazerFetchResiliente("atualizar_perfil.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nome: novoNome })
         });
-    };
 
-    preencherCampo("cep", endereco.cep);
-    preencherCampo("rua", endereco.rua);
-    preencherCampo("numero", endereco.numero);
-    preencherCampo("complemento", endereco.complemento);
-    preencherCampo("bairro", endereco.bairro);
-    preencherCampo("cidade", endereco.cidade);
-    preencherCampo("estado", endereco.estado);
+        const resultado = await resposta.json();
+
+        if (!resposta.ok || !resultado.sucesso) {
+            alert(resultado.mensagem || "Não foi possível atualizar o nome.");
+            return;
+        }
+
+        alert("Nome atualizado com sucesso!");
+        
+        // Atualiza na memória local
+        const dadosLocais = localStorage.getItem("usuarioLogado");
+        if (dadosLocais) {
+            const usr = JSON.parse(dadosLocais);
+            usr.nome = novoNome;
+            localStorage.setItem("usuarioLogado", JSON.stringify(usr));
+        }
+
+        cancelarEdicaoNome();
+        await carregarDadosPerfil();
+
+    } catch (erro) {
+        console.error("Erro ao atualizar nome:", erro);
+        alert("Erro ao conectar ao servidor.");
+    }
 }
 
 // =====================================================
-// HISTÓRICO DE COMPRAS & DEVOLUÇÃO
+// CARREGAR E EDITAR ENDEREÇO
+// =====================================================
+
+function carregarEndereco(endereco) {
+    if (!endereco) return;
+
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (val && val !== "-") ? val : "-";
+    };
+
+    setVal("cepPerfil", endereco.cep);
+    setVal("ruaPerfil", endereco.rua);
+    setVal("numeroPerfil", endereco.numero);
+    setVal("complementoPerfil", endereco.complemento);
+    setVal("bairroPerfil", endereco.bairro);
+    setVal("cidadePerfil", endereco.cidade);
+    setVal("estadoPerfil", endereco.estado);
+}
+
+function mostrarEdicaoEndereco() {
+    const existente = document.getElementById("endereco-existente");
+    const edicao = document.getElementById("endereco-edicao");
+
+    if (existente) existente.style.display = "none";
+    if (edicao) edicao.style.display = "block";
+
+    // Preenche os campos de input com os dados que estão exibidos atualmente
+    const getVal = (id) => {
+        const el = document.getElementById(id);
+        return (el && el.textContent !== "-") ? el.textContent : "";
+    };
+
+    if (document.getElementById("cepEdicao")) document.getElementById("cepEdicao").value = getVal("cepPerfil");
+    if (document.getElementById("ruaEdicao")) document.getElementById("ruaEdicao").value = getVal("ruaPerfil");
+    if (document.getElementById("numeroEdicao")) document.getElementById("numeroEdicao").value = getVal("numeroPerfil");
+    if (document.getElementById("complementoEdicao")) document.getElementById("complementoEdicao").value = getVal("complementoPerfil");
+    if (document.getElementById("bairroEdicao")) document.getElementById("bairroEdicao").value = getVal("bairroPerfil");
+    if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = getVal("cidadePerfil");
+    if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = getVal("estadoPerfil");
+}
+
+function cancelarEdicao() {
+    const existente = document.getElementById("endereco-existente");
+    const edicao = document.getElementById("endereco-edicao");
+
+    if (edicao) edicao.style.display = "none";
+    if (existente) existente.style.display = "block";
+}
+
+async function buscarCEPEdicao() {
+    const cepInput = document.getElementById("cepEdicao");
+    if (!cepInput) return;
+
+    const valor = cepInput.value.replace(/\D/g, "");
+
+    if (valor.length !== 8) return;
+
+    try {
+        const resposta = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
+        const dados = await resposta.json();
+
+        if (dados.erro) {
+            alert("CEP não encontrado.");
+            return;
+        }
+
+        if (document.getElementById("ruaEdicao")) document.getElementById("ruaEdicao").value = dados.logradouro || "";
+        if (document.getElementById("bairroEdicao")) document.getElementById("bairroEdicao").value = dados.bairro || "";
+        if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = dados.localidade || "";
+        if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = dados.uf || "";
+        if (document.getElementById("complementoEdicao") && dados.complemento) {
+            document.getElementById("complementoEdicao").value = dados.complemento;
+        }
+
+        const numInput = document.getElementById("numeroEdicao");
+        if (numInput) numInput.focus();
+
+    } catch (erro) {
+        console.error("Erro ao consultar CEP:", erro);
+    }
+}
+
+async function salvarEndereco() {
+    const cep = document.getElementById("cepEdicao").value.trim();
+    const rua = document.getElementById("ruaEdicao").value.trim();
+    const numero = document.getElementById("numeroEdicao").value.trim();
+    const complemento = document.getElementById("complementoEdicao").value.trim();
+    const bairro = document.getElementById("bairroEdicao").value.trim();
+    const cidade = document.getElementById("cidadeEdicao").value.trim();
+    const estado = document.getElementById("estadoEdicao").value.trim();
+
+    if (!cep || !rua || !numero || !bairro || !cidade || !estado) {
+        alert("Preencha todos os campos obrigatórios.");
+        return;
+    }
+
+    try {
+        const resposta = await fazerFetchResiliente("atualizar_endereco.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                cep, rua, numero, complemento, bairro, cidade, estado
+            })
+        });
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok || !resultado.sucesso) {
+            alert(resultado.mensagem || "Não foi possível atualizar o endereço.");
+            return;
+        }
+
+        alert("Endereço atualizado com sucesso!");
+        cancelarEdicao();
+        await carregarDadosPerfil();
+
+    } catch (erro) {
+        console.error("Erro ao atualizar endereço:", erro);
+        alert("Não foi possível conectar ao servidor.");
+    }
+}
+
+// =====================================================
+// CARREGAR COMPRAS E HISTÓRICO
 // =====================================================
 
 async function carregarCompras() {
@@ -220,7 +380,6 @@ async function carregarCompras() {
         compras.forEach(compra => {
             const compraCard = document.createElement("div");
             compraCard.className = "compra-card";
-            compraCard.style.cssText = "background:#fff; border:1px solid #ddd; border-radius:10px; padding:15px; margin-bottom:15px;";
 
             const data = new Date(compra.data || compra.data_pedido);
             const dataFormatada = isNaN(data.getTime()) ? "-" : data.toLocaleDateString("pt-BR");
@@ -231,7 +390,6 @@ async function carregarCompras() {
                 const preco = precoNum.toFixed(2).replace(".", ",");
                 const subtotal = (precoNum * qtd).toFixed(2).replace(".", ",");
                 
-                // Impede devolução se o pedido todo ou o produto estiver Devolvido ou Cancelado
                 const statusGlobal = (compra.status || "").toLowerCase();
                 const statusProd = (produto.status || "").toLowerCase();
                 const podeDevolver = !["devolvido", "cancelado"].includes(statusGlobal) && !["devolvido", "cancelado"].includes(statusProd);
@@ -239,12 +397,12 @@ async function carregarCompras() {
                 return `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
                         <div>
-                            <p style="margin:0; font-size:14px;"><strong>${qtd}x ${produto.nome || produto.nm_produto || 'Produto ZORA'}</strong></p>
+                            <p style="margin:0; font-size:14px;"><strong>${qtd}x ${produto.nome || 'Produto ZORA'}</strong></p>
                             <small style="color:#666;">R$ ${preco} unit. | Subtotal: R$ ${subtotal}</small>
                         </div>
                         <div>
                             ${podeDevolver ? 
-                                `<button type="button" onclick="abrirModalDevolucao(${compra.id_pedido}, ${produto.id_produto}, '${(produto.nome || produto.nm_produto || 'Produto').replace(/'/g, "\\'")}')" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">
+                                `<button type="button" onclick="abrirModalDevolucao(${compra.id_pedido}, ${produto.id_produto}, '${(produto.nome || 'Produto').replace(/'/g, "\\'")}')" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">
                                     Solicitar Devolução
                                  </button>` : 
                                 `<span style="color:#888; font-size:12px; font-weight:bold;">Devolução Solicitada</span>`
@@ -273,7 +431,7 @@ async function carregarCompras() {
                 </div>
 
                 <div class="compra-footer" style="margin-top:10px; font-size:13px;">
-                    <p style="margin:0;"><strong>Status:</strong> <span style="color:#28a745;">${compra.status || 'Aprovado'}</span></p>
+                    <p style="margin:0;"><strong>Status:</strong> <span style="color:#28a745; font-weight:bold;">${compra.status || 'Aprovado'}</span></p>
                 </div>
             `;
 
@@ -288,7 +446,7 @@ async function carregarCompras() {
 }
 
 // =====================================================
-// CONTROLE DA MODAL DE DEVOLUÇÃO
+// MODAL DE DEVOLUÇÃO E SUBMIT
 // =====================================================
 
 function abrirModalDevolucao(idPedido, idProduto, nomeProduto) {
@@ -354,17 +512,20 @@ async function confirmarDevolucao(evento) {
     }
 }
 
-async function sairDoPerfil() {
+// =====================================================
+// LOGOUT DA CONTA
+// =====================================================
+
+async function logout() {
     if (!confirm("Você tem certeza que deseja sair?")) {
         return;
     }
 
     try {
         await fazerFetchResiliente("logout.php", { method: "POST" });
-        localStorage.removeItem("usuarioLogado");
-        window.location.replace("/TelaLogin/login.html");
-    } catch (erro) {
-        console.error("Erro ao realizar logout:", erro);
+    } catch (e) {
+        console.error("Erro ao efetuar logout no PHP:", e);
+    } finally {
         localStorage.removeItem("usuarioLogado");
         window.location.replace("/TelaLogin/login.html");
     }
