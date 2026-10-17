@@ -41,21 +41,18 @@ function obterIdClienteLocal() {
     return null;
 }
 
-// Requisitor universal que tenta primeiro na raiz e injeta o id_cliente na URL e no Corpo JSON (POST)
+// Requisitor universal direto para a raiz (evita erros 404 em subpastas)
 async function fazerFetchComID(endpoint, opcoes = {}) {
     const idCliente = obterIdClienteLocal();
     const nomeArquivo = endpoint.replace(/^\//, "");
 
-    const rotas = [
-        `/${nomeArquivo}`,             // 1º Tenta diretamente na raiz (ex: /historico_pedidos.php)
-        nomeArquivo,                   // 2º Tenta caminho relativo
-        `./${nomeArquivo}`,
-        `/TelaCliente/${nomeArquivo}`  // 3º Tenta na pasta TelaCliente
-    ];
+    // Aponta diretamente para a raiz do servidor onde os arquivos PHP estão hospedados
+    let urlFinal = `/${nomeArquivo}`;
+    
+    if (idCliente) {
+        urlFinal += `?id_cliente=${encodeURIComponent(idCliente)}`;
+    }
 
-    const idParam = idCliente ? `id_cliente=${encodeURIComponent(idCliente)}` : "";
-
-    // Se for uma requisição com body (como POST), garante que o id_cliente vai dentro do JSON
     let opcoesAjustadas = { ...opcoes };
     if (opcoesAjustadas.body && typeof opcoesAjustadas.body === "string" && idCliente) {
         try {
@@ -65,33 +62,21 @@ async function fazerFetchComID(endpoint, opcoes = {}) {
                 opcoesAjustadas.body = JSON.stringify(bodyObj);
             }
         } catch (e) {
-            // Se o body não for JSON, mantém como está
+            // Mantém como está se não for JSON
         }
     }
 
-    let ultimoErro = null;
+    try {
+        const resposta = await fetch(urlFinal, {
+            credentials: "include",
+            ...opcoesAjustadas
+        });
 
-    for (const rota of rotas) {
-        try {
-            let urlFinal = rota;
-            if (idParam) {
-                urlFinal += (rota.includes("?") ? "&" : "?") + idParam;
-            }
-
-            const resposta = await fetch(urlFinal, {
-                credentials: "include",
-                ...opcoesAjustadas
-            });
-
-            if (resposta.status !== 404) {
-                return resposta;
-            }
-        } catch (e) {
-            ultimoErro = e;
-        }
+        return resposta;
+    } catch (erro) {
+        console.error(`Erro ao conectar com ${urlFinal}:`, erro);
+        throw erro;
     }
-
-    throw ultimoErro || new Error(`Não foi possível conectar ao endpoint ${nomeArquivo}`);
 }
 
 // =====================================================
