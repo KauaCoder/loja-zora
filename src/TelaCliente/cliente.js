@@ -41,15 +41,16 @@ function obterIdClienteLocal() {
     return null;
 }
 
-// Requisitor resiliente que testa a raiz e subpastas para evitar o erro 404
+// Requisitor universal que tenta tanto a pasta atual quanto a raiz para evitar 404
 async function fazerFetchComID(endpoint, opcoes = {}) {
     const idCliente = obterIdClienteLocal();
     const nomeArquivo = endpoint.replace(/^\//, "");
 
     const rotas = [
-        `/${nomeArquivo}`,
-        `/TelaCliente/${nomeArquivo}`,
-        `./${nomeArquivo}`
+        nomeArquivo,                   // Tenta caminho relativo (ex: 'cliente.php' dentro de /TelaCliente/)
+        `./${nomeArquivo}`,
+        `/${nomeArquivo}`,             // Tenta na raiz
+        `/TelaCliente/${nomeArquivo}`  // Tenta com caminho absoluto da pasta
     ];
 
     const idParam = idCliente ? `id_cliente=${encodeURIComponent(idCliente)}` : "";
