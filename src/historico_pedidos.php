@@ -125,7 +125,7 @@ try {
             ip.quantidade,
             ip.preco_unitario,
             ip.subtotal,
-            COALESCE(p.nm_produto, p.nome, 'Produto ZORA') as nm_produto,
+            COALESCE(p.nm_produto, 'Produto ZORA') as nm_produto,
             p.imagem
         FROM public.item_pedido ip
         LEFT JOIN public.produto p
