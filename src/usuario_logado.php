@@ -10,7 +10,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Vary: Origin');
 
-// Lista de origens permitidas (incluindo o seu domínio real do Render)
+// Lista de origens permitidas
 $origensPermitidas = [
     'https://loja-zora.onrender.com',
     'http://localhost:3000',
@@ -18,15 +18,13 @@ $origensPermitidas = [
 ];
 
 $origem = $_SERVER['HTTP_ORIGIN'] ?? null;
-
-// Se a origem veio no cabeçalho e está na lista (ou se não veio, assume o mesmo domínio)
 $origemPermitida = ($origem !== null && in_array($origem, $origensPermitidas, true)) || $origem === null;
 
 if ($origem !== null && !$origemPermitida) {
     http_response_code(403);
     echo json_encode([
-        'sucesso' => false,
-        'logado' => false,
+        'sucesso'  => false,
+        'logado'   => false,
         'mensagem' => 'Origem não autorizada.'
     ], JSON_UNESCAPED_UNICODE);
     exit;
@@ -52,7 +50,7 @@ if (!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'POST'], true)) {
     header('Allow: GET, POST, OPTIONS');
     http_response_code(405);
     echo json_encode([
-        'sucesso' => false,
+        'sucesso'  => false,
         'mensagem' => 'Método não permitido.'
     ], JSON_UNESCAPED_UNICODE);
     exit;
@@ -77,21 +75,13 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
     session_set_cookie_params([
         'lifetime' => 86400,
-        'path' => '/',
-        'secure' => $isHttps,
+        'path'     => '/',
+        'secure'   => $isHttps,
         'httponly' => true,
         'samesite' => $sameSite,
     ]);
 
-    if (!session_start()) {
-        http_response_code(500);
-        echo json_encode([
-            'sucesso' => false,
-            'logado' => false,
-            'mensagem' => 'Não foi possível iniciar a sessão.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
+    @session_start();
 }
 
 function responderJson(array $dados, int $status = 200): void
@@ -107,10 +97,10 @@ function encerrarSessaoAtual(): void
     if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
         setcookie(session_name(), '', [
-            'expires' => time() - 42000,
-            'path' => $params['path'] ?? '/',
-            'domain' => $params['domain'] ?? '',
-            'secure' => (bool) ($params['secure'] ?? false),
+            'expires'  => time() - 42000,
+            'path'     => $params['path'] ?? '/',
+            'domain'   => $params['domain'] ?? '',
+            'secure'   => (bool) ($params['secure'] ?? false),
             'httponly' => (bool) ($params['httponly'] ?? true),
             'samesite' => $params['samesite'] ?? 'Lax',
         ]);
@@ -121,18 +111,30 @@ function encerrarSessaoAtual(): void
     }
 }
 
-$caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
-    ? __DIR__ . '/src/conexao.php'
-    : __DIR__ . '/conexao.php';
+// Localiza conexao.php em múltiplos caminhos
+$caminhosConexao = [
+    __DIR__ . '/src/conexao.php',
+    __DIR__ . '/conexao.php',
+    __DIR__ . '/../conexao.php',
+    __DIR__ . '/../../conexao.php'
+];
 
-if (!is_file($caminhoConexao)) {
+$caminhoConexao = null;
+foreach ($caminhosConexao as $c) {
+    if (file_exists($c)) {
+        $caminhoConexao = $c;
+        break;
+    }
+}
+
+if (!$caminhoConexao) {
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
     }
     error_log('ZORA: arquivo conexao.php não encontrado.');
     responderJson([
-        'sucesso' => false,
-        'logado' => false,
+        'sucesso'  => false,
+        'logado'   => false,
         'mensagem' => 'Erro interno de configuração.'
     ], 500);
     exit;
@@ -145,8 +147,8 @@ try {
         throw new RuntimeException('A conexão PDO não foi inicializada.');
     }
 
-    // TENTA PEGAR O ID DA SESSÃO DO PHP OU DA URL (Caso o cookie falhe no Render)
-    $idSessao = $_SESSION['id_cliente'] ?? null;
+    // Busca o ID da sessão em todas as chaves possíveis ou no parâmetro GET
+    $idSessao = $_SESSION['id_cliente'] ?? $_SESSION['cliente_id'] ?? $_SESSION['usuario_id'] ?? null;
 
     if (!is_scalar($idSessao) || (int) $idSessao <= 0) {
         $idSessao = $_GET['id_cliente'] ?? null;
@@ -158,18 +160,19 @@ try {
         }
 
         responderJson([
-            'sucesso' => true,
-            'logado' => false,
+            'sucesso'  => true,
+            'logado'   => false,
             'is_admin' => false,
-            'cliente' => null
+            'cliente'  => null
         ]);
         exit;
     }
 
     $idCliente = (int) $idSessao;
 
+    // Consulta com schema explícito public.cliente e colunas reais
     $sql = 'SELECT id_cliente, nome, e_mail, telefone, COALESCE(is_admin, FALSE) AS is_admin
-            FROM cliente
+            FROM public.cliente
             WHERE id_cliente = :id_cliente
             LIMIT 1';
 
@@ -181,30 +184,33 @@ try {
         encerrarSessaoAtual();
 
         responderJson([
-            'sucesso' => true,
-            'logado' => false,
+            'sucesso'  => true,
+            'logado'   => false,
             'is_admin' => false,
-            'cliente' => null
+            'cliente'  => null
         ]);
         exit;
     }
 
     $isAdmin = filter_var($cliente['is_admin'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-    $_SESSION['is_admin'] = $isAdmin;
+    $_SESSION['id_cliente'] = $idCliente;
+    $_SESSION['is_admin']   = $isAdmin;
 
-    session_write_close();
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
 
     responderJson([
-        'sucesso' => true,
-        'logado' => true,
+        'sucesso'  => true,
+        'logado'   => true,
         'is_admin' => $isAdmin,
-        'cliente' => [
+        'cliente'  => [
             'id_cliente' => (int) $cliente['id_cliente'],
-            'nome' => $cliente['nome'],
-            'email' => $cliente['e_mail'],
-            'telefone' => $cliente['telefone'] ?? '',
-            'is_admin' => $isAdmin
+            'nome'       => $cliente['nome'],
+            'email'      => $cliente['e_mail'],
+            'telefone'   => $cliente['telefone'] ?? '',
+            'is_admin'   => $isAdmin
         ]
     ]);
 } catch (Throwable $erro) {
@@ -215,8 +221,8 @@ try {
     error_log('ZORA: falha na verificação de sessão: ' . $erro->getMessage());
 
     responderJson([
-        'sucesso' => false,
-        'logado' => false,
+        'sucesso'  => false,
+        'logado'   => false,
         'is_admin' => false,
         'mensagem' => 'Não foi possível verificar a sessão. Tente novamente.'
     ], 500);
