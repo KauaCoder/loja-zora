@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * ZORA — Painel Admin (Dados do Inventário + Dashboard)
+ * ZORA — Painel Admin (Inventário + Estatísticas + Todos os Pedidos Unificados)
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -95,11 +95,10 @@ try {
         throw new RuntimeException('A conexão PDO não foi inicializada corretamente.');
     }
 
-    // VERIFICAÇÃO DE AUTENTICAÇÃO (Sessão do PHP ou parâmetro URL alternativo)
+    // VERIFICAÇÃO DE AUTENTICAÇÃO
     $idSessao = $_SESSION['id_cliente'] ?? null;
 
     if (!is_scalar($idSessao) || (int) $idSessao <= 0) {
-        // Tenta recuperar via GET caso o cookie de sessão tenha falhado no Render
         $idSessao = $_GET['id_cliente'] ?? null;
     }
 
@@ -119,7 +118,7 @@ try {
 
     $idCliente = (int) $idSessao;
 
-    // Checa permissão de administrador diretamente na base de dados
+    // Checa permissão de administrador
     $stmtAdmin = $conexao->prepare('SELECT COALESCE(is_admin, FALSE) AS is_admin FROM cliente WHERE id_cliente = :id LIMIT 1');
     $stmtAdmin->execute([':id' => $idCliente]);
     $rowAdmin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
@@ -140,8 +139,8 @@ try {
         exit;
     }
 
-    // CONSULTA DOS PRODUTOS E ESTOQUE NO POSTGRESQL
-    $sql = '
+    // 1. CONSULTA DOS PRODUTOS E ESTOQUE
+    $sqlProdutos = '
         SELECT
             p.id_produto,
             p.nm_produto,
@@ -163,16 +162,15 @@ try {
         ORDER BY p.id_produto DESC
     ';
 
-    $stmt = $conexao->prepare($sql);
-    $stmt->execute();
-
-    $dados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmtProd = $conexao->prepare($sqlProdutos);
+    $stmtProd->execute();
+    $dadosProdutos = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
 
     $produtos = [];
     $totalEstoque = 0;
     $esgotadosCount = 0;
 
-    foreach ($dados as $produto) {
+    foreach ($dadosProdutos as $produto) {
         $qtd = (int) ($produto['qtd_item'] ?? 0);
         $totalEstoque += $qtd;
 
@@ -181,19 +179,99 @@ try {
         }
 
         $produtos[] = [
-            'id_produto'      => (int) $produto['id_produto'],
-            'nome'            => $produto['nm_produto'],
-            'preco'           => round((float) $produto['preco'], 2),
-            'qtd_item'        => $qtd,
-            'estoque'         => $qtd, // Compatibilidade com frontend
-            'categoria'       => $produto['categoria'] ?? 'Geral',
-            'imagem'          => $produto['imagem'] ?? 'default.jpg',
-            'descricao'       => $produto['descricao'] ?? '',
-            'id_item_estoque' => $produto['id_item_estoque'] !== null ? (int) $produto['id_item_estoque'] : null,
-            'qtd_max_produto' => $produto['qtd_max_produto'] !== null ? (int) $produto['qtd_max_produto'] : 0,
-            'id_fornecedor'   => $produto['id_fornecedor'] !== null ? (int) $produto['id_fornecedor'] : null,
-            'fornecedor'      => $produto['fornecedor'] ?? 'Não cadastrado',
-            'contato'         => $produto['contato'] ?? '-'
+            'id_produto'       => (int) $produto['id_produto'],
+            'nome'             => $produto['nm_produto'],
+            'preco'            => round((float) $produto['preco'], 2),
+            'qtd_item'         => $qtd,
+            'estoque'          => $qtd,
+            'categoria'        => $produto['categoria'] ?? 'Geral',
+            'imagem'           => $produto['imagem'] ?? 'default.jpg',
+            'descricao'        => $produto['descricao'] ?? '',
+            'id_item_estoque'  => $produto['id_item_estoque'] !== null ? (int) $produto['id_item_estoque'] : null,
+            'qtd_max_produto'  => $produto['qtd_max_produto'] !== null ? (int) $produto['qtd_max_produto'] : 0,
+            'id_fornecedor'    => $produto['id_fornecedor'] !== null ? (int) $produto['id_fornecedor'] : null,
+            'fornecedor'       => $produto['fornecedor'] ?? 'Não cadastrado',
+            'contato'          => $produto['contato'] ?? '-'
+        ];
+    }
+
+    // 2. ESTATÍSTICAS E RESUMO DE PEDIDOS
+    $sqlResumo = "
+        SELECT
+            COUNT(*) AS total_pedidos,
+            COALESCE(SUM(valor_total), 0) AS faturamento,
+            COALESCE(AVG(valor_total), 0) AS ticket_medio
+        FROM pedido
+    ";
+    $stmtResumo = $conexao->query($sqlResumo);
+    $resumo = $stmtResumo->fetch(PDO::FETCH_ASSOC);
+
+    $sqlVendidos = "
+        SELECT COALESCE(SUM(quantidade), 0) AS produtos_vendidos
+        FROM item_pedido
+    ";
+    $stmtVendidos = $conexao->query($sqlVendidos);
+    $vendidos = $stmtVendidos->fetch(PDO::FETCH_ASSOC);
+
+    $sqlMaisVendido = "
+        SELECT
+            p.nm_produto,
+            SUM(ip.quantidade) AS quantidade_vendida
+        FROM item_pedido ip
+        JOIN produto p
+            ON p.id_produto = ip.id_produto
+        GROUP BY
+            p.id_produto,
+            p.nm_produto
+        ORDER BY
+            quantidade_vendida DESC,
+            p.id_produto ASC
+        LIMIT 1
+    ";
+    $stmtMaisVendido = $conexao->query($sqlMaisVendido);
+    $maisVendido = $stmtMaisVendido->fetch(PDO::FETCH_ASSOC);
+
+    // 3. TODOS OS PEDIDOS (HISTÓRICO)
+    $sqlPedidos = "
+        SELECT
+            pe.id_pedido,
+            pe.data_pedido,
+            pe.valor_total,
+            pe.status,
+            c.nome AS cliente,
+            COALESCE(SUM(ip.quantidade), 0) AS quantidade_itens
+        FROM pedido pe
+        JOIN cliente c
+            ON c.id_cliente = pe.id_cliente
+        LEFT JOIN item_pedido ip
+            ON ip.id_pedido = pe.id_pedido
+        GROUP BY
+            pe.id_pedido,
+            pe.data_pedido,
+            pe.valor_total,
+            pe.status,
+            c.id_cliente,
+            c.nome
+        ORDER BY
+            pe.data_pedido DESC,
+            pe.id_pedido DESC
+    ";
+    $stmtPedidos = $conexao->query($sqlPedidos);
+    $dadosPedidos = $stmtPedidos->fetchAll(PDO::FETCH_ASSOC);
+
+    $pedidos = [];
+    foreach ($dadosPedidos as $pedido) {
+        $dataFormatada = $pedido["data_pedido"]
+            ? date("d/m/Y H:i", strtotime($pedido["data_pedido"]))
+            : "-";
+
+        $pedidos[] = [
+            "id_pedido" => (int) $pedido["id_pedido"],
+            "cliente" => $pedido["cliente"],
+            "data_pedido" => $dataFormatada,
+            "valor_total" => round((float) $pedido["valor_total"], 2),
+            "status" => $pedido["status"] ?? "Pendente",
+            "quantidade_itens" => (int) $pedido["quantidade_itens"]
         ];
     }
 
@@ -207,9 +285,18 @@ try {
         'dashboard' => [
             'total_produtos' => count($produtos),
             'total_estoque'  => $totalEstoque,
-            'esgotados'      => $esgotadosCount
+            'esgotados'      => $esgotadosCount,
+            'faturamento'    => round((float) ($resumo["faturamento"] ?? 0), 2),
+            'total_pedidos'  => (int) ($resumo["total_pedidos"] ?? 0),
+            'produtos_vendidos' => (int) ($vendidos["produtos_vendidos"] ?? 0),
+            'ticket_medio'   => round((float) ($resumo["ticket_medio"] ?? 0), 2)
         ],
-        'produtos'  => $produtos
+        'mais_vendido' => $maisVendido ? [
+            "nome" => $maisVendido["nm_produto"],
+            "quantidade" => (int) $maisVendido["quantidade_vendida"]
+        ] : null,
+        'pedidos'  => $pedidos,
+        'produtos' => $produtos
     ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
 
 } catch (Throwable $erro) {
