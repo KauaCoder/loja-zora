@@ -91,31 +91,41 @@ nav a:hover{
 
 }
 
+/* =========================
+   MENU MOBILE / SIDEBAR (PADRÃO ZORA)
+========================= */
+
 .sidebar{
 
     position:fixed;
 
     top:0;
 
-    right:-300px;
+    right:-350px;
 
-    width:270px;
+    width:min(84vw, 340px);
+
+    max-width:100%;
 
     height:100vh;
 
-    background:#F5EFE6;
+    height:100dvh;
 
-    box-shadow:-5px 0 15px rgba(0,0,0,.25);
+    background:#fffaf5;
+
+    box-shadow:-12px 0 35px rgba(0, 0, 0, 0.16);
 
     display:flex;
 
     flex-direction:column;
 
-    align-items:flex-start;
+    justify-content:flex-start;
 
-    padding-top:20px;
+    padding:14px 18px max(24px, env(safe-area-inset-bottom));
 
-    transition:.4s;
+    overflow-y:auto;
+
+    transition: right 260ms cubic-bezier(.2, .8, .2, 1);
 
     z-index:3000;
 
@@ -133,27 +143,50 @@ nav a:hover{
 
     list-style:none;
 
+    margin:4px 0;
+
+}
+
+.sidebar .sidebar-fechar {
+    margin-bottom: 14px;
+    border-bottom: 1px solid #e8ded2;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sidebar .sidebar-fechar a {
+    min-height: 48px;
+    font-size: 27px;
+    padding: 8px 10px;
+    justify-content: flex-end;
 }
 
 .sidebar a{
 
     width:100%;
 
-    padding:20px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 50px;
+    padding: 14px 12px;
+    border-radius: 10px;
 
-    display:block;
-
-    color:#000;
+    color:#211d19;
 
     text-decoration:none;
 
-    font-size:18px;
+    font-size:16px;
+    font-weight: 500;
+
+    transition: background 200ms ease, color 200ms ease;
 
 }
 
 .sidebar a:hover{
 
-    background:#fffaf0;
+    background:#eee2d3;
+    color:#85552f;
 
 }
 
@@ -162,18 +195,20 @@ nav a:hover{
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
+    width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(20, 17, 14, 0.48);
     opacity: 0;
     visibility: hidden;
-    transition: 0.3s;
-    z-index: 2500;
+    pointer-events: none;
+    transition: opacity 260ms ease, visibility 260ms ease;
+    z-index: 1800;
 }
 
 .overlay.ativo {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
 }
 
 /* Impede rolagem quando painel aberto */
@@ -565,19 +600,15 @@ button:not(.opcao-radio):disabled{
 
     .menu-button{
 
-        display:block;
+        display:flex;
+        align-items:center;
+        padding-right:15px;
 
     }
 
     nav a{
 
         padding:0 20px;
-
-    }
-
-    .sidebar{
-
-        width:230px;
 
     }
 
