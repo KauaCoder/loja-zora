@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - TELA DE ENTREGA E PAGAMENTO
-// PostgreSQL + Sessão PHP
+// PostgreSQL + Sessão PHP (Versão Completa & Definitiva)
 // =====================================================
 
 // =====================================================
@@ -51,36 +51,55 @@ function obterIdClienteLocal() {
     return null;
 }
 
+
 // =====================================================
 // 2. MENU LATERAL, OVERLAY E PERFIL (PADRÃO ZORA)
 // =====================================================
 
 function obterSidebar() {
-    return document.getElementById("sidebar") || document.querySelector(".sidebar");
+    return document.getElementById("sidebar")
+        || document.querySelector(".sidebar");
 }
 
 function obterOverlay() {
-    return document.getElementById("overlay") || document.querySelector(".overlay");
+    return document.getElementById("overlay")
+        || document.querySelector(".overlay");
 }
 
 function sincronizarOverlay() {
     const sidebar = obterSidebar();
     const overlay = obterOverlay();
+    const pedidos = document.getElementById("Pedidos");
 
     const menuAberto = sidebar && (
         sidebar.classList.contains("ativo")
         || sidebar.classList.contains("active")
     );
 
+    const pedidosAberto = pedidos
+        && pedidos.classList.contains("ativo");
+
+    const algumPainelAberto = Boolean(
+        menuAberto || pedidosAberto
+    );
+
     if (overlay) {
-        overlay.classList.toggle("ativo", menuAberto);
+        overlay.classList.toggle(
+            "ativo",
+            algumPainelAberto
+        );
     }
 
-    document.body.classList.toggle("painel-aberto", menuAberto);
+    // Impede a rolagem da página quando um painel está aberto.
+    document.body.classList.toggle(
+        "painel-aberto",
+        algumPainelAberto
+    );
 }
 
 function showSidebar() {
     const sidebar = obterSidebar();
+
     if (!sidebar) {
         console.warn("ZORA: menu lateral não encontrado.");
         return;
@@ -92,46 +111,84 @@ function showSidebar() {
 
 function hideSidebar() {
     const sidebar = obterSidebar();
+
     if (sidebar) {
         sidebar.classList.remove("ativo", "active");
     }
+
     sincronizarOverlay();
 }
 
 function fecharTudo() {
-    hideSidebar();
+    const sidebar = obterSidebar();
+    const pedidos = document.getElementById("Pedidos");
+
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
+
+    if (pedidos) {
+        pedidos.classList.remove("ativo");
+    }
+
+    sincronizarOverlay();
 }
 
 async function abrirPerfil() {
     let usuario = null;
 
-    try {
-        usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
-    } catch (erro) {
-        usuario = null;
+    if (typeof obterUsuarioLogado === "function") {
+        try {
+            usuario = await obterUsuarioLogado();
+        } catch (erro) {
+            console.error("Erro ao obter usuário:", erro);
+        }
+    } else {
+        try {
+            usuario = JSON.parse(
+                localStorage.getItem("usuarioLogado") || "null"
+            );
+        } catch (erro) {
+            usuario = null;
+        }
     }
 
-    if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
-        const ehAdmin =
+    const idCliente = obterIdClienteLocal();
+
+    if ((usuario && (usuario.nome || usuario.email || usuario.id_cliente)) || idCliente) {
+        const ehAdmin = usuario && (
             usuario.is_admin === true
             || usuario.is_admin === 1
             || usuario.is_admin === "1"
-            || usuario.nivel === "admin";
+            || usuario.nivel === "admin"
+        );
 
         window.location.href = ehAdmin
             ? "/TelaAdmin/admin.html"
             : "/TelaCliente/cliente.html";
+
     } else {
         window.location.href = "/TelaLogin/login.html";
     }
 }
 
 async function checarEAtualizarMenu() {
+    if (typeof atualizarMenuUsuario === "function") {
+        try {
+            await atualizarMenuUsuario();
+            return;
+        } catch (erro) {
+            console.error("Erro ao atualizar menu:", erro);
+        }
+    }
+
     let usuario = null;
     const idCliente = obterIdClienteLocal();
 
     try {
-        usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
+        usuario = JSON.parse(
+            localStorage.getItem("usuarioLogado") || "null"
+        );
     } catch (erro) {
         usuario = null;
     }
@@ -142,8 +199,12 @@ async function checarEAtualizarMenu() {
     let texto = "Login";
 
     if ((usuario && (usuario.nome || usuario.email)) || idCliente) {
-        const ehAdmin =
-            usuario && (usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin");
+        const ehAdmin = usuario && (
+            usuario.is_admin === true
+            || usuario.is_admin === 1
+            || usuario.is_admin === "1"
+            || usuario.nivel === "admin"
+        );
 
         if (ehAdmin) {
             texto = "📊 Dashboard Adm";
@@ -159,6 +220,7 @@ async function checarEAtualizarMenu() {
     if (menuDesktop) menuDesktop.textContent = texto;
     if (menuMobile) menuMobile.textContent = texto;
 }
+
 
 // =====================================================
 // 3. RENDERIZAR RESUMO
@@ -194,6 +256,7 @@ function renderizarResumo() {
         lista.appendChild(item);
     });
 }
+
 
 // =====================================================
 // 4. MÁSCARAS E BUSCA DE CEP
@@ -303,6 +366,7 @@ function limparEndereco() {
     });
 }
 
+
 // =====================================================
 // 5. TRANSIÇÃO DE ETAPAS (IR PARA PAGAMENTO / VOLTAR)
 // =====================================================
@@ -383,6 +447,7 @@ function voltarParaEndereco() {
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
 
 // =====================================================
 // 6. INICIALIZAÇÃO E EVENTOS AO CARREGAR
