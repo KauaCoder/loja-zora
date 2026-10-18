@@ -48,10 +48,10 @@ async function fazerFetchComID(endpoint, opcoes = {}) {
 
     // Direciona para a pasta correta com base no arquivo solicitado
     let urlFinal = "";
-    if (nomeArquivo === "cliente.php" || nomeArquivo === "atualizar_perfil.php" || nomeArquivo === "atualizar_endereco.php") {
+    if (nomeArquivo === "cliente.php" || nomeArquivo === "atualizar_perfil.php" || nomeArquivo === "atualizar_endereco.php" || nomeArquivo === "solicitar_devolucao.php") {
         urlFinal = `/TelaCliente/${nomeArquivo}`;
     } else {
-        // historico_pedidos.php, logout.php, solicitar_devolucao.php, etc., estão na raiz
+        // historico_pedidos.php, logout.php, etc., estão na raiz
         urlFinal = `/${nomeArquivo}`;
     }
     
@@ -186,7 +186,7 @@ async function carregarCompras() {
                 const subtotal = (precoNum * qtd).toFixed(2).replace(".", ",");
 
                 const statusGlobal = (compra.status || "").toLowerCase();
-                const podeDevolver = !["devolvido", "cancelado"].includes(statusGlobal);
+                const podeDevolver = !["devolvido", "cancelado", "solicitação de devolução"].includes(statusGlobal);
 
                 return `
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
@@ -198,7 +198,7 @@ async function carregarCompras() {
                             ${podeDevolver ? 
                                 `<button type="button" onclick="abrirModalDevolucao(${compra.id_pedido}, ${produto.id_produto}, '${(produto.nome || 'Produto').replace(/'/g, "\\'")}')" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">
                                     Solicitar Devolução
-                                 </button>` : 
+                               </button>` : 
                                 `<span style="color:#888; font-size:12px; font-weight:bold;">Devolução Solicitada</span>`
                             }
                         </div>
