@@ -57,7 +57,11 @@ $input = json_decode(file_get_contents("php://input"), true) ?? $_POST;
 $nome     = trim($input["nome"] ?? "");
 $email    = strtolower(trim($input["email"] ?? ""));
 $senha    = $input["senha"] ?? "";
-$cpf      = preg_replace('/[^0-9]/', '', $input["cpf"] ?? "");
+
+// Limpeza e tratamento do CPF para aceitar vazio como NULL
+$cpf_limpo = preg_replace('/[^0-9]/', '', $input["cpf"] ?? "");
+$cpf      = !empty($cpf_limpo) ? $cpf_limpo : null;
+
 $telefone = preg_replace('/[^0-9]/', '', $input["telefone"] ?? "");
 
 // Dados do Endereço (com suporte a variações de chaves vindas do front-end)
@@ -117,7 +121,8 @@ try {
     $stmt_cliente->bindValue(":nome", $nome);
     $stmt_cliente->bindValue(":email", $email);
     $stmt_cliente->bindValue(":senha", $senha_hash);
-    $stmt_cliente->bindValue(":cpf", $cpf);
+    // Vincula o CPF garantindo o tratamento correto para nulo se estiver vazio
+    $stmt_cliente->bindValue(":cpf", $cpf, $cpf === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
     $stmt_cliente->bindValue(":telefone", $telefone);
     $stmt_cliente->execute();
     
