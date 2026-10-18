@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // =====================================================
-// 1. CARREGAR PRODUTOS E INVENTÁRIO (UNIFICADO)
+// 1. CARREGAR PRODUTOS, PEDIDOS E INVENTÁRIO (UNIFICADO)
 // =====================================================
 
 async function carregarDadosAdmin() {
@@ -75,9 +75,17 @@ async function carregarDadosAdmin() {
         // Armazena lista de produtos
         produtosAdmin = Array.isArray(resultado.produtos) ? resultado.produtos : [];
 
-        // Preenche métricas do Dashboard se retornado
+        // Preenche métricas do Dashboard e Vendas se retornado
         if (resultado.dashboard) {
             preencherCardsDashboard(resultado.dashboard);
+        }
+
+        if (resultado.mais_vendido) {
+            preencherProdutoMaisVendido(resultado.mais_vendido);
+        }
+
+        if (resultado.pedidos) {
+            renderizarPedidosAdmin(resultado.pedidos);
         }
 
         carregarCategorias();
@@ -106,6 +114,55 @@ function preencherCardsDashboard(dashboard) {
     definirTexto("totalProdutosCount", dashboard.total_produtos || 0);
     definirTexto("totalEstoqueCount", dashboard.total_estoque || 0);
     definirTexto("esgotadosCount", dashboard.esgotados || 0);
+
+    // Se houver elementos específicos para faturamento e pedidos no topo
+    definirTexto("totalFaturamento", formatarMoeda(dashboard.faturamento || 0));
+    definirTexto("totalPedidosCountVendas", dashboard.total_pedidos || 0);
+    definirTexto("totalProdutosVendidos", dashboard.produtos_vendidos || 0);
+    definirTexto("ticketMedio", formatarMoeda(dashboard.ticket_medio || 0));
+}
+
+function preencherProdutoMaisVendido(maisVendido) {
+    const el = document.getElementById("produtoMaisVendido") || document.querySelector(".produto-mais-vendido");
+    if (el) {
+        if (maisVendido && maisVendido.nome) {
+            el.innerHTML = `<strong>${maisVendido.nome}</strong> (${maisVendido.quantidade} un. vendidas)`;
+        } else {
+            el.textContent = "Nenhuma venda registrada";
+        }
+    }
+}
+
+// =====================================================
+// 2.1 RENDERIZAR HISTÓRICO DE PEDIDOS NO ADMIN
+// =====================================================
+
+function renderizarPedidosAdmin(pedidos) {
+    // Procura pela tabela de pedidos pelo ID ou classe comum
+    const tabelaPedidos = document.getElementById("tabelaPedidos") || document.querySelector(".tabela-pedidos");
+    if (!tabelaPedidos) return;
+
+    tabelaPedidos.innerHTML = "";
+
+    if (!Array.isArray(pedidos) || pedidos.length === 0) {
+        tabelaPedidos.innerHTML = `<tr><td colspan="6" class="sem-resultados" style="text-align:center; padding:20px; color:#777;">Nenhum pedido registrado.</td></tr>`;
+        return;
+    }
+
+    pedidos.forEach(pedido => {
+        const linha = document.createElement("tr");
+
+        linha.innerHTML = `
+            <td>#${pedido.id_pedido}</td>
+            <td>${pedido.cliente || "Cliente"}</td>
+            <td>${pedido.data_pedido}</td>
+            <td>${pedido.quantidade_itens} item(ns)</td>
+            <td><strong>${formatarMoeda(pedido.valor_total)}</strong></td>
+            <td><span class="status-pedido ${String(pedido.status).toLowerCase()}">${pedido.status}</span></td>
+        `;
+
+        tabelaPedidos.appendChild(linha);
+    });
 }
 
 // =====================================================
@@ -494,7 +551,6 @@ async function salvarFornecedor(evento) {
         return;
     }
 
-    // Remove caracteres especiais para testar se há dígitos suficientes ou se é um e-mail válido
     const contatoLimpo = contatoFornecedor.replace(/\D/g, "");
     const ehEmail = contatoFornecedor.includes("@") && contatoFornecedor.includes(".");
 
