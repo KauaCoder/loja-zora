@@ -52,7 +52,8 @@ async function carregarDadosAdmin() {
             }
         }
 
-        const resposta = await fetch(`admin_dados.php${idClienteUrl}`, {
+        // admin_dados.php está na raiz (por isso a barra '/')
+        const resposta = await fetch(`/admin_dados.php${idClienteUrl}`, {
             method: "GET",
             cache: "no-store",
             credentials: "include"
@@ -423,7 +424,8 @@ async function salvarReposicao(evento) {
     const quantidade = Number(document.getElementById("quantidadeReposicao").value);
 
     try {
-        const resposta = await fetch("TelaAdmin/adicionar_estoque.php", {
+        // adicionar_estoque.php está dentro da pasta TelaAdmin
+        const resposta = await fetch("adicionar_estoque.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
