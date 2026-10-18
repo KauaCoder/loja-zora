@@ -36,12 +36,23 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Localiza conexao.php
-$caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
-    ? __DIR__ . '/src/conexao.php'
-    : (file_exists(__DIR__ . '/conexao.php') ? __DIR__ . '/conexao.php' : __DIR__ . '/../conexao.php');
+// Localiza conexao.php dinamicamente
+$caminhos_conexao = [
+    __DIR__ . '/conexao.php',
+    __DIR__ . '/../conexao.php',
+    __DIR__ . '/../../conexao.php',
+    __DIR__ . '/src/conexao.php'
+];
 
-if (!is_file($caminhoConexao)) {
+$caminhoConexao = null;
+foreach ($caminhos_conexao as $caminho) {
+    if (file_exists($caminho)) {
+        $caminhoConexao = $caminho;
+        break;
+    }
+}
+
+if (!$caminhoConexao) {
     http_response_code(500);
     echo json_encode(['sucesso' => false, 'mensagem' => 'Erro ao localizar conexao.php'], JSON_UNESCAPED_UNICODE);
     exit;
@@ -66,8 +77,8 @@ try {
         exit;
     }
 
-    // Busca o id_item_estoque e a quantidade atual do produto
-    $stmt = $conexao->prepare('SELECT p.id_item_estoque, p.qtd_item, e.qtd_max_produto FROM produto p LEFT JOIN estoque e ON e.id_item_estoque = p.id_item_estoque WHERE p.id_produto = :id LIMIT 1');
+    // Busca o limite máximo e a quantidade atual do produto
+    $stmt = $conexao->prepare('SELECT p.qtd_item, e.qtd_max_produto FROM produto p LEFT JOIN estoque e ON e.id_item_estoque = p.id_item_estoque WHERE p.id_produto = :id LIMIT 1');
     $stmt->execute([':id' => $idProduto]);
     $prod = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -86,15 +97,9 @@ try {
         exit;
     }
 
-    // Atualiza a quantidade do produto
+    // Atualiza a quantidade diretamente na tabela PRODUTO
     $stmtUp = $conexao->prepare('UPDATE produto SET qtd_item = :qtd WHERE id_produto = :id');
     $stmtUp->execute([':qtd' => $novoEstoque, ':id' => $idProduto]);
-
-    // Se houver item_estoque associado, atualiza também na tabela estoque se necessário
-    if (!empty($prod['id_item_estoque'])) {
-        $stmtUpEst = $conexao->prepare('UPDATE estoque SET qtd_item = :qtd WHERE id_item_estoque = :id_estoque');
-        $stmtUpEst->execute([':qtd' => $novoEstoque, ':id_estoque' => $prod['id_item_estoque']]);
-    }
 
     echo json_encode(['sucesso' => true, 'mensagem' => 'Estoque atualizado com sucesso!'], JSON_UNESCAPED_UNICODE);
 
