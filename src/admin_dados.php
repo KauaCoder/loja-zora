@@ -195,43 +195,41 @@ try {
         ];
     }
 
-    // 2. ESTATÍSTICAS E RESUMO DE PEDIDOS
-    $sqlResumo = "
-        SELECT
-            COUNT(*) AS total_pedidos,
-            COALESCE(SUM(valor_total), 0) AS faturamento,
-            COALESCE(AVG(valor_total), 0) AS ticket_medio
-        FROM pedido
+    // 2. ESTATÍSTICAS E RESUMO DE VENDAS (LENDO DA NOVA TABELA 'venda')
+    $sqlResumoVenda = "
+        SELECT 
+            COALESCE(SUM(valor_item_produto * quantidade), 0) AS faturamento,
+            COALESCE(SUM(quantidade), 0) AS produtos_vendidos
+        FROM venda
     ";
-    $stmtResumo = $conexao->query($sqlResumo);
-    $resumo = $stmtResumo->fetch(PDO::FETCH_ASSOC);
+    $stmtResumoVenda = $conexao->query($sqlResumoVenda);
+    $resumoVenda = $stmtResumoVenda->fetch(PDO::FETCH_ASSOC);
 
-    $sqlVendidos = "
-        SELECT COALESCE(SUM(quantidade), 0) AS produtos_vendidos
-        FROM item_pedido
-    ";
-    $stmtVendidos = $conexao->query($sqlVendidos);
-    $vendidos = $stmtVendidos->fetch(PDO::FETCH_ASSOC);
+    // Conta total de pedidos para o ticket médio
+    $stmtTotalPedidos = $conexao->query("SELECT COUNT(*) AS total_pedidos FROM pedido");
+    $totalPedidos = (int) $stmtTotalPedidos->fetchColumn();
+
+    $faturamento = (float) ($resumoVenda['faturamento'] ?? 0);
+    $produtosVendidos = (int) ($resumoVenda['produtos_vendidos'] ?? 0);
+    $ticketMedio = $totalPedidos > 0 ? ($faturamento / $totalPedidos) : 0;
+    
+    // Lucro no momento é igual ao faturamento (caso adicione custo, subtraia aqui)
+    $lucro = $faturamento;
 
     $sqlMaisVendido = "
-        SELECT
-            p.nm_produto,
-            SUM(ip.quantidade) AS quantidade_vendida
-        FROM item_pedido ip
-        JOIN produto p
-            ON p.id_produto = ip.id_produto
-        GROUP BY
-            p.id_produto,
-            p.nm_produto
-        ORDER BY
-            quantidade_vendida DESC,
-            p.id_produto ASC
+        SELECT 
+            p.nm_produto, 
+            SUM(v.quantidade) AS quantidade_vendida
+        FROM venda v
+        JOIN produto p ON p.id_produto = v.id_produto
+        GROUP BY p.id_produto, p.nm_produto
+        ORDER BY quantidade_vendida DESC
         LIMIT 1
     ";
     $stmtMaisVendido = $conexao->query($sqlMaisVendido);
     $maisVendido = $stmtMaisVendido->fetch(PDO::FETCH_ASSOC);
 
-    // 3. TODOS OS PEDIDOS (HISTÓRICO)
+    // 3. TODOS OS PEDIDOS (HISTÓRICO DA TABELA PEDIDO E CLIENTE)
     $sqlPedidos = "
         SELECT
             pe.id_pedido,
@@ -286,10 +284,11 @@ try {
             'total_produtos' => count($produtos),
             'total_estoque'  => $totalEstoque,
             'esgotados'      => $esgotadosCount,
-            'faturamento'    => round((float) ($resumo["faturamento"] ?? 0), 2),
-            'total_pedidos'  => (int) ($resumo["total_pedidos"] ?? 0),
-            'produtos_vendidos' => (int) ($vendidos["produtos_vendidos"] ?? 0),
-            'ticket_medio'   => round((float) ($resumo["ticket_medio"] ?? 0), 2)
+            'faturamento'    => round($faturamento, 2),
+            'total_pedidos'  => $totalPedidos,
+            'produtos_vendidos' => $produtosVendidos,
+            'ticket_medio'   => round($ticketMedio, 2),
+            'lucro'          => round($lucro, 2)
         ],
         'mais_vendido' => $maisVendido ? [
             "nome" => $maisVendido["nm_produto"],
