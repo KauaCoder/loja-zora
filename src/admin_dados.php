@@ -179,19 +179,19 @@ try {
         }
 
         $produtos[] = [
-            'id_produto'       => (int) $produto['id_produto'],
-            'nome'             => $produto['nm_produto'],
-            'preco'            => round((float) $produto['preco'], 2),
-            'qtd_item'         => $qtd,
-            'estoque'          => $qtd,
-            'categoria'        => $produto['categoria'] ?? 'Geral',
-            'imagem'           => $produto['imagem'] ?? 'default.jpg',
-            'descricao'        => $produto['descricao'] ?? '',
-            'id_item_estoque'  => $produto['id_item_estoque'] !== null ? (int) $produto['id_item_estoque'] : null,
-            'qtd_max_produto'  => $produto['qtd_max_produto'] !== null ? (int) $produto['qtd_max_produto'] : 0,
-            'id_fornecedor'    => $produto['id_fornecedor'] !== null ? (int) $produto['id_fornecedor'] : null,
-            'fornecedor'       => $produto['fornecedor'] ?? 'Não cadastrado',
-            'contato'          => $produto['contato'] ?? '-'
+            'id_produto'        => (int) $produto['id_produto'],
+            'nome'              => $produto['nm_produto'],
+            'preco'             => round((float) $produto['preco'], 2),
+            'qtd_item'          => $qtd,
+            'estoque'           => $qtd,
+            'categoria'         => $produto['categoria'] ?? 'Geral',
+            'imagem'            => $produto['imagem'] ?? 'default.jpg',
+            'descricao'         => $produto['descricao'] ?? '',
+            'id_item_estoque'   => $produto['id_item_estoque'] !== null ? (int) $produto['id_item_estoque'] : null,
+            'qtd_max_produto'   => $produto['qtd_max_produto'] !== null ? (int) $produto['qtd_max_produto'] : 0,
+            'id_fornecedor'     => $produto['id_fornecedor'] !== null ? (int) $produto['id_fornecedor'] : null,
+            'fornecedor'        => $produto['fornecedor'] ?? 'Não cadastrado',
+            'contato'           => $produto['contato'] ?? '-'
         ];
     }
 
