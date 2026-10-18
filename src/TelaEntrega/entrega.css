@@ -121,10 +121,10 @@ nav a:hover{
 
 }
 
-.sidebar.active{
-
+/* Suporte unificado para .active e .ativo */
+.sidebar.active,
+.sidebar.ativo{
     right:0;
-
 }
 
 .sidebar li{
@@ -155,6 +155,30 @@ nav a:hover{
 
     background:#fffaf0;
 
+}
+
+/* Overlay de fundo */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+    z-index: 2500;
+}
+
+.overlay.ativo {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Impede rolagem quando painel aberto */
+body.painel-aberto {
+    overflow: hidden;
 }
 
 /* =========================
@@ -503,44 +527,28 @@ input[readonly]{
 
 }
 
-button{
-
+/* Botões principais */
+button:not(.opcao-radio){
     width:100%;
-
     margin-top:28px;
-
     padding:15px;
-
     border:none;
-
     border-radius:8px;
-
     background:#111;
-
     color:white;
-
     cursor:pointer;
-
     font-size:16px;
-
     font-weight:bold;
-
     transition:.3s;
-
 }
 
-button:hover{
-
+button:not(.opcao-radio):hover{
     background:#444;
-
 }
 
-button:disabled{
-
+button:not(.opcao-radio):disabled{
     background:#ccc;
-
     cursor:not-allowed;
-
 }
 
 /* =========================
