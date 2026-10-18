@@ -516,7 +516,7 @@ async function salvarEdicaoProduto(evento) {
 }
 
 // =====================================================
-// 7. MODAL EDITAR FORNECEDOR (COM VALIDAÇÃO RÍGIDA)
+// 7. MODAL EDITAR FORNECEDOR (COM VALIDAÇÕES ATUALIZADAS)
 // =====================================================
 
 function abrirModalFornecedor(produto) {
@@ -546,20 +546,25 @@ async function salvarFornecedor(evento) {
     const nomeFornecedor = document.getElementById("fornecedorNome").value.trim();
     const contatoFornecedor = document.getElementById("fornecedorContato").value.trim();
 
-    // VALIDAÇÃO RÍGIDA DO FORNECEDOR
-    if (nomeFornecedor.length < 2 || /^\d+$/.test(nomeFornecedor)) {
-        exibirMensagemModal("mensagemFornecedor", "Insira um nome de fornecedor válido (mínimo de 2 letras).", "erro");
+    // 1. VALIDAÇÃO DO NOME DO FORNECEDOR (Sem números/caracteres especiais e no máximo 20 caracteres)
+    const regexNomeValido = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/;
+    if (nomeFornecedor.length < 2 || nomeFornecedor.length > 20 || !regexNomeValido.test(nomeFornecedor)) {
+        exibirMensagemModal("mensagemFornecedor", "O nome do fornecedor deve ter entre 2 e 20 caracteres e não pode conter números ou caracteres especiais.", "erro");
         document.getElementById("fornecedorNome").focus();
         return;
     }
 
-    const contatoLimpo = contatoFornecedor.replace(/\D/g, "");
+    // 2. VALIDAÇÃO DO CONTATO/TELEFONE
+    const contatoNumerico = contatoFornecedor.replace(/\D/g, "");
     const ehEmail = contatoFornecedor.includes("@") && contatoFornecedor.includes(".");
 
-    if (!ehEmail && contatoLimpo.length < 8) {
-        exibirMensagemModal("mensagemFornecedor", "Insira um contato válido (Telefone com DDD ou E-mail).", "erro");
-        document.getElementById("fornecedorContato").focus();
-        return;
+    if (!ehEmail) {
+        // Se for telefone/celular, deve possuir exatamente 9 números
+        if (contatoNumerico.length !== 9) {
+            exibirMensagemModal("mensagemFornecedor", "O número de celular deve conter exatamente 9 dígitos.", "erro");
+            document.getElementById("fornecedorContato").focus();
+            return;
+        }
     }
 
     const dados = {
