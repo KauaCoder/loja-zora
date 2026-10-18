@@ -23,23 +23,47 @@
 
     <!-- MENU -->
     <nav>
-        <!-- Menu Lateral -->
-        <ul class="sidebar">
-            <li><a href="#" onclick="hideSidebar()">✕</a></li>
-            <li><a href="/Telainicial/index.html">Produtos</a></li>
-            <li><a href="/Telainicial/index.html">Pedidos</a></li>
-            <li><a href="#">Sobre</a></li>
-            <li class="hideOnMobile"><a href="#" id="menuUsuarioMobile" onclick="abrirPerfil()">Login</a></li>
+        <!-- Menu Lateral (Mobile) -->
+        <ul class="sidebar" id="sidebar">
+            <li class="sidebar-fechar">
+                <a href="#" onclick="hideSidebar(); return false;" aria-label="Fechar menu">✕</a>
+            </li>
+            <li>
+                <a href="/Telainicial/index.html" onclick="hideSidebar();">Produtos</a>
+            </li>
+            <li>
+                <a href="/Telainicial/index.html" onclick="hideSidebar();">Pedidos</a>
+            </li>
+            <li>
+                <a href="#rodape" onclick="hideSidebar();">Sobre</a>
+            </li>
+            <li>
+                <a href="#" id="menuUsuarioMobile" onclick="hideSidebar(); abrirPerfil(); return false;">
+                    Login
+                </a>
+            </li>
         </ul>
 
         <!-- Menu Principal -->
         <ul>
-            <li><a href="/Telainicial/index.html">ZORA</a></li>
-            <li class="hideOnMobile"><a href="/Telainicial/index.html">Produtos</a></li>
-            <li class="hideOnMobile"><a href="/Telainicial/index.html">Pedidos</a></li>
-            <li class="hideOnMobile"><a href="#">Sobre</a></li>
-            <li class="hideOnMobile"><a href="#" id="menuUsuario" onclick="abrirPerfil()">Login</a></li>
-            <li class="menu-button"><a href="#" onclick="showSidebar()">☰</a></li>
+            <li class="logo-menu">
+                <a href="/Telainicial/index.html">ZORA</a>
+            </li>
+            <li class="hideOnMobile">
+                <a href="/Telainicial/index.html">Produtos</a>
+            </li>
+            <li class="hideOnMobile">
+                <a href="/Telainicial/index.html">Pedidos</a>
+            </li>
+            <li class="hideOnMobile">
+                <a href="#">Sobre</a>
+            </li>
+            <li class="hideOnMobile">
+                <a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">Login</a>
+            </li>
+            <li class="menu-button">
+                <a href="#" onclick="showSidebar(); return false;" aria-label="Abrir menu">☰</a>
+            </li>
         </ul>
     </nav>
 
