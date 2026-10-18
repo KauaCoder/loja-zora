@@ -1,7 +1,16 @@
 <?php
-/* =========================================================
-   ZORA - HISTÓRICO DE PEDIDOS DO CLIENTE (Supabase / PostgreSQL)
-   ========================================================= */
+declare(strict_types=1);
+
+/**
+ * =========================================================
+ * ZORA - HISTÓRICO DE PEDIDOS DO CLIENTE (Supabase / PostgreSQL)
+ * =========================================================
+ */
+
+// ATIVAR EXIBIÇÃO DE ERROS PARA DEBUG (Remova se preferir em produção)
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
 
 $origem = $_SERVER['HTTP_ORIGIN'] ?? '*';
 if ($origem !== '*') {
@@ -95,14 +104,15 @@ try {
     $idClienteInt = (int) $idCliente;
 
     // =========================================================
-    // BUSCAR PEDIDOS DO CLIENTE
+    // BUSCAR PEDIDOS DO CLIENTE (Incluindo forma_pagamento)
     // =========================================================
     $sqlPedidos = "
         SELECT
             id_pedido,
             data_pedido,
             valor_total,
-            status
+            status,
+            forma_pagamento
         FROM public.pedido
         WHERE id_cliente = :id_cliente
         ORDER BY data_pedido DESC, id_pedido DESC
@@ -170,12 +180,13 @@ try {
         }
 
         $historico[] = [
-            "id_pedido" => (int) $pedido["id_pedido"],
-            "data"      => $dataFormatada,
-            "data_raw"  => $pedido["data_pedido"],
-            "total"     => (float) $pedido["valor_total"],
-            "status"    => $pedido["status"] ?? "Pendente",
-            "produtos"  => $produtos
+            "id_pedido"       => (int) $pedido["id_pedido"],
+            "data"            => $dataFormatada,
+            "data_raw"        => $pedido["data_pedido"],
+            "total"           => (float) $pedido["valor_total"],
+            "status"          => $pedido["status"] ?? "Pendente",
+            "forma_pagamento" => $pedido["forma_pagamento"] ?? "Não informada",
+            "produtos"        => $produtos
         ];
     }
 
@@ -195,7 +206,7 @@ try {
         "mensagem" => "Erro ao carregar histórico: " . $erro->getMessage(),
         "detalhes" => [
             "arquivo" => $erro->getFile(),
-            "linha" => $erro->getLine()
+            "linha"   => $erro->getLine()
         ]
     ], JSON_UNESCAPED_UNICODE);
 
