@@ -52,7 +52,7 @@ function obterIdClienteLocal() {
 }
 
 // =====================================================
-// 2. MENU LATERAL, OVERLAY E VERIFICAÇÃO DE LOGIN
+// 2. MENU LATERAL, OVERLAY E PERFIL (PADRÃO ZORA)
 // =====================================================
 
 function obterSidebar() {
@@ -81,7 +81,10 @@ function sincronizarOverlay() {
 
 function showSidebar() {
     const sidebar = obterSidebar();
-    if (!sidebar) return;
+    if (!sidebar) {
+        console.warn("ZORA: menu lateral não encontrado.");
+        return;
+    }
 
     sidebar.classList.add("ativo", "active");
     sincronizarOverlay();
@@ -99,44 +102,62 @@ function fecharTudo() {
     hideSidebar();
 }
 
-async function verificarLogin() {
-    try {
-        const idCliente = obterIdClienteLocal();
-        let url = "/usuario_logado.php";
-        if (idCliente) {
-            url += `?id_cliente=${encodeURIComponent(idCliente)}`;
-        }
-
-        const resposta = await fetch(url, {
-            method: "GET",
-            credentials: "include"
-        });
-
-        const resultado = await resposta.json();
-        const logado = (resultado.sucesso === true && resultado.logado === true) || Boolean(idCliente);
-
-        const menuUsuario = document.getElementById("menuUsuario");
-        const menuUsuarioMobile = document.getElementById("menuUsuarioMobile");
-
-        const texto = logado ? "Perfil" : "Login";
-
-        if (menuUsuario) menuUsuario.textContent = texto;
-        if (menuUsuarioMobile) menuUsuarioMobile.textContent = texto;
-
-        return logado;
-    } catch (erro) {
-        console.error("Erro ao verificar login:", erro);
-        return Boolean(obterIdClienteLocal());
-    }
-}
-
 async function abrirPerfil() {
-    const logado = await verificarLogin();
-    if (logado) {
-        window.location.href = "/TelaCliente/cliente.html";
+    let usuario = null;
+
+    try {
+        usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
+    } catch (erro) {
+        usuario = null;
+    }
+
+    if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
+        const ehAdmin =
+            usuario.is_admin === true
+            || usuario.is_admin === 1
+            || usuario.is_admin === "1"
+            || usuario.nivel === "admin";
+
+        window.location.href = ehAdmin
+            ? "/TelaAdmin/admin.html"
+            : "/TelaCliente/cliente.html";
     } else {
         window.location.href = "/TelaLogin/login.html";
     }
+}
+
+async function checarEAtualizarMenu() {
+    let usuario = null;
+    const idCliente = obterIdClienteLocal();
+
+    try {
+        usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
+    } catch (erro) {
+        usuario = null;
+    }
+
+    const menuDesktop = document.getElementById("menuUsuario");
+    const menuMobile = document.getElementById("menuUsuarioMobile");
+
+    let texto = "Login";
+
+    if ((usuario && (usuario.nome || usuario.email)) || idCliente) {
+        const ehAdmin =
+            usuario && (usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin");
+
+        if (ehAdmin) {
+            texto = "📊 Dashboard Adm";
+        } else {
+            const primeiroNome = (usuario && usuario.nome)
+                ? usuario.nome.split(" ")[0]
+                : "Perfil";
+
+            texto = `Olá, ${primeiroNome}`;
+        }
+    }
+
+    if (menuDesktop) menuDesktop.textContent = texto;
+    if (menuMobile) menuMobile.textContent = texto;
 }
 
 // =====================================================
@@ -368,7 +389,7 @@ function voltarParaEndereco() {
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
-    verificarLogin();
+    checarEAtualizarMenu();
     renderizarResumo();
     inicializarMascarasECep();
 
@@ -404,9 +425,9 @@ document.addEventListener("DOMContentLoaded", function () {
             event.preventDefault();
 
             const idCliente = obterIdClienteLocal();
-            const logado = await verificarLogin();
+            const usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
 
-            if (!logado && !idCliente) {
+            if (!usuario && !idCliente) {
                 alert("Sua sessão expirou. Faça login novamente.");
                 window.location.href = "/TelaLogin/login.html";
                 return;
@@ -443,7 +464,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     headers: { "Content-Type": "application/json" },
                     credentials: "include",
                     body: JSON.stringify({
-                        id_cliente: idCliente ? Number(idCliente) : null,
+                        id_cliente: idCliente ? Number(idCliente) : (usuario ? Number(usuario.id_cliente) : null),
                         cpf: cpfValor,
                         nome: nome,
                         forma_pagamento: formaPagamento,
