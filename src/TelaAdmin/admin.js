@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 async function carregarDadosAdmin() {
     const tabela = document.getElementById("tabelaProdutos");
+    const tabelaPedidos = document.getElementById("tabelaPedidos") || document.querySelector(".tabela-pedidos");
 
     try {
         // Recupera o ID do cliente logado no navegador para garantir a sessão no Render
@@ -52,7 +53,7 @@ async function carregarDadosAdmin() {
             }
         }
 
-        // admin_dados.php está na raiz (por isso a barra '/')
+        // admin_dados.php está na raiz
         const resposta = await fetch(`/admin_dados.php${idClienteUrl}`, {
             method: "GET",
             cache: "no-store",
@@ -65,18 +66,18 @@ async function carregarDadosAdmin() {
         try {
             resultado = JSON.parse(textoBruto);
         } catch (e) {
-            console.error("Erro ao converter JSON do admin_dados.php. Resposta recebida:", textoBruto);
-            throw new Error("O servidor retornou uma resposta inválida (não é JSON). Verifique os logs do PHP.");
+            console.error("Erro ao converter JSON. Resposta recebida:", textoBruto);
+            throw new Error("O servidor retornou uma resposta inválida. Veja a consola para mais detalhes.");
         }
 
         if (!resposta.ok || !resultado.sucesso) {
-            throw new Error(resultado.mensagem || "Erro ao carregar os dados do painel.");
+            throw new Error(resultado.mensagem || "Erro ao carregar os dados do painel do servidor.");
         }
 
         // Armazena lista de produtos
         produtosAdmin = Array.isArray(resultado.produtos) ? resultado.produtos : [];
 
-        // Preenche métricas do Dashboard e Vendas se retornado
+        // Preenche métricas do Dashboard e Vendas
         if (resultado.dashboard) {
             preencherCardsDashboard(resultado.dashboard);
         }
@@ -85,8 +86,11 @@ async function carregarDadosAdmin() {
             preencherProdutoMaisVendido(resultado.mais_vendido);
         }
 
+        // Preenche histórico de pedidos
         if (resultado.pedidos) {
             renderizarPedidosAdmin(resultado.pedidos);
+        } else if (tabelaPedidos) {
+            tabelaPedidos.innerHTML = `<tr><td colspan="6" class="sem-resultados" style="text-align:center; padding:20px;">Nenhum pedido encontrado.</td></tr>`;
         }
 
         carregarCategorias();
@@ -94,12 +98,25 @@ async function carregarDadosAdmin() {
         aplicarFiltros();
 
     } catch (erro) {
-        console.error("Erro ao carregar inventário:", erro);
+        console.error("Erro ao carregar os dados:", erro);
+        
+        // MOSTRA O ERRO NA TABELA DE PRODUTOS
         if (tabela) {
             tabela.innerHTML = `
                 <tr>
-                    <td colspan="8" class="erro-tabela">
-                        Não foi possível carregar os produtos: ${erro.message}
+                    <td colspan="8" class="erro-tabela" style="color:red; text-align:center;">
+                        ⚠️ Erro nos produtos: ${erro.message}
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // MOSTRA O ERRO NA TABELA DE PEDIDOS PARA AJUDAR NA DEPURAÇÃO
+        if (tabelaPedidos) {
+            tabelaPedidos.innerHTML = `
+                <tr>
+                    <td colspan="6" style="color:red; text-align:center; padding:20px; font-weight:bold;">
+                        ⚠️ Erro ao carregar métricas/pedidos: ${erro.message}
                     </td>
                 </tr>
             `;
@@ -116,11 +133,14 @@ function preencherCardsDashboard(dashboard) {
     definirTexto("totalEstoqueCount", dashboard.total_estoque || 0);
     definirTexto("esgotadosCount", dashboard.esgotados || 0);
 
-    // Se houver elementos específicos para faturamento e pedidos no topo
+    // DADOS DE FATURAMENTO E VENDAS
     definirTexto("totalFaturamento", formatarMoeda(dashboard.faturamento || 0));
     definirTexto("totalPedidosCountVendas", dashboard.total_pedidos || 0);
     definirTexto("totalProdutosVendidos", dashboard.produtos_vendidos || 0);
     definirTexto("ticketMedio", formatarMoeda(dashboard.ticket_medio || 0));
+    
+    // CASO EXISTA UM CAMPO PARA O LUCRO NO HTML
+    definirTexto("totalLucro", formatarMoeda(dashboard.lucro || 0));
 }
 
 function preencherProdutoMaisVendido(maisVendido) {
@@ -139,14 +159,13 @@ function preencherProdutoMaisVendido(maisVendido) {
 // =====================================================
 
 function renderizarPedidosAdmin(pedidos) {
-    // Procura pela tabela de pedidos pelo ID ou classe comum
     const tabelaPedidos = document.getElementById("tabelaPedidos") || document.querySelector(".tabela-pedidos");
     if (!tabelaPedidos) return;
 
     tabelaPedidos.innerHTML = "";
 
     if (!Array.isArray(pedidos) || pedidos.length === 0) {
-        tabelaPedidos.innerHTML = `<tr><td colspan="6" class="sem-resultados" style="text-align:center; padding:20px; color:#777;">Nenhum pedido registrado.</td></tr>`;
+        tabelaPedidos.innerHTML = `<tr><td colspan="6" class="sem-resultados" style="text-align:center; padding:20px; color:#777;">Nenhum pedido registado.</td></tr>`;
         return;
     }
 
@@ -197,7 +216,6 @@ function atualizarResumo() {
     const totalProdutos = produtosAdmin.length;
     const totalUnidades = produtosAdmin.reduce((total, p) => total + (Number(p.qtd_item) || 0), 0);
 
-    // Regra dos 40%: Considera estoque baixo quando for <= 40% do limite máximo
     const estoqueBaixo = produtosAdmin.filter(p => {
         const quantidade = Number(p.qtd_item) || 0;
         const maximo = Number(p.qtd_max_produto) || 100;
@@ -249,7 +267,6 @@ function renderizarProdutos(produtos) {
     produtos.forEach(produto => {
         const linha = document.createElement("tr");
 
-        // PRODUTO
         const colProduto = document.createElement("td");
         colProduto.innerHTML = `
             <div class="produto-info">
@@ -261,44 +278,36 @@ function renderizarProdutos(produtos) {
             </div>
         `;
 
-        // CATEGORIA
         const colCategoria = document.createElement("td");
         colCategoria.textContent = produto.categoria || "-";
 
-        // PREÇO
         const colPreco = document.createElement("td");
         colPreco.textContent = formatarMoeda(produto.preco);
 
-        // ESTOQUE
         const quantidade = Number(produto.qtd_item) || 0;
         const maximo = Number(produto.qtd_max_produto) || 100;
         const colEstoque = document.createElement("td");
         colEstoque.innerHTML = `<strong>${maximo > 0 ? `${quantidade} /${maximo}` : quantidade}</strong>`;
 
-        // FORNECEDOR E CONTATO
         const colFornecedor = document.createElement("td");
-        colFornecedor.textContent = produto.fornecedor || "Não cadastrado";
+        colFornecedor.textContent = produto.fornecedor || "Não registado";
 
         const colContato = document.createElement("td");
         colContato.textContent = produto.contato || "-";
 
-        // STATUS
         const colStatus = document.createElement("td");
         colStatus.appendChild(criarStatus(quantidade, maximo));
 
-        // AÇÕES
         const colAcoes = document.createElement("td");
         const grupoAcoes = document.createElement("div");
         grupoAcoes.className = "grupo-acoes";
 
-        // Botão Editar
         const btnEditar = document.createElement("button");
         btnEditar.type = "button";
         btnEditar.className = "botao-editar";
         btnEditar.textContent = "Editar";
         btnEditar.onclick = () => abrirModalEdicao(produto);
 
-        // Botão Repor
         const btnRepor = document.createElement("button");
         btnRepor.type = "button";
         btnRepor.className = "botao-repor";
@@ -310,7 +319,6 @@ function renderizarProdutos(produtos) {
             btnRepor.onclick = () => abrirModalReposicao(produto);
         }
 
-        // Botão Fornecedor
         const btnFornecedor = document.createElement("button");
         btnFornecedor.type = "button";
         btnFornecedor.className = "botao-fornecedor";
@@ -326,7 +334,6 @@ function renderizarProdutos(produtos) {
         grupoAcoes.appendChild(btnRepor);
         grupoAcoes.appendChild(btnFornecedor);
 
-        // BOTÃO WHATSAPP ADM (Dispara quando o estoque estiver em <= 40%)
         const percentualAtual = maximo > 0 ? (quantidade / maximo) * 100 : 100;
         if (percentualAtual <= 40) {
             const btnWhatsapp = document.createElement("a");
@@ -338,8 +345,8 @@ function renderizarProdutos(produtos) {
             const msg = `⚠️ *ALERTA DE ESTOQUE BAIXO - ZORA*\n\n` +
                 `📦 *Produto:* ${produto.nome} (ID: ${produto.id_produto})\n` +
                 `📊 *Estoque Restante:* ${quantidade} de ${maximo} unidades (${percentualAtual.toFixed(1)}%)\n\n` +
-                `🏭 *Fornecedor:* ${produto.fornecedor || 'Não cadastrado'}\n` +
-                `📞 *Contato Fornecedor:* ${produto.contato || 'Sem contato'}\n\n` +
+                `🏭 *Fornecedor:* ${produto.fornecedor || 'Não registado'}\n` +
+                `📞 *Contato Fornecedor:* ${produto.contato || 'Sem contacto'}\n\n` +
                 `💡 *Ação:* Favor solicitar reabastecimento junto ao fornecedor.`;
 
             btnWhatsapp.href = `https://wa.me/${TELEFONE_ADMIN_WHATSAPP}?text=${encodeURIComponent(msg)}`;
@@ -347,7 +354,6 @@ function renderizarProdutos(produtos) {
         }
 
         colAcoes.appendChild(grupoAcoes);
-
         linha.appendChild(colProduto);
         linha.appendChild(colCategoria);
         linha.appendChild(colPreco);
@@ -424,7 +430,6 @@ async function salvarReposicao(evento) {
     const quantidade = Number(document.getElementById("quantidadeReposicao").value);
 
     try {
-        // adicionar_estoque.php está dentro da pasta TelaAdmin
         const resposta = await fetch("adicionar_estoque.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -546,7 +551,6 @@ async function salvarFornecedor(evento) {
     const nomeFornecedor = document.getElementById("fornecedorNome").value.trim();
     const contatoFornecedor = document.getElementById("fornecedorContato").value.trim();
 
-    // 1. VALIDAÇÃO DO NOME DO FORNECEDOR (Sem números/caracteres especiais e no máximo 20 caracteres)
     const regexNomeValido = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/;
     if (nomeFornecedor.length < 2 || nomeFornecedor.length > 20 || !regexNomeValido.test(nomeFornecedor)) {
         exibirMensagemModal("mensagemFornecedor", "O nome do fornecedor deve ter entre 2 e 20 caracteres e não pode conter números ou caracteres especiais.", "erro");
@@ -554,14 +558,12 @@ async function salvarFornecedor(evento) {
         return;
     }
 
-    // 2. VALIDAÇÃO DO CONTATO/TELEFONE
     const contatoNumerico = contatoFornecedor.replace(/\D/g, "");
     const ehEmail = contatoFornecedor.includes("@") && contatoFornecedor.includes(".");
 
     if (!ehEmail) {
-        // Se for telefone/celular, deve possuir exatamente 9 números
         if (contatoNumerico.length !== 9) {
-            exibirMensagemModal("mensagemFornecedor", "O número de celular deve conter exatamente 9 dígitos.", "erro");
+            exibirMensagemModal("mensagemFornecedor", "O número de telemóvel deve conter exatamente 9 dígitos.", "erro");
             document.getElementById("fornecedorContato").focus();
             return;
         }
