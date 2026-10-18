@@ -36,7 +36,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 async function carregarDadosAdmin() {
     const tabela = document.getElementById("tabelaProdutos");
-    const tabelaPedidos = document.getElementById("tabelaPedidos") || document.querySelector(".tabela-pedidos");
+    // CORRIGIDO: Busca a tabela de pedidos pelo ID correto do HTML
+    const tabelaPedidos = document.getElementById("dashboardListaPedidos"); 
 
     try {
         // Recupera o ID do cliente logado no navegador para garantir a sessão no Render
@@ -111,7 +112,7 @@ async function carregarDadosAdmin() {
             `;
         }
         
-        // MOSTRA O ERRO NA TABELA DE PEDIDOS PARA AJUDAR NA DEPURAÇÃO
+        // MOSTRA O ERRO NA TABELA DE PEDIDOS
         if (tabelaPedidos) {
             tabelaPedidos.innerHTML = `
                 <tr>
@@ -129,22 +130,16 @@ async function carregarDadosAdmin() {
 // =====================================================
 
 function preencherCardsDashboard(dashboard) {
-    definirTexto("totalProdutosCount", dashboard.total_produtos || 0);
-    definirTexto("totalEstoqueCount", dashboard.total_estoque || 0);
-    definirTexto("esgotadosCount", dashboard.esgotados || 0);
-
-    // DADOS DE FATURAMENTO E VENDAS
-    definirTexto("totalFaturamento", formatarMoeda(dashboard.faturamento || 0));
-    definirTexto("totalPedidosCountVendas", dashboard.total_pedidos || 0);
-    definirTexto("totalProdutosVendidos", dashboard.produtos_vendidos || 0);
-    definirTexto("ticketMedio", formatarMoeda(dashboard.ticket_medio || 0));
-    
-    // CASO EXISTA UM CAMPO PARA O LUCRO NO HTML
-    definirTexto("totalLucro", formatarMoeda(dashboard.lucro || 0));
+    // CORRIGIDO: Agora usa os IDs exatos que estão no seu HTML
+    definirTexto("dashboardFaturamento", formatarMoeda(dashboard.faturamento || 0));
+    definirTexto("dashboardPedidos", dashboard.total_pedidos || 0);
+    definirTexto("dashboardVendidos", dashboard.produtos_vendidos || 0);
+    definirTexto("dashboardTicket", formatarMoeda(dashboard.ticket_medio || 0));
 }
 
 function preencherProdutoMaisVendido(maisVendido) {
-    const el = document.getElementById("produtoMaisVendido") || document.querySelector(".produto-mais-vendido");
+    // CORRIGIDO: Agora usa o ID exato que está no seu HTML
+    const el = document.getElementById("dashboardMaisVendido");
     if (el) {
         if (maisVendido && maisVendido.nome) {
             el.innerHTML = `<strong>${maisVendido.nome}</strong> (${maisVendido.quantidade} un. vendidas)`;
@@ -159,7 +154,8 @@ function preencherProdutoMaisVendido(maisVendido) {
 // =====================================================
 
 function renderizarPedidosAdmin(pedidos) {
-    const tabelaPedidos = document.getElementById("tabelaPedidos") || document.querySelector(".tabela-pedidos");
+    // CORRIGIDO: Agora usa o ID exato que está no seu HTML
+    const tabelaPedidos = document.getElementById("dashboardListaPedidos");
     if (!tabelaPedidos) return;
 
     tabelaPedidos.innerHTML = "";
@@ -290,7 +286,7 @@ function renderizarProdutos(produtos) {
         colEstoque.innerHTML = `<strong>${maximo > 0 ? `${quantidade} /${maximo}` : quantidade}</strong>`;
 
         const colFornecedor = document.createElement("td");
-        colFornecedor.textContent = produto.fornecedor || "Não registado";
+        colFornecedor.textContent = produto.fornecedor || "Não cadastrado";
 
         const colContato = document.createElement("td");
         colContato.textContent = produto.contato || "-";
@@ -345,8 +341,8 @@ function renderizarProdutos(produtos) {
             const msg = `⚠️ *ALERTA DE ESTOQUE BAIXO - ZORA*\n\n` +
                 `📦 *Produto:* ${produto.nome} (ID: ${produto.id_produto})\n` +
                 `📊 *Estoque Restante:* ${quantidade} de ${maximo} unidades (${percentualAtual.toFixed(1)}%)\n\n` +
-                `🏭 *Fornecedor:* ${produto.fornecedor || 'Não registado'}\n` +
-                `📞 *Contato Fornecedor:* ${produto.contato || 'Sem contacto'}\n\n` +
+                `🏭 *Fornecedor:* ${produto.fornecedor || 'Não cadastrado'}\n` +
+                `📞 *Contato Fornecedor:* ${produto.contato || 'Sem contato'}\n\n` +
                 `💡 *Ação:* Favor solicitar reabastecimento junto ao fornecedor.`;
 
             btnWhatsapp.href = `https://wa.me/${TELEFONE_ADMIN_WHATSAPP}?text=${encodeURIComponent(msg)}`;
@@ -563,7 +559,7 @@ async function salvarFornecedor(evento) {
 
     if (!ehEmail) {
         if (contatoNumerico.length !== 9) {
-            exibirMensagemModal("mensagemFornecedor", "O número de telemóvel deve conter exatamente 9 dígitos.", "erro");
+            exibirMensagemModal("mensagemFornecedor", "O número de celular deve conter exatamente 9 dígitos.", "erro");
             document.getElementById("fornecedorContato").focus();
             return;
         }
