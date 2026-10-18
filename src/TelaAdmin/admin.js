@@ -375,9 +375,6 @@ async function salvarReposicao(evento) {
 
         const textoBruto = await resposta.text();
         
-        // Exibe o erro exato no Console do navegador para diagnóstico
-        console.log("RESPOSTA DO PHP:", textoBruto);
-
         let resultado;
         try {
             resultado = JSON.parse(textoBruto);
@@ -460,7 +457,7 @@ async function salvarEdicaoProduto(evento) {
 }
 
 // =====================================================
-// 7. MODAL EDITAR FORNECEDOR
+// 7. MODAL EDITAR FORNECEDOR (COM VALIDAÇÃO RÍGIDA)
 // =====================================================
 
 function abrirModalFornecedor(produto) {
@@ -487,11 +484,31 @@ function fecharModalFornecedor() {
 async function salvarFornecedor(evento) {
     evento.preventDefault();
 
+    const nomeFornecedor = document.getElementById("fornecedorNome").value.trim();
+    const contatoFornecedor = document.getElementById("fornecedorContato").value.trim();
+
+    // VALIDAÇÃO RÍGIDA DO FORNECEDOR
+    if (nomeFornecedor.length < 2 || /^\d+$/.test(nomeFornecedor)) {
+        exibirMensagemModal("mensagemFornecedor", "Insira um nome de fornecedor válido (mínimo de 2 letras).", "erro");
+        document.getElementById("fornecedorNome").focus();
+        return;
+    }
+
+    // Remove caracteres especiais para testar se há dígitos suficientes ou se é um e-mail válido
+    const contatoLimpo = contatoFornecedor.replace(/\D/g, "");
+    const ehEmail = contatoFornecedor.includes("@") && contatoFornecedor.includes(".");
+
+    if (!ehEmail && contatoLimpo.length < 8) {
+        exibirMensagemModal("mensagemFornecedor", "Insira um contato válido (Telefone com DDD ou E-mail).", "erro");
+        document.getElementById("fornecedorContato").focus();
+        return;
+    }
+
     const dados = {
         id_fornecedor: Number(document.getElementById("fornecedorId").value),
         id_item_estoque: Number(document.getElementById("fornecedorIdEstoque").value),
-        nome: document.getElementById("fornecedorNome").value.trim(),
-        contato: document.getElementById("fornecedorContato").value.trim()
+        nome: nomeFornecedor,
+        contato: contatoFornecedor
     };
 
     try {
