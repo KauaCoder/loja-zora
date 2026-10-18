@@ -52,7 +52,7 @@ async function carregarDadosAdmin() {
             }
         }
 
-        const resposta = await fetch(`/admin_dados.php${idClienteUrl}`, {
+        const resposta = await fetch(`admin_dados.php${idClienteUrl}`, {
             method: "GET",
             cache: "no-store",
             credentials: "include"
@@ -423,7 +423,7 @@ async function salvarReposicao(evento) {
     const quantidade = Number(document.getElementById("quantidadeReposicao").value);
 
     try {
-        const resposta = await fetch("/adicionar_estoque.php", {
+        const resposta = await fetch("TelaAdmin/adicionar_estoque.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -485,7 +485,7 @@ async function salvarEdicaoProduto(evento) {
     };
 
     try {
-        const resposta = await fetch("/editar_produto.php", {
+        const resposta = await fetch("editar_produto.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -568,7 +568,7 @@ async function salvarFornecedor(evento) {
     };
 
     try {
-        const resposta = await fetch("/atualizar_fornecedor.php", {
+        const resposta = await fetch("atualizar_fornecedor.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
