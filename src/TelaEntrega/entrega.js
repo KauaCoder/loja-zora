@@ -52,17 +52,51 @@ function obterIdClienteLocal() {
 }
 
 // =====================================================
-// 2. VERIFICAR LOGIN E MENU MOBILE
+// 2. MENU LATERAL, OVERLAY E VERIFICAÇÃO DE LOGIN
 // =====================================================
 
-const sidebar = document.querySelector(".sidebar");
+function obterSidebar() {
+    return document.getElementById("sidebar") || document.querySelector(".sidebar");
+}
+
+function obterOverlay() {
+    return document.getElementById("overlay") || document.querySelector(".overlay");
+}
+
+function sincronizarOverlay() {
+    const sidebar = obterSidebar();
+    const overlay = obterOverlay();
+
+    const menuAberto = sidebar && (
+        sidebar.classList.contains("ativo")
+        || sidebar.classList.contains("active")
+    );
+
+    if (overlay) {
+        overlay.classList.toggle("ativo", menuAberto);
+    }
+
+    document.body.classList.toggle("painel-aberto", menuAberto);
+}
 
 function showSidebar() {
-    if (sidebar) sidebar.classList.add("active");
+    const sidebar = obterSidebar();
+    if (!sidebar) return;
+
+    sidebar.classList.add("ativo", "active");
+    sincronizarOverlay();
 }
 
 function hideSidebar() {
-    if (sidebar) sidebar.classList.remove("active");
+    const sidebar = obterSidebar();
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
+    sincronizarOverlay();
+}
+
+function fecharTudo() {
+    hideSidebar();
 }
 
 async function verificarLogin() {
@@ -337,6 +371,11 @@ document.addEventListener("DOMContentLoaded", function () {
     verificarLogin();
     renderizarResumo();
     inicializarMascarasECep();
+
+    const overlay = obterOverlay();
+    if (overlay) {
+        overlay.addEventListener("click", fecharTudo);
+    }
 
     // Vincula o botão Ir para Pagamento
     const btnIrParaPagamento = document.getElementById("btnIrParaPagamento");
