@@ -1,5 +1,5 @@
 // =====================================================
-// ZORA - TELA INICIAL, CATÁLOGO, SLIDES E CARRINHO
+// ZORA - TELA INICIAL, CATÁLOGO, SLIDES, CARRINHO E PESQUISA
 // Versão Completa & Definitiva
 // =====================================================
 
@@ -82,6 +82,12 @@ function fecharTudo() {
     if (pedidos) {
         pedidos.classList.remove("ativo");
     }
+
+    // Esconde os dropdowns de busca ao fechar tudo
+    const dropdownDesktop = document.getElementById("resultadoBusca");
+    const dropdownMobile = document.getElementById("resultadoBuscaMobile");
+    if (dropdownDesktop) dropdownDesktop.style.display = "none";
+    if (dropdownMobile) dropdownMobile.style.display = "none";
 
     sincronizarOverlay();
 }
@@ -232,6 +238,8 @@ function reiniciarTemporizadorSlide() {
 // 3. CATÁLOGO DE PRODUTOS E ROLAGEM HORIZONTAL
 // =====================================================
 
+let produtosGlobais = []; // Armazena a lista de produtos carregados para uso na busca
+
 async function carregarCatalogo() {
     const container = document.getElementById("catalogoProdutos");
 
@@ -256,10 +264,12 @@ async function carregarCatalogo() {
             );
         }
 
-        renderizarCatalogo(resultado.produtos);
+        produtosGlobais = Array.isArray(resultado.produtos) ? resultado.produtos : [];
+        renderizarCatalogo(produtosGlobais);
 
     } catch (erro) {
         console.error("Erro ao carregar catálogo:", erro);
+        produtosGlobais = [];
 
         container.innerHTML =
             "<p class='carregando'>" +
@@ -380,6 +390,118 @@ function scrollProdutos(direcao) {
         left: direcao * larguraItem * 2,
         behavior: "smooth"
     });
+}
+
+
+// =====================================================
+// 3.1. SISTEMA DE PESQUISA FUNCIONAL EM TEMPO REAL
+// =====================================================
+
+function configurarBusca() {
+    const inputDesktop = document.getElementById("inputBusca");
+    const dropdownDesktop = document.getElementById("resultadoBusca");
+
+    const inputMobile = document.getElementById("inputBuscaMobile");
+    const dropdownMobile = document.getElementById("resultadoBuscaMobile");
+
+    if (inputDesktop && dropdownDesktop) {
+        inputDesktop.addEventListener("input", (e) => {
+            executarBusca(e.target.value, dropdownDesktop);
+        });
+
+        inputDesktop.addEventListener("focus", (e) => {
+            if (e.target.value.trim().length > 0) {
+                dropdownDesktop.style.display = "block";
+            }
+        });
+    }
+
+    if (inputMobile && dropdownMobile) {
+        inputMobile.addEventListener("input", (e) => {
+            executarBusca(e.target.value, dropdownMobile);
+        });
+
+        inputMobile.addEventListener("focus", (e) => {
+            if (e.target.value.trim().length > 0) {
+                dropdownMobile.style.display = "block";
+            }
+        });
+    }
+
+    // Fecha os dropdowns ao clicar fora
+    document.addEventListener("click", (e) => {
+        if (inputDesktop && dropdownDesktop && !inputDesktop.contains(e.target) && !dropdownDesktop.contains(e.target)) {
+            dropdownDesktop.style.display = "none";
+        }
+        if (inputMobile && dropdownMobile && !inputMobile.contains(e.target) && !dropdownMobile.contains(e.target)) {
+            dropdownMobile.style.display = "none";
+        }
+    });
+}
+
+function executarBusca(termo, containerDropdown) {
+    const termoLimpo = termo.trim().toLowerCase();
+
+    if (!containerDropdown) return;
+
+    if (termoLimpo.length === 0) {
+        containerDropdown.innerHTML = "";
+        containerDropdown.style.display = "none";
+        return;
+    }
+
+    const resultados = produtosGlobais.filter(produto => {
+        const nome = String(produto.nome || "").toLowerCase();
+        const descricao = String(produto.descricao || "").toLowerCase();
+        const categoria = String(produto.categoria || "").toLowerCase();
+        return nome.includes(termoLimpo) || descricao.includes(termoLimpo) || categoria.includes(termoLimpo);
+    });
+
+    containerDropdown.innerHTML = "";
+
+    if (resultados.length === 0) {
+        const itemVazio = document.createElement("div");
+        itemVazio.className = "busca-item-vazio";
+        itemVazio.textContent = "Nenhum produto encontrado";
+        containerDropdown.appendChild(itemVazio);
+    } else {
+        resultados.forEach(produto => {
+            const id = Number(produto.id_produto);
+            const nome = String(produto.nome || "Produto ZORA");
+            const preco = Number(produto.preco) || 0;
+            const imagemSrc = obterImagemProduto(produto.imagem);
+
+            const linkItem = document.createElement("a");
+            linkItem.href = `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
+            linkItem.className = "busca-item-resultado";
+
+            const img = document.createElement("img");
+            img.src = imagemSrc;
+            img.alt = nome;
+            img.loading = "lazy";
+            img.onerror = function() {
+                this.onerror = null;
+                this.src = "/img/Logo%201.png";
+            };
+
+            const infoDiv = document.createElement("div");
+            infoDiv.className = "busca-item-info";
+
+            const tituloEl = document.createElement("span");
+            tituloEl.className = "busca-item-nome";
+            tituloEl.textContent = nome;
+
+            const precoEl = document.createElement("span");
+            precoEl.className = "busca-item-preco";
+            precoEl.textContent = `R$ ${formatarPreco(preco)}`;
+
+            infoDiv.append(tituloEl, precoEl);
+            linkItem.append(img, infoDiv);
+            containerDropdown.appendChild(linkItem);
+        });
+    }
+
+    containerDropdown.style.display = "block";
 }
 
 
@@ -767,6 +889,7 @@ document.addEventListener("DOMContentLoaded", () => {
     carregarCarrinho();
     checarEAtualizarMenu();
     reiniciarTemporizadorSlide();
+    configurarBusca();
 
     const overlay = obterOverlay();
     if (overlay) {
