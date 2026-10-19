@@ -58,6 +58,14 @@
                 <a href="#" onclick="hideSidebar(); return false;" aria-label="Fechar menu">✕</a> 
             </li> 
 
+            <!-- BARRA DE PESQUISA MOBILE -->
+            <li class="sidebar-busca">
+                <div class="busca-container-mobile">
+                    <input type="text" id="inputBuscaMobile" placeholder="Pesquisar produtos..." autocomplete="off">
+                    <div id="resultadoBuscaMobile" class="resultado-busca-dropdown"></div>
+                </div>
+            </li>
+
             <li> 
                 <a href="#catalogoProdutos" onclick="hideSidebar();">Produtos</a> 
             </li> 
@@ -97,6 +105,16 @@
             <li class="hideOnMobile"> 
                 <a href="#catalogoProdutos">Produtos</a> 
             </li> 
+
+            <!-- BARRA DE PESQUISA DESKTOP -->
+            <li class="hideOnMobile nav-busca-item">
+                <div class="busca-container">
+                    <input type="text" id="inputBusca" placeholder="Pesquisar peças, vestidos..." autocomplete="off">
+                    <button type="button" class="btn-lupa" aria-label="Pesquisar">🔍</button>
+                    <!-- Dropdown de resultados da pesquisa -->
+                    <div id="resultadoBusca" class="resultado-busca-dropdown"></div>
+                </div>
+            </li>
 
             <!-- PEDIDOS --> 
             <li class="hideOnMobile"> 
