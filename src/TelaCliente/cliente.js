@@ -23,6 +23,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if (formDevolucao) {
         formDevolucao.addEventListener("submit", confirmarDevolucao);
     }
+
+    // Fechar menu ao clicar no overlay escuro
+    const overlay = obterOverlay();
+    if (overlay) {
+        overlay.addEventListener("click", hideSidebar);
+    }
 });
 
 // Helper para obter o ID do cliente armazenado no navegador
@@ -478,12 +484,38 @@ async function logout() {
     }
 }
 
+// =====================================================
+// MENU LATERAL (SIDEBAR) CORRIGIDO
+// =====================================================
+
+function obterSidebar() {
+    return document.getElementById("sidebar") || document.querySelector(".sidebar");
+}
+
+function obterOverlay() {
+    return document.getElementById("overlay") || document.querySelector(".overlay");
+}
+
 function showSidebar() {
-    const sidebar = document.querySelector(".sidebar");
-    if (sidebar) sidebar.classList.add("active");
+    const sidebar = obterSidebar();
+    if (sidebar) {
+        sidebar.classList.add("ativo", "active"); // Adiciona ambas as classes para evitar falhas
+    }
+    
+    const overlay = obterOverlay();
+    if (overlay) {
+        overlay.classList.add("ativo", "active");
+    }
 }
 
 function hideSidebar() {
-    const sidebar = document.querySelector(".sidebar");
-    if (sidebar) sidebar.classList.remove("active");
+    const sidebar = obterSidebar();
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
+    }
+    
+    const overlay = obterOverlay();
+    if (overlay) {
+        overlay.classList.remove("ativo", "active");
+    }
 }
