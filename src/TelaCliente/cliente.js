@@ -5,6 +5,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     carregarDadosPerfil();
     carregarCompras();
+    checarEAtualizarMenu();
 
     const cepEdicao = document.getElementById("cepEdicao");
     if (cepEdicao) {
@@ -24,10 +25,10 @@ document.addEventListener("DOMContentLoaded", function () {
         formDevolucao.addEventListener("submit", confirmarDevolucao);
     }
 
-    // Fechar menu ao clicar no overlay escuro
+    // Fechar menu ao clicar no overlay escuro (Padrão da Tela Inicial)
     const overlay = obterOverlay();
     if (overlay) {
-        overlay.addEventListener("click", hideSidebar);
+        overlay.addEventListener("click", fecharTudo);
     }
 });
 
@@ -310,6 +311,7 @@ async function salvarNovoNome() {
 
         cancelarEdicaoNome();
         await carregarDadosPerfil();
+        checarEAtualizarMenu();
 
     } catch (erro) {
         console.error("Erro ao atualizar nome:", erro);
@@ -485,7 +487,7 @@ async function logout() {
 }
 
 // =====================================================
-// MENU LATERAL (SIDEBAR) CORRIGIDO
+// MENU LATERAL, OVERLAY E PERFIL (PADRÃO TELA INICIAL)
 // =====================================================
 
 function obterSidebar() {
@@ -496,26 +498,114 @@ function obterOverlay() {
     return document.getElementById("overlay") || document.querySelector(".overlay");
 }
 
+function sincronizarOverlay() {
+    const sidebar = obterSidebar();
+    const overlay = obterOverlay();
+    const pedidos = document.getElementById("Pedidos"); // Para o caso de existir o carrinho nesta tela
+
+    const menuAberto = sidebar && (
+        sidebar.classList.contains("ativo") || sidebar.classList.contains("active")
+    );
+
+    const pedidosAberto = pedidos && pedidos.classList.contains("ativo");
+
+    const algumPainelAberto = Boolean(menuAberto || pedidosAberto);
+
+    if (overlay) {
+        overlay.classList.toggle("ativo", algumPainelAberto);
+    }
+
+    // Impede a rolagem da página quando um painel está aberto.
+    document.body.classList.toggle("painel-aberto", algumPainelAberto);
+}
+
 function showSidebar() {
     const sidebar = obterSidebar();
-    if (sidebar) {
-        sidebar.classList.add("ativo", "active"); // Adiciona ambas as classes para evitar falhas
+
+    if (!sidebar) {
+        console.warn("ZORA: menu lateral não encontrado.");
+        return;
     }
-    
-    const overlay = obterOverlay();
-    if (overlay) {
-        overlay.classList.add("ativo", "active");
-    }
+
+    sidebar.classList.add("ativo", "active");
+    sincronizarOverlay();
 }
 
 function hideSidebar() {
     const sidebar = obterSidebar();
+
     if (sidebar) {
         sidebar.classList.remove("ativo", "active");
     }
-    
-    const overlay = obterOverlay();
-    if (overlay) {
-        overlay.classList.remove("ativo", "active");
+
+    sincronizarOverlay();
+}
+
+function fecharTudo() {
+    const sidebar = obterSidebar();
+    const pedidos = document.getElementById("Pedidos");
+
+    if (sidebar) {
+        sidebar.classList.remove("ativo", "active");
     }
+
+    if (pedidos) {
+        pedidos.classList.remove("ativo");
+    }
+
+    sincronizarOverlay();
+}
+
+async function abrirPerfil() {
+    let usuario = null;
+
+    if (typeof obterUsuarioLogado === "function") {
+        try {
+            usuario = await obterUsuarioLogado();
+        } catch (erro) {
+            console.error("Erro ao obter usuário:", erro);
+        }
+    } else {
+        try {
+            usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
+        } catch (erro) {
+            usuario = null;
+        }
+    }
+
+    if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
+        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+        window.location.href = ehAdmin ? "/TelaAdmin/admin.html" : "/TelaCliente/cliente.html";
+    } else {
+        window.location.href = "/TelaLogin/login.html";
+    }
+}
+
+async function checarEAtualizarMenu() {
+    let usuario = null;
+
+    try {
+        usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
+    } catch (erro) {
+        usuario = null;
+    }
+
+    const menuDesktop = document.getElementById("menuUsuario");
+    const menuMobile = document.getElementById("menuUsuarioMobile");
+
+    let texto = "Login";
+
+    if (usuario && (usuario.nome || usuario.email)) {
+        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+
+        if (ehAdmin) {
+            texto = "Painel do Adm";
+        } else {
+            const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+            texto = `Olá, ${primeiroNome}`;
+        }
+    }
+
+    if (menuDesktop) menuDesktop.textContent = texto;
+    if (menuMobile) menuMobile.textContent = texto;
 }
