@@ -12,9 +12,13 @@
 
 <body>
 
+    <!-- OVERLAY (Fundo escuro que o JavaScript usa para fechar o menu) -->
+    <div id="overlay" class="overlay"></div>
+
     <!-- MENU -->
     <nav>
-        <ul class="sidebar">
+        <!-- MENU LATERAL (Para telemóvel) -->
+        <ul class="sidebar" id="sidebar">
             <li>
                 <a href="#" onclick="hideSidebar()">✕</a>
             </li>
@@ -22,16 +26,21 @@
                 <a href="/Telainicial/index.html">Produtos</a>
             </li>
             <li>
-                <a href="/Telainicial/index.html" onclick="abrirPedidos()">Pedidos</a>
+                <!-- Se usar carrinho/pedidos, redireciona ou abre o modal -->
+                <a href="/Telainicial/index.html">Pedidos</a>
             </li>
             <li>
                 <a href="#">Sobre</a>
             </li>
-            <li class="hideOnMobile">
-                <a href="#" id="menuUsuarioMobile" onclick="logout()">Sair</a>
+            <li>
+                <a href="#" id="menuUsuarioMobile">Perfil</a>
+            </li>
+            <li>
+                <a href="#" onclick="logout()">Sair</a>
             </li>
         </ul>
 
+        <!-- MENU PRINCIPAL (Para ecrãs maiores) -->
         <ul>
             <li>
                 <a href="/Telainicial/index.html">ZORA</a>
@@ -40,10 +49,10 @@
                 <a href="/Telainicial/index.html">Produtos</a>
             </li>
             <li class="hideOnMobile">
-                <a href="#">Perfil</a>
+                <a href="#">Sobre</a>
             </li>
             <li class="hideOnMobile">
-                <a href="#">Sobre</a>
+                <a href="#" id="menuUsuario">Perfil</a>
             </li>
             <li class="hideOnMobile">
                 <a href="#" onclick="logout()">Sair</a>
