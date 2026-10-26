@@ -98,7 +98,7 @@ nav ul.sidebar {
     padding: 0;
     margin: 0;
     transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 4000; /* Aumentado para ficar acima de tudo */
+    z-index: 4000; /* Mantém o menu sempre na camada superior */
 }
 
 nav ul.sidebar.ativo,  
@@ -117,10 +117,10 @@ nav ul.sidebar.active {
     height: 100vh;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(2px);
-    z-index: 3000; /* Abaixo do menu (4000) */
+    z-index: 3000; /* Fica abaixo do menu (4000) */
     opacity: 0;
     visibility: hidden;
-    pointer-events: none; /* ESSE É O SEGREDO: Impede cliques fantasma quando invisível */
+    pointer-events: none; /* ESSENCIAL: Evita que o overlay invisível bloqueie cliques na página */
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
@@ -128,9 +128,8 @@ nav ul.sidebar.active {
 .overlay.active {
     opacity: 1;
     visibility: visible;
-    pointer-events: auto; /* Reativa os cliques apenas quando o menu abre */
+    pointer-events: auto; /* Ativa os cliques no fundo apenas quando o menu estiver aberto */
 }
-
 /* =========================================================
    ESTRUTURA DA PÁGINA
    ========================================================= */
