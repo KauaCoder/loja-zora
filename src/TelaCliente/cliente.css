@@ -79,7 +79,6 @@ nav a:hover {
    MENU LATERAL RESPONSIVO (SIDEBAR)
    ========================================================= */
 
-/* Impede a rolagem da página quando o menu está aberto */
 body.painel-aberto {
     overflow: hidden;
 }
@@ -87,7 +86,7 @@ body.painel-aberto {
 nav ul.sidebar {
     position: fixed;
     top: 0;
-    right: -320px; /* Menu entra pela direita */
+    right: -320px; 
     width: 290px;
     height: 100vh;
     background: var(--fundo-card);
@@ -99,51 +98,12 @@ nav ul.sidebar {
     padding: 0;
     margin: 0;
     transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 3000;
+    z-index: 4000; /* Aumentado para ficar acima de tudo */
 }
 
-nav ul.sidebar.ativo, 
+nav ul.sidebar.ativo,  
 nav ul.sidebar.active {
     right: 0;
-}
-
-nav ul.sidebar li {
-    width: 100%;
-    margin: 0;
-}
-
-nav ul.sidebar li a {
-    width: 100%;
-    padding: 16px 24px;
-    display: block;
-    color: var(--texto);
-    text-decoration: none;
-    font-size: 16px;
-    font-weight: 500;
-    box-sizing: border-box;
-    transition: background 0.2s ease, color 0.2s ease;
-}
-
-nav ul.sidebar li a:hover {
-    background: var(--rosa-claro);
-    color: var(--rosa);
-}
-
-/* Estilo específico para o botão de fechar (X) */
-nav ul.sidebar li:first-child a {
-    font-size: 20px;
-    color: var(--texto-secundario);
-    text-align: right;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--borda);
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: flex-end;
-}
-
-nav ul.sidebar li:first-child a:hover {
-    color: var(--rosa);
-    background: transparent;
 }
 
 /* =========================================================
@@ -157,16 +117,18 @@ nav ul.sidebar li:first-child a:hover {
     height: 100vh;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(2px);
-    z-index: 2500;
+    z-index: 3000; /* Abaixo do menu (4000) */
     opacity: 0;
     visibility: hidden;
+    pointer-events: none; /* ESSE É O SEGREDO: Impede cliques fantasma quando invisível */
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-.overlay.ativo, 
+.overlay.ativo,  
 .overlay.active {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto; /* Reativa os cliques apenas quando o menu abre */
 }
 
 /* =========================================================
