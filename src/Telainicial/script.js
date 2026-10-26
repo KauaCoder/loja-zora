@@ -688,165 +688,169 @@ function renderizarPedidos() {
             alterarQuantidade(indice, 1);
         });
 
-        qtdContainer.append(
-            btnMenos,
-            numQtd,
-            btnMais
-        );
-
-        detalhes.append(
-            linkNome,
-            precoUnitario,
-            qtdContainer
-        );
-
-        const acoes = document.createElement("div");
-        acoes.className = "carrinho-acoes";
-
-        const subtotal = document.createElement("span");
-        subtotal.className = "carrinho-subtotal";
-        subtotal.textContent =
-            `R$ ${formatarPreco(preco * quantidade)}`;
+        qtdContainer.appendChild(btnMenos);
+        qtdContainer.appendChild(numQtd);
+        qtdContainer.appendChild(btnMais);
 
         const btnRemover = document.createElement("button");
         btnRemover.type = "button";
-        btnRemover.className = "remover-item";
-        btnRemover.textContent = "🗑";
-        btnRemover.title = "Remover produto";
-        btnRemover.setAttribute("aria-label", "Remover produto");
+        btnRemover.className = "btn-remover";
+        btnRemover.innerHTML = "Remover";
+        btnRemover.setAttribute(
+            "aria-label",
+            "Remover " + produto.nome + " do carrinho"
+        );
 
         btnRemover.addEventListener("click", () => {
             removerPedido(indice);
         });
 
-        acoes.append(subtotal, btnRemover);
+        detalhes.appendChild(linkNome);
+        detalhes.appendChild(precoUnitario);
+        detalhes.appendChild(qtdContainer);
+        detalhes.appendChild(btnRemover);
 
-        item.append(
-            linkFoto,
-            detalhes,
-            acoes
-        );
+        item.appendChild(linkFoto);
+        item.appendChild(detalhes);
 
         lista.appendChild(item);
     });
-
-    atualizarTotal();
-    atualizarBadge();
-}
-
-function adicionarPedidos(idProduto, nome, preco, imagem, estoqueDisponivel) {
-    const id = Number(idProduto);
-    const valor = Number(preco);
-
-    if (
-        !Number.isInteger(id)
-        || id <= 0
-        || !Number.isFinite(valor)
-        || valor < 0
-    ) {
-        alert("Não foi possível adicionar este produto.");
-        return;
-    }
-
-    const produtoExistente = pedidosArray.find(
-        produto => Number(produto.id_produto) === id
-    );
-
-    const quantidadeAtual = produtoExistente
-        ? Number(produtoExistente.quantidade) || 0
-        : 0;
-
-    const limiteEstoque = Number.isFinite(Number(estoqueDisponivel))
-        ? Number(estoqueDisponivel)
-        : (produtoExistente && Number.isFinite(Number(produtoExistente.estoque)) ? Number(produtoExistente.estoque) : Infinity);
-
-    if (quantidadeAtual + 1 > limiteEstoque) {
-        alert(`Estoque insuficiente. Disponíveis: ${limiteEstoque} unidade(s).`);
-        return;
-    }
-
-    if (produtoExistente) {
-        produtoExistente.quantidade = quantidadeAtual + 1;
-    } else {
-        pedidosArray.push({
-            id_produto: id,
-            nome: String(nome || "Produto ZORA"),
-            preco: valor,
-            imagem: imagem || "/img/Logo%201.png",
-            quantidade: 1,
-            estoque: limiteEstoque
-        });
-    }
-
-    if (!salvarCarrinho()) {
-        return;
-    }
-
-    renderizarPedidos();
-    atualizarBadge();
-    abrirPedidos();
 }
 
 function alterarQuantidade(indice, delta) {
+    if (!Number.isInteger(indice)
+        || indice < 0
+        || indice >= pedidosArray.length) {
+        return;
+    }
+
+    const incremento = Number.isInteger(delta) ? delta : 0;
     const produto = pedidosArray[indice];
 
-    if (!produto) return;
+    let novaQtd = (Number(produto.quantidade) || 1) + incremento;
+    const estoque = Number.isFinite(Number(produto.estoque))
+        ? Number(produto.estoque)
+        : Infinity;
 
-    const quantidadeAtual = Number(produto.quantidade) || 1;
-    const novaQuantidade = quantidadeAtual + delta;
-
-    if (novaQuantidade <= 0) {
+    if (novaQtd < 1) {
         removerPedido(indice);
         return;
     }
 
-    if (delta > 0 && Number.isFinite(Number(produto.estoque))) {
-        if (novaQuantidade > produto.estoque) {
-            alert(`Quantidade máxima atingida. Disponíveis: ${produto.estoque} unidade(s).`);
-            return;
-        }
+    if (novaQtd > estoque) {
+        alert(
+            "Você atingiu o limite de estoque disponível "
+            + "para este produto (" + estoque + " un.)."
+        );
+        novaQtd = estoque;
     }
 
-    produto.quantidade = novaQuantidade;
-
-    if (!salvarCarrinho()) return;
-
-    renderizarPedidos();
-    atualizarBadge();
+    if (novaQtd !== produto.quantidade) {
+        produto.quantidade = novaQtd;
+        if (salvarCarrinho()) {
+            renderizarPedidos();
+        }
+    }
 }
 
 function removerPedido(indice) {
-    if (indice < 0 || indice >= pedidosArray.length) {
+    if (!Number.isInteger(indice)
+        || indice < 0
+        || indice >= pedidosArray.length) {
         return;
     }
 
     pedidosArray.splice(indice, 1);
 
-    if (!salvarCarrinho()) return;
-
-    renderizarPedidos();
-    atualizarBadge();
+    if (salvarCarrinho()) {
+        renderizarPedidos();
+    }
 }
 
+function adicionarPedidos(id, nome, preco, imagem, estoque, quantidadeRequerida = 1) {
+    const idProd = Number(id);
+    const precoProd = Number(preco);
+    const estoqueProd = Number.isFinite(Number(estoque))
+        ? Number(estoque)
+        : Infinity;
+    let qtdAdd = Number.isInteger(quantidadeRequerida)
+        ? quantidadeRequerida
+        : 1;
 
-// =====================================================
-// 5. ABERTURA E FECHAMENTO DO CARRINHO
-// =====================================================
-
-function abrirPedidos() {
-    const pedidos = document.getElementById("Pedidos");
-
-    if (!pedidos) {
-        console.warn("ZORA: painel de pedidos não encontrado.");
+    if (!Number.isInteger(idProd) || idProd <= 0) {
+        alert("ID de produto inválido.");
         return;
     }
 
-    const sidebar = obterSidebar();
-    if (sidebar) {
-        sidebar.classList.remove("ativo", "active");
+    if (!Number.isFinite(precoProd) || precoProd < 0) {
+        alert("Preço do produto inválido.");
+        return;
     }
 
-    pedidos.classList.add("ativo");
+    if (estoqueProd <= 0) {
+        alert("Este produto está esgotado.");
+        return;
+    }
+
+    if (qtdAdd < 1) {
+        qtdAdd = 1;
+    } else if (qtdAdd > estoqueProd) {
+        alert(
+            "Só temos " + estoqueProd
+            + " unidades disponíveis no estoque."
+        );
+        qtdAdd = estoqueProd;
+    }
+
+    const nomeProd = String(nome || "Produto ZORA").trim();
+    const imagemProd = String(imagem || "/img/Logo%201.png").trim();
+
+    const indiceExistente = pedidosArray.findIndex(
+        p => p.id_produto === idProd
+    );
+
+    if (indiceExistente >= 0) {
+        const prod = pedidosArray[indiceExistente];
+        const novaQtd = (Number(prod.quantidade) || 0) + qtdAdd;
+
+        if (novaQtd > estoqueProd) {
+            alert(
+                "Não é possível adicionar " + qtdAdd
+                + " unidades. Estoque insuficiente. (Máximo: "
+                + estoqueProd + " un.)"
+            );
+            prod.quantidade = estoqueProd;
+        } else {
+            prod.quantidade = novaQtd;
+        }
+
+    } else {
+        pedidosArray.push({
+            id_produto: idProd,
+            nome: nomeProd,
+            preco: precoProd,
+            imagem: imagemProd,
+            quantidade: qtdAdd,
+            estoque: estoqueProd
+        });
+    }
+
+    if (salvarCarrinho()) {
+        renderizarPedidos();
+        mostrarPedidos();
+        alert(
+            nomeProd + " (x" + qtdAdd
+            + ") adicionado ao carrinho!"
+        );
+    }
+}
+
+function mostrarPedidos() {
+    const pedidos = document.getElementById("Pedidos");
+
+    if (pedidos) {
+        pedidos.classList.add("ativo");
+    }
 
     sincronizarOverlay();
 }
@@ -861,38 +865,67 @@ function fecharPedidos() {
     sincronizarOverlay();
 }
 
+// -----------------------------------------------------
+// CHECAGEM DE LOGIN ANTES DE FINALIZAR O PEDIDO
+// -----------------------------------------------------
 
-// =====================================================
-// 6. FINALIZAÇÃO DO PEDIDO
-// =====================================================
-
-function pagarPedido() {
-    if (pedidosArray.length === 0) {
-        alert("Seu carrinho está vazio.");
-        return;
+function checarLoginFinalizacao() {
+    let usuarioLogado = null;
+    try {
+        usuarioLogado = JSON.parse(localStorage.getItem("usuarioLogado"));
+    } catch (e) {
+        console.error("Erro ao ler usuário logado do localStorage.");
     }
 
-    localStorage.setItem("carrinho", JSON.stringify(pedidosArray));
-    localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
-    localStorage.setItem("totalPedido", calcularTotal());
-
-    window.location.href = "/TelaEntrega/entrega.html";
+    if (!usuarioLogado || (!usuarioLogado.email && !usuarioLogado.id_cliente)) {
+        alert("Você precisa fazer login para finalizar o seu pedido.");
+        window.location.href = "/TelaLogin/login.html"; // Redireciona para o login
+    } else {
+        window.location.href = "/TelaEntrega/telaentrega.html"; // Vai para a tela de entrega/pagamento
+    }
 }
 
 
 // =====================================================
-// 7. INICIALIZAÇÃO DA PÁGINA
+// 5. INICIALIZAÇÃO E EVENTOS
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const origin = urlParams.get('origin');
+
+    if (origin === 'login') {
+        const mensagemSucesso = document.getElementById("mensagemSucessoLogin");
+        if (mensagemSucesso) {
+            mensagemSucesso.classList.add("ativo");
+            setTimeout(() => {
+                mensagemSucesso.classList.remove("ativo");
+            }, 3000);
+        }
+    }
+
+    checarEAtualizarMenu();
     carregarCatalogo();
     carregarCarrinho();
-    checarEAtualizarMenu();
-    reiniciarTemporizadorSlide();
     configurarBusca();
+
+    mostrarSlide(slideIndiceAtual);
+    reiniciarTemporizadorSlide();
 
     const overlay = obterOverlay();
     if (overlay) {
         overlay.addEventListener("click", fecharTudo);
     }
+    
+    // Adiciona o evento de click no botão Finalizar Compra
+    const btnFinalizar = document.getElementById("finalizar-compra");
+    if(btnFinalizar) {
+        btnFinalizar.addEventListener("click", function(event) {
+            event.preventDefault(); // Evita a navegação padrão
+            checarLoginFinalizacao();
+        });
+    }
+
 });
+
