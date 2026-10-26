@@ -547,3 +547,26 @@ button[onclick*="salvar"]:hover,
         text-align: center;
     }
 }
+
+/* =========================================================
+   AJUSTE ESPECÍFICO DO BOTÃO DE FECHAR DA SIDEBAR
+   ========================================================= */
+.sidebar .sidebar-fechar {
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--borda);
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.sidebar .sidebar-fechar a {
+    min-height: 48px;
+    font-size: 27px;
+    padding: 8px 10px;
+    justify-content: flex-end;
+    background: transparent !important;
+}
+
+.sidebar .sidebar-fechar a:hover {
+    color: var(--rosa);
+}
