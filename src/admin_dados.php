@@ -195,33 +195,33 @@ try {
         ];
     }
 
-    // 2. ESTATÍSTICAS E RESUMO DE VENDAS (LENDO DA NOVA TABELA 'venda')
-    $sqlResumoVenda = "
-        SELECT 
-            COALESCE(SUM(valor_item_produto * quantidade), 0) AS faturamento,
-            COALESCE(SUM(quantidade), 0) AS produtos_vendidos
-        FROM venda
-    ";
-    $stmtResumoVenda = $conexao->query($sqlResumoVenda);
-    $resumoVenda = $stmtResumoVenda->fetch(PDO::FETCH_ASSOC);
+    // 2. ESTATÍSTICAS E RESUMO DE VENDAS (Corrigido para ler da tabela PEDIDO)
+    // Soma o valor total de todos os pedidos aprovados ou finalizados
+    $sqlFaturamento = "SELECT COALESCE(SUM(valor_total), 0) AS faturamento FROM pedido";
+    $stmtFaturamento = $conexao->query($sqlFaturamento);
+    $faturamento = (float) $stmtFaturamento->fetchColumn();
+
+    // Conta todos os produtos vendidos através da tabela item_pedido
+    $sqlProdutosVendidos = "SELECT COALESCE(SUM(quantidade), 0) AS produtos_vendidos FROM item_pedido";
+    $stmtProdutosVendidos = $conexao->query($sqlProdutosVendidos);
+    $produtosVendidos = (int) $stmtProdutosVendidos->fetchColumn();
 
     // Conta total de pedidos para o ticket médio
     $stmtTotalPedidos = $conexao->query("SELECT COUNT(*) AS total_pedidos FROM pedido");
     $totalPedidos = (int) $stmtTotalPedidos->fetchColumn();
 
-    $faturamento = (float) ($resumoVenda['faturamento'] ?? 0);
-    $produtosVendidos = (int) ($resumoVenda['produtos_vendidos'] ?? 0);
     $ticketMedio = $totalPedidos > 0 ? ($faturamento / $totalPedidos) : 0;
     
     // Lucro no momento é igual ao faturamento (caso adicione custo, subtraia aqui)
     $lucro = $faturamento;
 
+    // Busca o produto mais vendido através dos itens dos pedidos
     $sqlMaisVendido = "
         SELECT 
             p.nm_produto, 
-            SUM(v.quantidade) AS quantidade_vendida
-        FROM venda v
-        JOIN produto p ON p.id_produto = v.id_produto
+            SUM(ip.quantidade) AS quantidade_vendida
+        FROM item_pedido ip
+        JOIN produto p ON p.id_produto = ip.id_produto
         GROUP BY p.id_produto, p.nm_produto
         ORDER BY quantidade_vendida DESC
         LIMIT 1
