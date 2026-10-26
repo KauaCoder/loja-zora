@@ -54,7 +54,7 @@ async function carregarDadosAdmin() {
             }
         }
 
-        // admin_dados.php está na raiz
+        // admin_dados.php está na raiz (FORA da pasta TelaAdmin)
         const resposta = await fetch(`/admin_dados.php${idClienteUrl}`, {
             method: "GET",
             cache: "no-store",
@@ -130,7 +130,6 @@ async function carregarDadosAdmin() {
 // =====================================================
 
 function preencherCardsDashboard(dashboard) {
-    // CORRIGIDO: Agora usa os IDs exatos que estão no seu HTML
     definirTexto("dashboardFaturamento", formatarMoeda(dashboard.faturamento || 0));
     definirTexto("dashboardPedidos", dashboard.total_pedidos || 0);
     definirTexto("dashboardVendidos", dashboard.produtos_vendidos || 0);
@@ -138,7 +137,6 @@ function preencherCardsDashboard(dashboard) {
 }
 
 function preencherProdutoMaisVendido(maisVendido) {
-    // CORRIGIDO: Agora usa o ID exato que está no seu HTML
     const el = document.getElementById("dashboardMaisVendido");
     if (el) {
         if (maisVendido && maisVendido.nome) {
@@ -154,7 +152,6 @@ function preencherProdutoMaisVendido(maisVendido) {
 // =====================================================
 
 function renderizarPedidosAdmin(pedidos) {
-    // CORRIGIDO: Agora usa o ID exato que está no seu HTML
     const tabelaPedidos = document.getElementById("dashboardListaPedidos");
     if (!tabelaPedidos) return;
 
@@ -426,6 +423,7 @@ async function salvarReposicao(evento) {
     const quantidade = Number(document.getElementById("quantidadeReposicao").value);
 
     try {
+        // MANTIDO SEM BARRA (Este ficheiro ESTÁ dentro da pasta TelaAdmin)
         const resposta = await fetch("adicionar_estoque.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -488,7 +486,8 @@ async function salvarEdicaoProduto(evento) {
     };
 
     try {
-        const resposta = await fetch("editar_produto.php", {
+        // ADICIONADA A BARRA (Este ficheiro NÃO ESTÁ na pasta TelaAdmin, está na raiz)
+        const resposta = await fetch("/editar_produto.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -573,7 +572,8 @@ async function salvarFornecedor(evento) {
     };
 
     try {
-        const resposta = await fetch("atualizar_fornecedor.php", {
+        // ADICIONADA A BARRA (Como não vi o arquivo na pasta TelaAdmin, ele deve estar na raiz)
+        const resposta = await fetch("/atualizar_fornecedor.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
