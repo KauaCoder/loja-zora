@@ -1,4 +1,4 @@
- =====================================================
+// =====================================================
 // ZORA - TELA INICIAL, CATÁLOGO, SLIDES, CARRINHO E PESQUISA
 // Versão Completa & Definitiva
 // =====================================================
@@ -684,4 +684,284 @@ function renderizarPedidos() {
         btnMais.textContent = "+";
         btnMais.setAttribute("aria-label", "Aumentar quantidade");
 
-        btnMais.addEvent
+        btnMais.addEventListener("click", () => {
+            alterarQuantidade(indice, 1);
+        });
+
+        qtdContainer.appendChild(btnMenos);
+        qtdContainer.appendChild(numQtd);
+        qtdContainer.appendChild(btnMais);
+
+        const btnRemover = document.createElement("button");
+        btnRemover.type = "button";
+        btnRemover.className = "btn-remover";
+        btnRemover.innerHTML = "Remover";
+        btnRemover.setAttribute(
+            "aria-label",
+            "Remover " + produto.nome + " do carrinho"
+        );
+
+        btnRemover.addEventListener("click", () => {
+            removerPedido(indice);
+        });
+
+        detalhes.appendChild(linkNome);
+        detalhes.appendChild(precoUnitario);
+        detalhes.appendChild(qtdContainer);
+        detalhes.appendChild(btnRemover);
+
+        item.appendChild(linkFoto);
+        item.appendChild(detalhes);
+
+        lista.appendChild(item);
+    });
+}
+
+function alterarQuantidade(indice, delta) {
+    if (!Number.isInteger(indice)
+        || indice < 0
+        || indice >= pedidosArray.length) {
+        return;
+    }
+
+    const incremento = Number.isInteger(delta) ? delta : 0;
+    const produto = pedidosArray[indice];
+
+    let novaQtd = (Number(produto.quantidade) || 1) + incremento;
+    const estoque = Number.isFinite(Number(produto.estoque))
+        ? Number(produto.estoque)
+        : Infinity;
+
+    if (novaQtd < 1) {
+        removerPedido(indice);
+        return;
+    }
+
+    if (novaQtd > estoque) {
+        alert(
+            "Você atingiu o limite de estoque disponível "
+            + "para este produto (" + estoque + " un.)."
+        );
+        novaQtd = estoque;
+    }
+
+    if (novaQtd !== produto.quantidade) {
+        produto.quantidade = novaQtd;
+        if (salvarCarrinho()) {
+            renderizarPedidos();
+        }
+    }
+}
+
+function removerPedido(indice) {
+    if (!Number.isInteger(indice)
+        || indice < 0
+        || indice >= pedidosArray.length) {
+        return;
+    }
+
+    pedidosArray.splice(indice, 1);
+
+    if (salvarCarrinho()) {
+        renderizarPedidos();
+    }
+}
+
+function adicionarPedidos(id, nome, preco, imagem, estoque, quantidadeRequerida = 1) {
+    const idProd = Number(id);
+    const precoProd = Number(preco);
+    const estoqueProd = Number.isFinite(Number(estoque))
+        ? Number(estoque)
+        : Infinity;
+    let qtdAdd = Number.isInteger(quantidadeRequerida)
+        ? quantidadeRequerida
+        : 1;
+
+    if (!Number.isInteger(idProd) || idProd <= 0) {
+        alert("ID de produto inválido.");
+        return;
+    }
+
+    if (!Number.isFinite(precoProd) || precoProd < 0) {
+        alert("Preço do produto inválido.");
+        return;
+    }
+
+    if (estoqueProd <= 0) {
+        alert("Este produto está esgotado.");
+        return;
+    }
+
+    if (qtdAdd < 1) {
+        qtdAdd = 1;
+    } else if (qtdAdd > estoqueProd) {
+        alert(
+            "Só temos " + estoqueProd
+            + " unidades disponíveis no estoque."
+        );
+        qtdAdd = estoqueProd;
+    }
+
+    const nomeProd = String(nome || "Produto ZORA").trim();
+    const imagemProd = String(imagem || "/img/Logo%201.png").trim();
+
+    const indiceExistente = pedidosArray.findIndex(
+        p => p.id_produto === idProd
+    );
+
+    if (indiceExistente >= 0) {
+        const prod = pedidosArray[indiceExistente];
+        const novaQtd = (Number(prod.quantidade) || 0) + qtdAdd;
+
+        if (novaQtd > estoqueProd) {
+            alert(
+                "Não é possível adicionar " + qtdAdd
+                + " unidades. Estoque insuficiente. (Máximo: "
+                + estoqueProd + " un.)"
+            );
+            prod.quantidade = estoqueProd;
+        } else {
+            prod.quantidade = novaQtd;
+        }
+
+    } else {
+        pedidosArray.push({
+            id_produto: idProd,
+            nome: nomeProd,
+            preco: precoProd,
+            imagem: imagemProd,
+            quantidade: qtdAdd,
+            estoque: estoqueProd
+        });
+    }
+
+    if (salvarCarrinho()) {
+        renderizarPedidos();
+        mostrarPedidos();
+        alert(
+            nomeProd + " (x" + qtdAdd
+            + ") adicionado ao carrinho!"
+        );
+    }
+}
+
+function mostrarPedidos() {
+    const pedidos = document.getElementById("Pedidos");
+
+    if (pedidos) {
+        pedidos.classList.add("ativo");
+    }
+
+    sincronizarOverlay();
+}
+
+function fecharPedidos() {
+    const pedidos = document.getElementById("Pedidos");
+
+    if (pedidos) {
+        pedidos.classList.remove("ativo");
+    }
+
+    sincronizarOverlay();
+}
+
+// -----------------------------------------------------
+// CHECAGEM DE LOGIN ANTES DE FINALIZAR O PEDIDO
+// -----------------------------------------------------
+
+async function checarLoginFinalizacao() {
+    let idClienteLocal = null;
+    
+    // Tenta pegar o ID do localStorage primeiro
+    try {
+        const usuarioLogado = JSON.parse(localStorage.getItem("usuarioLogado"));
+        if (usuarioLogado && usuarioLogado.id_cliente) {
+            idClienteLocal = usuarioLogado.id_cliente;
+        }
+    } catch (e) {
+        console.error("Erro ao ler usuário logado do localStorage.");
+    }
+
+    // Se nem no localStorage o usuário existe, manda direto pro login
+    if (!idClienteLocal) {
+        alert("Você precisa fazer login para finalizar o seu pedido.");
+        window.location.href = "/TelaLogin/login.html";
+        return;
+    }
+
+    try {
+        // Valida no servidor se a sessão realmente existe e é válida
+        const resposta = await fetch(`/verificar_sessao.php?id_cliente=${idClienteLocal}`, {
+            method: "GET",
+            credentials: "include" // Importante para enviar cookies de sessão
+        });
+
+        const resultado = await resposta.json();
+
+        // Se o servidor confirmar que está logado
+        if (resposta.ok && resultado.sucesso && resultado.logado) {
+            // Se for admin, não deveria estar comprando na visão de cliente (opcional)
+            if (resultado.is_admin) {
+                const prosseguir = confirm("Você está logado como Administrador. Deseja prosseguir para a compra como cliente normal?");
+                if (!prosseguir) return;
+            }
+            
+            // Tudo certo, vai para o checkout
+            window.location.href = "/TelaEntrega/telaentrega.html";
+        } else {
+            // Se o servidor disse que não está logado (sessão expirou, etc)
+            localStorage.removeItem("usuarioLogado"); // Limpa o "falso" login do navegador
+            alert("A sua sessão expirou ou é inválida. Por favor, faça login novamente.");
+            window.location.href = "/TelaLogin/login.html";
+        }
+        
+    } catch (erro) {
+        console.error("Erro ao verificar sessão no servidor:", erro);
+        // Em caso de falha de rede, avança com base no localStorage como plano B
+        window.location.href = "/TelaEntrega/telaentrega.html";
+    }
+}
+
+
+// =====================================================
+// 5. INICIALIZAÇÃO E EVENTOS
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const origin = urlParams.get('origin');
+
+    if (origin === 'login') {
+        const mensagemSucesso = document.getElementById("mensagemSucessoLogin");
+        if (mensagemSucesso) {
+            mensagemSucesso.classList.add("ativo");
+            setTimeout(() => {
+                mensagemSucesso.classList.remove("ativo");
+            }, 3000);
+        }
+    }
+
+    checarEAtualizarMenu();
+    carregarCatalogo();
+    carregarCarrinho();
+    configurarBusca();
+
+    mostrarSlide(slideIndiceAtual);
+    reiniciarTemporizadorSlide();
+
+    const overlay = obterOverlay();
+    if (overlay) {
+        overlay.addEventListener("click", fecharTudo);
+    }
+    
+    // Adiciona o evento de click no botão Finalizar Compra
+    const btnFinalizar = document.getElementById("finalizar-compra");
+    if(btnFinalizar) {
+        btnFinalizar.addEventListener("click", function(event) {
+            event.preventDefault(); // Evita a navegação padrão
+            checarLoginFinalizacao();
+        });
+    }
+
+});
