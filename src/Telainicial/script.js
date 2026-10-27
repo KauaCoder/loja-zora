@@ -872,7 +872,6 @@ function fecharPedidos() {
 async function checarLoginFinalizacao() {
     let idClienteLocal = null;
     
-    // Tenta pegar o ID do localStorage primeiro
     try {
         const usuarioLogado = JSON.parse(localStorage.getItem("usuarioLogado"));
         if (usuarioLogado && usuarioLogado.id_cliente) {
@@ -882,7 +881,6 @@ async function checarLoginFinalizacao() {
         console.error("Erro ao ler usuário logado do localStorage.");
     }
 
-    // Se nem no localStorage o usuário existe, manda direto pro login
     if (!idClienteLocal) {
         alert("Você precisa fazer login para finalizar o seu pedido.");
         window.location.href = "/TelaLogin/login.html";
@@ -890,38 +888,30 @@ async function checarLoginFinalizacao() {
     }
 
     try {
-        // Valida no servidor se a sessão realmente existe e é válida
         const resposta = await fetch(`/verificar_sessao.php?id_cliente=${idClienteLocal}`, {
             method: "GET",
-            credentials: "include" // Importante para enviar cookies de sessão
+            credentials: "include" 
         });
 
         const resultado = await resposta.json();
 
-        // Se o servidor confirmar que está logado
         if (resposta.ok && resultado.sucesso && resultado.logado) {
-            // Se for admin, não deveria estar comprando na visão de cliente (opcional)
             if (resultado.is_admin) {
                 const prosseguir = confirm("Você está logado como Administrador. Deseja prosseguir para a compra como cliente normal?");
                 if (!prosseguir) return;
             }
-            
-            // Tudo certo, vai para o checkout
             window.location.href = "/TelaEntrega/telaentrega.html";
         } else {
-            // Se o servidor disse que não está logado (sessão expirou, etc)
-            localStorage.removeItem("usuarioLogado"); // Limpa o "falso" login do navegador
+            localStorage.removeItem("usuarioLogado"); 
             alert("A sua sessão expirou ou é inválida. Por favor, faça login novamente.");
             window.location.href = "/TelaLogin/login.html";
         }
         
     } catch (erro) {
         console.error("Erro ao verificar sessão no servidor:", erro);
-        // Em caso de falha de rede, avança com base no localStorage como plano B
         window.location.href = "/TelaEntrega/telaentrega.html";
     }
 }
-
 
 // =====================================================
 // 5. INICIALIZAÇÃO E EVENTOS
