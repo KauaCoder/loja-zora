@@ -1,84 +1,91 @@
 <?php
+// ============================================================================
+// ZORA - API DE CATÁLOGO DE PRODUTOS
+// Descrição: Busca todos os produtos cadastrados na tabela public.produto
+// ============================================================================
+
+// 1. CONFIGURAÇÕES DE CABEÇALHO (HEADERS)
 header("Content-Type: application/json; charset=UTF-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
 
-// =============================================
-// VERIFICAR MÉTODO HTTP
-// =============================================
+// Exibir erros no desenvolvimento para facilitar diagnósticos (se necessário)
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
+// 2. VALIDAÇÃO DO MÉTODO HTTP
 if ($_SERVER["REQUEST_METHOD"] !== "GET") {
     http_response_code(405);
     echo json_encode([
         "sucesso" => false,
-        "mensagem" => "Método não permitido. Utilize GET."
-    ], JSON_UNESCAPED_UNICODE);
+        "erro_codigo" => "METODO_NAO_PERMITIDO",
+        "mensagem" => "Método não permitido. Esta rota aceita apenas requisições GET."
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
 
-// =============================================
-// LOCALIZAR E CARREGAR CONEXÃO
-// =============================================
-
+// 3. BUSCA E CARREGAMENTO DO ARQUIVO DE CONEXÃO
 $caminhos_conexao = [
     __DIR__ . '/src/conexao.php',
     __DIR__ . '/conexao.php',
-    __DIR__ . '/../conexao.php'
+    __DIR__ . '/../conexao.php',
+    __DIR__ . '/../../conexao.php'
 ];
 
-$caminho_conexao = null;
+$caminho_encontrado = null;
+
 foreach ($caminhos_conexao as $caminho) {
     if (file_exists($caminho)) {
-        $caminho_conexao = $caminho;
+        $caminho_encontrado = $caminho;
         break;
     }
 }
 
-if (!$caminho_conexao) {
+if (!$caminho_encontrado) {
     http_response_code(500);
     echo json_encode([
         "sucesso" => false,
-        "mensagem" => "Não foi possível localizar o arquivo conexao.php."
-    ], JSON_UNESCAPED_UNICODE);
+        "erro_codigo" => "CONEXAO_NAO_ENCONTRADA",
+        "mensagem" => "Não foi possível localizar o arquivo conexao.php no servidor."
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
 
-require_once $caminho_conexao;
+require_once $caminho_encontrado;
 
+// 4. EXECUÇÃO DA CONSULTA SQL E TRATAMENTO DE ERROS
 try {
+    // Valida se a variável de conexão PDO foi inicializada corretamente
     if (!isset($conexao) || !($conexao instanceof PDO)) {
-        throw new Exception("Variável \$conexao não foi definida corretamente.");
+        throw new Exception("A variável \$conexao não foi definida ou não é uma instância válida do PDO.");
     }
 
-    // =============================================
-    // CONSULTA RESILIENTE AO POSTGRESQL (SUPABASE)
-    // Usa aspas duplas em "Produto" para evitar erro de Case-Sensitivity
-    // =============================================
-
-    $sql = 'SELECT * FROM public."Produto" ORDER BY id_produto ASC';
+    // Consulta SQL apontando explicitamente para public.produto (PostgreSQL/Supabase)
+    $sql = 'SELECT * FROM public.produto ORDER BY id_produto ASC';
 
     $stmt = $conexao->prepare($sql);
-    $stmt->execute();
+    
+    if (!$stmt->execute()) {
+        $erroInfo = $stmt->errorInfo();
+        throw new Exception("Falha ao executar a consulta SQL: " . ($erroInfo[2] ?? "Erro desconhecido"));
+    }
 
-    $dados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $dados_brutos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $produtos_formatados = [];
 
-    $produtos = [];
-
-    foreach ($dados as $produto) {
-        // Mapeamento alinhado exatamente com o Supabase:
-        // Colunas reais: id_produto, nm_produto, preco, qtd_item, categoria, imagem
-        $id        = $produto["id_produto"] ?? $produto["id"] ?? 0;
-        $nome      = $produto["nm_produto"] ?? $produto["nome"] ?? $produto["nome_produto"] ?? "Produto ZORA";
-        $preco     = $produto["preco"] ?? $produto["valor"] ?? 0;
-        
-        // Dá prioridade a qtd_item para não pegar NULL caso a coluna estoque exista
-        $estoque   = $produto["qtd_item"] ?? $produto["estoque"] ?? $produto["quantidade"] ?? $produto["qtd"] ?? 99;
-        
+    // Mapeamento e higienização dos campos retornados do banco de dados
+    foreach ($dados_brutos as $produto) {
+        $id = $produto["id_produto"] ?? $produto["id"] ?? 0;
+        $nome = $produto["nm_produto"] ?? $produto["nome"] ?? $produto["nome_produto"] ?? "Produto ZORA";
+        $preco = $produto["preco"] ?? $produto["valor"] ?? 0;
+        $estoque = $produto["qtd_item"] ?? $produto["estoque"] ?? $produto["quantidade"] ?? $produto["qtd"] ?? 0;
         $categoria = $produto["categoria"] ?? "Geral";
-        $imagem    = $produto["imagem"] ?? $produto["foto"] ?? "Logo 1.png";
+        $imagem = $produto["imagem"] ?? $produto["foto"] ?? "Logo 1.png";
         $descricao = $produto["descricao"] ?? "Peça exclusiva ZORA com caimento e modelagem impecáveis.";
 
-        $produtos[] = [
-            "id_produto" => (int) $id,
+        $produtos_formatados[] = [
+            "id_produto"  => (int) $id,
             "nome"        => (string) $nome,
             "nm_produto"  => (string) $nome,
             "preco"       => round((float) $preco, 2),
@@ -90,16 +97,30 @@ try {
         ];
     }
 
+    // Retorno de sucesso em formato JSON
+    http_response_code(200);
     echo json_encode([
         "sucesso"  => true,
-        "produtos" => $produtos
-    ], JSON_UNESCAPED_UNICODE);
+        "total"    => count($produtos_formatados),
+        "produtos" => $produtos_formatados
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
-} catch (Throwable $erro) {
+} catch (PDOException $e) {
+    // Tratamento de erro específico do Banco de Dados
     http_response_code(500);
-
     echo json_encode([
-        "sucesso"  => false,
-        "mensagem" => "Erro no servidor: " . $erro->getMessage()
-    ], JSON_UNESCAPED_UNICODE);
+        "sucesso"     => false,
+        "erro_codigo" => "ERRO_BANCO_DADOS",
+        "mensagem"    => "Erro de banco de dados: " . $e->getMessage()
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
+} catch (Throwable $e) {
+    // Tratamento de erros genéricos
+    http_response_code(500);
+    echo json_encode([
+        "sucesso"     => false,
+        "erro_codigo" => "ERRO_SERVIDOR",
+        "mensagem"    => "Erro no servidor: " . $e->getMessage()
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 }
+?>
