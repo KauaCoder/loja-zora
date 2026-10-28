@@ -37,7 +37,7 @@
         </div>
     </div>
 
-    <!-- ========================= MENU ========================= -->
+   <!-- ========================= MENU ========================= -->
     <nav>
         <!-- MENU LATERAL MOBILE -->
         <ul class="sidebar" id="sidebar">
@@ -64,39 +64,34 @@
             </li>
         </ul>
 
-        <!-- MENU PRINCIPAL -->
-        <ul>
-            <li class="logo-menu">
-                <a href="/Telainicial/index.html">
-                    <img src="/img/Logo 1.png" alt="ZORA - Logo Oficial">
-                </a>
-            </li>
+        <!-- MENU PRINCIPAL (DESKTOP) -->
+        <div class="nav-container">
+            <a href="/Telainicial/index.html" class="logo-menu">
+                <img src="/img/Logo 1.png" alt="ZORA - Logo Oficial">
+            </a>
 
-            <li class="hideOnMobile nav-busca-item">
+            <div class="hideOnMobile nav-busca-item">
                 <div class="busca-container">
                     <input type="text" id="inputBusca" placeholder="Pesquisar peças, vestidos..." autocomplete="off">
                     <button type="button" class="btn-lupa" aria-label="Pesquisar">🔍</button>
                 </div>
-            </li>
+            </div>
 
-            <li class="hideOnMobile"><a href="/TelaCatalogo/catalogo.html" class="link-ativo">Catálogo</a></li>
+            <ul class="nav-links hideOnMobile">
+                <li><a href="/TelaCatalogo/catalogo.html" class="link-ativo">Catálogo</a></li>
+                <li>
+                    <a href="#" onclick="abrirPedidos(); return false;">
+                        Pedidos <span class="badge-carrinho"></span>
+                    </a>
+                </li>
+                <li><a href="#rodape">Sobre</a></li>
+                <li><a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">Login</a></li>
+            </ul>
 
-            <li class="hideOnMobile">
-                <a href="#" onclick="abrirPedidos(); return false;">
-                    Pedidos <span class="badge-carrinho"></span>
-                </a>
-            </li>
-
-            <li class="hideOnMobile"><a href="#rodape">Sobre</a></li>
-
-            <li class="hideOnMobile">
-                <a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">Login</a>
-            </li>
-
-            <li class="menu-button">
+            <div class="menu-button">
                 <a href="#" onclick="showSidebar(); return false;" aria-label="Abrir menu">☰</a>
-            </li>
-        </ul>
+            </div>
+        </div>
     </nav>
 
     <!-- ========================= CATÁLOGO ========================= -->
