@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - TELA INICIAL, CATÁLOGO, SLIDES, CARRINHO E PESQUISA
-// Versão Completa & Definitiva
+// Versão Completa & Definitiva (Com Suporte a TelaCatalogo)
 // =====================================================
 
 
@@ -227,6 +227,9 @@ function irParaSlide(indice) {
 }
 
 function reiniciarTemporizadorSlide() {
+    const slides = document.querySelectorAll(".promocao-slide");
+    if (!slides || slides.length === 0) return;
+
     if (temporizadorSlide) clearInterval(temporizadorSlide);
     temporizadorSlide = setInterval(() => {
         mostrarSlide(slideIndiceAtual + 1);
