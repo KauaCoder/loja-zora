@@ -1,6 +1,7 @@
 // =====================================================
 // ZORA - CATÁLOGO, FILTROS, FAVORITOS E SACOLA
 // Localização: TelaCatalogo/js/catalogo.js
+// Sistema de Resiliência Multicamadas de Requisições e Imagens
 // =====================================================
 
 let products = [];
@@ -21,80 +22,161 @@ const toastEl = document.querySelector("#toast");
 const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const checkedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
 
-// Trata caminhos locais, URLs absolutas e aplica proxy contra bloqueio de CORS/ORB da Shopee/CDNs
+// =====================================================
+// GERENCIADOR DE IMAGENS RESILIENTE (MULTICAMADAS)
+// =====================================================
+
 function tratarCaminhoImagem(imgSrc, id) {
-  if (!imgSrc) return `/img/img${id || 1}.jpeg`;
+  if (!imgSrc || imgSrc.trim() === "") {
+    return `/img/img${id || 1}.jpeg`;
+  }
 
-  // Se for URL externa do Shopee / CDN bloqueada, passa pelo proxy gratuito wsrv.nl para contornar ORB/CORS
-  if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://")) {
-    if (imgSrc.includes("susercontent.com") || imgSrc.includes("shopee")) {
-      return `https://wsrv.nl/?url=${encodeURIComponent(imgSrc)}`;
+  const src = imgSrc.trim();
+
+  // Se já for imagem local com /
+  if (src.startsWith("/")) {
+    return src;
+  }
+
+  // Se for URL externa (Shopee, Supabase Storage, CDN Externa)
+  if (src.startsWith("http://") || src.startsWith("https://")) {
+    // Se for domínio da Shopee ou CDN com restrição de CORS/ORB, passa pelo proxy wsrv.nl em primeira instância
+    if (src.includes("susercontent.com") || src.includes("shopee") || src.includes("down-br")) {
+      return `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
     }
-    return imgSrc;
+    return src;
   }
 
-  if (imgSrc.startsWith("/")) {
-    return imgSrc;
-  }
-
-  return `/img/${imgSrc}`;
+  // Caso seja nome de arquivo direto ex: "foto1.jpg"
+  return `/img/${src}`;
 }
+
+// Manipulador de erros na tag <img> para trocar proxies dinamicamente caso haja falha de conexão
+window.gerenciarFalhaImagem = function(imgElement, productId) {
+  if (!imgElement) return;
+
+  const tentativaAtual = Number(imgElement.dataset.tentativa || 0);
+  const urlOriginal = imgElement.dataset.originalUrl || imgElement.src;
+
+  imgElement.dataset.tentativa = tentativaAtual + 1;
+
+  // CAMADA 1 -> Tenta Proxy WSRV.NL
+  if (tentativaAtual === 0) {
+    if (urlOriginal.startsWith("http") && !urlOriginal.includes("wsrv.nl")) {
+      imgElement.src = `https://wsrv.nl/?url=${encodeURIComponent(urlOriginal)}`;
+      return;
+    }
+  }
+
+  // CAMADA 2 -> Tenta Proxy CorsProxy.io
+  if (tentativaAtual === 1) {
+    if (urlOriginal.startsWith("http")) {
+      const urlLimpa = urlOriginal.replace(/^https?:\/\//, "");
+      imgElement.src = `https://corsproxy.io/?${encodeURIComponent(urlOriginal)}`;
+      return;
+    }
+  }
+
+  // CAMADA 3 -> Tenta Fallback para Imagem Local correspondente ao ID do produto
+  if (tentativaAtual === 2) {
+    if (productId) {
+      imgElement.src = `/img/img${productId}.jpeg`;
+      return;
+    }
+  }
+
+  // CAMADA 4 -> Tenta Imagem Local Padrão Genérica
+  if (tentativaAtual === 3) {
+    imgElement.src = `/img/img1.jpeg`;
+    return;
+  }
+
+  // CAMADA FINAL -> Logo Oficial ZORA (Evita loop infinito zerando o onerror)
+  imgElement.onerror = null;
+  imgElement.src = `/img/Logo 1.png`;
+};
+
+// =====================================================
+// CARREGAMENTO RESILIENTE DE PRODUTOS DO SERVIDOR
+// =====================================================
 
 async function carregarProdutosServidor() {
-  try {
-    let resposta = await fetch("/produtos_catalogo.php", {
-      headers: { "Accept": "application/json" }
+  const rotasPossiveis = [
+    "/produtos_catalogo.php",
+    "../produtos_catalogo.php",
+    "../../produtos_catalogo.php",
+    "/Telainicial/produtos_catalogo.php",
+    "./produtos_catalogo.php"
+  ];
+
+  let respostaSucesso = null;
+  let dadosRetornados = null;
+
+  for (const rota of rotasPossiveis) {
+    try {
+      const resposta = await fetch(rota, {
+        method: "GET",
+        headers: { 
+          "Accept": "application/json",
+          "Cache-Control": "no-cache" 
+        }
+      });
+
+      if (resposta.ok) {
+        const json = await resposta.json();
+        if (json && json.sucesso && Array.isArray(json.produtos)) {
+          respostaSucesso = resposta;
+          dadosRetornados = json.produtos;
+          break; // Conexão bem-sucedida encontrada
+        }
+      }
+    } catch (e) {
+      // Continua para a próxima rota sem interromper a execução
+    }
+  }
+
+  if (dadosRetornados && dadosRetornados.length > 0) {
+    products = dadosRetornados.map(p => {
+      const idProd = Number(p.id_produto || p.id || 0);
+      const nomeProd = p.nm_produto || p.nome || p.nome_produto || "Produto ZORA";
+      const precoProd = Number(p.preco || p.valor || 0);
+      const estoqueProd = p.qtd_item !== undefined ? Number(p.qtd_item) : (p.estoque !== undefined ? Number(p.estoque) : 10);
+      
+      const catBruta = p.categoria || "Geral";
+      const cat = catBruta.replace("Categoria: ", "").trim();
+
+      let tamanhos = ["P", "M", "G", "GG"];
+      const catLower = cat.toLowerCase();
+      if (catLower.includes("calça") || catLower.includes("saia") || catLower.includes("calcas") || catLower.includes("saias") || catLower.includes("short")) {
+        tamanhos = ["36", "38", "40", "42", "44"];
+      }
+
+      const imgBruta = p.imagem || p.foto || "";
+
+      return {
+        id: idProd,
+        name: nomeProd,
+        category: cat,
+        price: precoProd,
+        oldPrice: p.preco_antigo ? Number(p.preco_antigo) : null,
+        sizes: tamanhos,
+        age: "Coleção ZORA",
+        promo: "Oferta Especial",
+        badge: estoqueProd > 0 ? null : "ESGOTADO",
+        imageRaw: imgBruta,
+        image: tratarCaminhoImagem(imgBruta, idProd)
+      };
     });
 
-    if (!resposta.ok) {
-      resposta = await fetch("../produtos_catalogo.php", {
-        headers: { "Accept": "application/json" }
-      });
-    }
-
-    if (!resposta.ok) {
-      resposta = await fetch("../../produtos_catalogo.php", {
-        headers: { "Accept": "application/json" }
-      });
-    }
-
-    const resultado = await resposta.json();
-
-    if (resultado && resultado.sucesso && Array.isArray(resultado.produtos) && resultado.produtos.length > 0) {
-      products = resultado.produtos.map(p => {
-        const idProd = Number(p.id_produto);
-        const nomeProd = p.nm_produto || p.nome || "Produto ZORA";
-        const precoProd = Number(p.preco) || 0;
-        const estoqueProd = p.qtd_item !== undefined ? Number(p.qtd_item) : (p.estoque !== undefined ? Number(p.estoque) : 10);
-        
-        const catBruta = p.categoria || "Geral";
-        const cat = catBruta.replace("Categoria: ", "").trim();
-
-        let tamanhos = ["P", "M", "G", "GG"];
-        if (cat.toLowerCase().includes("calça") || cat.toLowerCase().includes("saia") || cat.toLowerCase().includes("calcas") || cat.toLowerCase().includes("saias")) {
-          tamanhos = ["36", "38", "40", "42", "44"];
-        }
-
-        return {
-          id: idProd,
-          name: nomeProd,
-          category: cat,
-          price: precoProd,
-          oldPrice: p.preco_antigo ? Number(p.preco_antigo) : null,
-          sizes: tamanhos,
-          age: "Coleção ZORA",
-          promo: "Oferta Especial",
-          badge: estoqueProd > 0 ? null : "ESGOTADO",
-          image: tratarCaminhoImagem(p.imagem, idProd)
-        };
-      });
-
-      renderProducts();
-    }
-  } catch (erro) {
-    console.warn("Aviso ao carregar produtos no catálogo:", erro);
+    renderProducts();
+  } else {
+    console.warn("Aviso: Não foi possível obter produtos das APIs. Verifique as rotas do backend.");
   }
 }
+
+// =====================================================
+// FILTRAGEM E ORDENAÇÃO
+// =====================================================
 
 function filteredProducts() {
   const categories = checkedValues("category");
@@ -124,12 +206,23 @@ function filteredProducts() {
   return list;
 }
 
+// =====================================================
+// RENDERIZAÇÃO DE CARDS DE PRODUTO
+// =====================================================
+
 function productCard(p) {
   const isFavorite = favorites.has(p.id);
+  
   return `<article class="product-card">
     <div class="product-image-wrap">
       <a href="/TelaProdutos/produtos.html?id=${p.id}">
-        <img class="product-image" src="${p.image}" alt="${p.name}" loading="lazy" onerror="if(!this.dataset.triedProxy && this.src.startsWith('http')){this.dataset.triedProxy=true;this.src='https://wsrv.nl/?url='+encodeURIComponent(this.src);}else{this.onerror=null;this.src='/img/Logo 1.png';}">
+        <img class="product-image" 
+             src="${p.image}" 
+             alt="${p.name}" 
+             loading="lazy"
+             data-original-url="${p.imageRaw || p.image}"
+             data-product-id="${p.id}"
+             onerror="window.gerenciarFalhaImagem(this, ${p.id})">
       </a>
       <div class="product-image-fallback" hidden>ZORA</div>
       ${p.badge ? `<span class="product-badge">${p.badge}</span>` : ""}
@@ -199,6 +292,10 @@ function renderActiveFilters() {
   holder.querySelectorAll("[data-clear-chip]").forEach(btn => btn.addEventListener("click", () => active[Number(btn.dataset.clearChip)].clear()));
 }
 
+// =====================================================
+// INTERFACE DE USUÁRIO (PAINÉIS, SACOLA E TOAST)
+// =====================================================
+
 function showToast(message) {
   if (!toastEl) return;
   toastEl.textContent = message;
@@ -233,7 +330,7 @@ function renderCart() {
     cartItemsEl.innerHTML = '<p class="cart-empty">Sua sacola está vazia.</p>';
   } else {
     cartItemsEl.innerHTML = cart.map(item => `<div class="cart-line">
-      <img class="cart-thumb" src="${item.image}" alt="${item.name}">
+      <img class="cart-thumb" src="${item.image}" alt="${item.name}" onerror="window.gerenciarFalhaImagem(this, ${item.id})">
       <div>
         <h3>${item.name}</h3>
         <p>${money(item.price)}</p>
@@ -281,6 +378,10 @@ function carregarCarrinhoSalvo() {
     }
   }
 }
+
+// =====================================================
+// EVENTOS E INICIALIZAÇÃO
+// =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
   const gridEl = document.querySelector("#productGrid");
@@ -404,7 +505,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const yearEl = document.querySelector("#year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Inicialização encadeada após o DOM estar pronto
+  // Inicialização encadeada
   carregarCarrinhoSalvo();
   carregarProdutosServidor();
 });
