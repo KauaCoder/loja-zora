@@ -1,5 +1,6 @@
 // =====================================================
 // ZORA - PAINEL ADMINISTRATIVO INTEGRADO (VERSÃO BLINDADA)
+// Localização: TelaAdmin/js/admin.js
 // =====================================================
 
 let produtosAdmin = [];
@@ -30,17 +31,24 @@ document.addEventListener("DOMContentLoaded", function () {
     if (categoria) categoria.addEventListener("change", aplicarFiltros);
 });
 
+// Tratamento de caminho de imagem (locais vs URLs externas do Supabase)
+function tratarCaminhoImagemAdmin(imgSrc, id) {
+    if (!imgSrc) return `/img/img${id || 1}.jpeg`;
+    if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://") || imgSrc.startsWith("/")) {
+        return imgSrc;
+    }
+    return `/img/${imgSrc}`;
+}
+
 // =====================================================
 // 1. CARREGAR PRODUTOS, PEDIDOS E INVENTÁRIO (UNIFICADO)
 // =====================================================
 
 async function carregarDadosAdmin() {
     const tabela = document.getElementById("tabelaProdutos");
-    // CORRIGIDO: Busca a tabela de pedidos pelo ID correto do HTML
     const tabelaPedidos = document.getElementById("dashboardListaPedidos"); 
 
     try {
-        // Recupera o ID do cliente logado no navegador para garantir a sessão no Render
         let idClienteUrl = "";
         const dadosLocais = localStorage.getItem("usuarioLogado");
         if (dadosLocais) {
@@ -54,7 +62,6 @@ async function carregarDadosAdmin() {
             }
         }
 
-        // admin_dados.php está na raiz (FORA da pasta TelaAdmin)
         const resposta = await fetch(`/admin_dados.php${idClienteUrl}`, {
             method: "GET",
             cache: "no-store",
@@ -68,17 +75,15 @@ async function carregarDadosAdmin() {
             resultado = JSON.parse(textoBruto);
         } catch (e) {
             console.error("Erro ao converter JSON. Resposta recebida:", textoBruto);
-            throw new Error("O servidor retornou uma resposta inválida. Veja a consola para mais detalhes.");
+            throw new Error("O servidor retornou uma resposta inválida. Veja o console para mais detalhes.");
         }
 
         if (!resposta.ok || !resultado.sucesso) {
             throw new Error(resultado.mensagem || "Erro ao carregar os dados do painel do servidor.");
         }
 
-        // Armazena lista de produtos
         produtosAdmin = Array.isArray(resultado.produtos) ? resultado.produtos : [];
 
-        // Preenche métricas do Dashboard e Vendas
         if (resultado.dashboard) {
             preencherCardsDashboard(resultado.dashboard);
         }
@@ -87,7 +92,6 @@ async function carregarDadosAdmin() {
             preencherProdutoMaisVendido(resultado.mais_vendido);
         }
 
-        // Preenche histórico de pedidos
         if (resultado.pedidos) {
             renderizarPedidosAdmin(resultado.pedidos);
         } else if (tabelaPedidos) {
@@ -101,7 +105,6 @@ async function carregarDadosAdmin() {
     } catch (erro) {
         console.error("Erro ao carregar os dados:", erro);
         
-        // MOSTRA O ERRO NA TABELA DE PRODUTOS
         if (tabela) {
             tabela.innerHTML = `
                 <tr>
@@ -112,7 +115,6 @@ async function carregarDadosAdmin() {
             `;
         }
         
-        // MOSTRA O ERRO NA TABELA DE PEDIDOS
         if (tabelaPedidos) {
             tabelaPedidos.innerHTML = `
                 <tr>
@@ -147,10 +149,6 @@ function preencherProdutoMaisVendido(maisVendido) {
     }
 }
 
-// =====================================================
-// 2.1 RENDERIZAR HISTÓRICO DE PEDIDOS NO ADMIN
-// =====================================================
-
 function renderizarPedidosAdmin(pedidos) {
     const tabelaPedidos = document.getElementById("dashboardListaPedidos");
     if (!tabelaPedidos) return;
@@ -158,7 +156,7 @@ function renderizarPedidosAdmin(pedidos) {
     tabelaPedidos.innerHTML = "";
 
     if (!Array.isArray(pedidos) || pedidos.length === 0) {
-        tabelaPedidos.innerHTML = `<tr><td colspan="6" class="sem-resultados" style="text-align:center; padding:20px; color:#777;">Nenhum pedido registado.</td></tr>`;
+        tabelaPedidos.innerHTML = `<tr><td colspan="6" class="sem-resultados" style="text-align:center; padding:20px; color:#777;">Nenhum pedido registrado.</td></tr>`;
         return;
     }
 
@@ -207,16 +205,16 @@ function carregarCategorias() {
 
 function atualizarResumo() {
     const totalProdutos = produtosAdmin.length;
-    const totalUnidades = produtosAdmin.reduce((total, p) => total + (Number(p.qtd_item) || 0), 0);
+    const totalUnidades = produtosAdmin.reduce((total, p) => total + (Number(p.qtd_item || p.estoque) || 0), 0);
 
     const estoqueBaixo = produtosAdmin.filter(p => {
-        const quantidade = Number(p.qtd_item) || 0;
+        const quantidade = Number(p.qtd_item || p.estoque) || 0;
         const maximo = Number(p.qtd_max_produto) || 100;
         if (quantidade <= 0) return false;
         return (quantidade / maximo) * 100 <= 40;
     }).length;
 
-    const esgotados = produtosAdmin.filter(p => (Number(p.qtd_item) || 0) <= 0).length;
+    const esgotados = produtosAdmin.filter(p => (Number(p.qtd_item || p.estoque) || 0) <= 0).length;
 
     definirTexto("totalProdutos", totalProdutos);
     definirTexto("totalUnidades", totalUnidades);
@@ -232,7 +230,7 @@ function aplicarFiltros() {
     const categoriaSelecionada = categoria ? categoria.value : "";
 
     const produtosFiltrados = produtosAdmin.filter(produto => {
-        const nome = String(produto.nome || "").toLowerCase();
+        const nome = String(produto.nm_produto || produto.nome || "").toLowerCase();
         const correspondeNome = nome.includes(texto);
         const correspondeCategoria = categoriaSelecionada === "" || produto.categoria === categoriaSelecionada;
         return correspondeNome && correspondeCategoria;
@@ -260,12 +258,15 @@ function renderizarProdutos(produtos) {
     produtos.forEach(produto => {
         const linha = document.createElement("tr");
 
+        const nomeProduto = produto.nm_produto || produto.nome || "Produto ZORA";
+        const imgUrl = tratarCaminhoImagemAdmin(produto.imagem, produto.id_produto);
+
         const colProduto = document.createElement("td");
         colProduto.innerHTML = `
             <div class="produto-info">
-                <img src="/img/${produto.imagem || 'default.jpg'}" alt="${produto.nome}">
+                <img src="${imgUrl}" alt="${nomeProduto}" onerror="this.onerror=null;this.src='/img/Logo 1.png'">
                 <div>
-                    <strong>${produto.nome}</strong>
+                    <strong>${nomeProduto}</strong>
                     <small>Código #${produto.id_produto}</small>
                 </div>
             </div>
@@ -277,7 +278,7 @@ function renderizarProdutos(produtos) {
         const colPreco = document.createElement("td");
         colPreco.textContent = formatarMoeda(produto.preco);
 
-        const quantidade = Number(produto.qtd_item) || 0;
+        const quantidade = Number(produto.qtd_item !== undefined ? produto.qtd_item : produto.estoque) || 0;
         const maximo = Number(produto.qtd_max_produto) || 100;
         const colEstoque = document.createElement("td");
         colEstoque.innerHTML = `<strong>${maximo > 0 ? `${quantidade} /${maximo}` : quantidade}</strong>`;
@@ -336,7 +337,7 @@ function renderizarProdutos(produtos) {
             btnWhatsapp.textContent = "📱 WPP ADM";
 
             const msg = `⚠️ *ALERTA DE ESTOQUE BAIXO - ZORA*\n\n` +
-                `📦 *Produto:* ${produto.nome} (ID: ${produto.id_produto})\n` +
+                `📦 *Produto:* ${nomeProduto} (ID: ${produto.id_produto})\n` +
                 `📊 *Estoque Restante:* ${quantidade} de ${maximo} unidades (${percentualAtual.toFixed(1)}%)\n\n` +
                 `🏭 *Fornecedor:* ${produto.fornecedor || 'Não cadastrado'}\n` +
                 `📞 *Contato Fornecedor:* ${produto.contato || 'Sem contato'}\n\n` +
@@ -390,11 +391,14 @@ function abrirModalReposicao(produto) {
     const modal = document.getElementById("modalReposicao");
     if (!modal) return;
 
-    definirTexto("modalNomeProduto", produto.nome);
-    definirTexto("modalEstoqueAtual", produto.qtd_item);
+    const nomeProduto = produto.nm_produto || produto.nome || "Produto ZORA";
+    const qtdAtual = produto.qtd_item !== undefined ? produto.qtd_item : produto.estoque;
+
+    definirTexto("modalNomeProduto", nomeProduto);
+    definirTexto("modalEstoqueAtual", qtdAtual);
 
     const maximo = Number(produto.qtd_max_produto) || 100;
-    const atual = Number(produto.qtd_item) || 0;
+    const atual = Number(qtdAtual) || 0;
     const disponivel = Math.max(0, maximo - atual);
 
     definirTexto("modalEstoqueMaximo", maximo);
@@ -423,7 +427,6 @@ async function salvarReposicao(evento) {
     const quantidade = Number(document.getElementById("quantidadeReposicao").value);
 
     try {
-        // MANTIDO SEM BARRA (Este ficheiro ESTÁ dentro da pasta TelaAdmin)
         const resposta = await fetch("adicionar_estoque.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -461,8 +464,10 @@ function abrirModalEdicao(produto) {
     const modal = document.getElementById("modalEditarProduto");
     if (!modal) return;
 
+    const nomeProduto = produto.nm_produto || produto.nome || "";
+
     document.getElementById("editarIdProduto").value = produto.id_produto;
-    document.getElementById("editarNome").value = produto.nome;
+    document.getElementById("editarNome").value = nomeProduto;
     document.getElementById("editarPreco").value = produto.preco;
     document.getElementById("editarDescricao").value = produto.descricao || "";
 
@@ -486,7 +491,6 @@ async function salvarEdicaoProduto(evento) {
     };
 
     try {
-        // ADICIONADA A BARRA (Este ficheiro NÃO ESTÁ na pasta TelaAdmin, está na raiz)
         const resposta = await fetch("/editar_produto.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -516,7 +520,7 @@ async function salvarEdicaoProduto(evento) {
 }
 
 // =====================================================
-// 7. MODAL EDITAR FORNECEDOR (COM VALIDAÇÕES ATUALIZADAS)
+// 7. MODAL EDITAR FORNECEDOR
 // =====================================================
 
 function abrirModalFornecedor(produto) {
@@ -572,7 +576,6 @@ async function salvarFornecedor(evento) {
     };
 
     try {
-        // ADICIONADA A BARRA (Como não vi o arquivo na pasta TelaAdmin, ele deve estar na raiz)
         const resposta = await fetch("/atualizar_fornecedor.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
