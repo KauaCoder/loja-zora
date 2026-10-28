@@ -364,39 +364,15 @@ function fecharPedidos() {
 }
 
 function pagarPedido() {
-    // Relê a sacola salva (garante dados atuais mesmo se vierem de outra aba/página)
-    if (pedidosArray.length === 0) {
-        try {
-            const salvo = JSON.parse(localStorage.getItem("carrinho") || "[]");
-            if (Array.isArray(salvo)) pedidosArray = salvo;
-        } catch (e) { /* ignora */ }
-    }
-
     if (pedidosArray.length === 0) {
         alert("Seu carrinho está vazio.");
         return;
     }
-
-    try {
-        localStorage.setItem("carrinho", JSON.stringify(pedidosArray));
-        localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
-        localStorage.setItem("totalPedido", calcularTotal());
-    } catch (e) {
-        alert("Não foi possível salvar o pedido neste dispositivo.");
-        return;
-    }
-
+    localStorage.setItem("carrinho", JSON.stringify(pedidosArray));
+    localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
+    localStorage.setItem("totalPedido", calcularTotal());
     window.location.href = "/TelaEntrega/entrega.html";
 }
-
-// Garante o clique do botão mesmo sem o onclick inline
-document.addEventListener("DOMContentLoaded", () => {
-    const btn = document.querySelector(".PedidosPagar button");
-    if (btn) {
-        btn.removeAttribute("onclick");
-        btn.addEventListener("click", pagarPedido);
-    }
-});
 
 // =====================================================
 // 4. CATÁLOGO: DADOS, FAVORITOS, FILTROS E ORDENAÇÃO
