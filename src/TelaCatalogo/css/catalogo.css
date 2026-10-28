@@ -31,7 +31,7 @@ body {
 }
 
 /* =========================================================
-   ESTILIZAÇÃO DA PARTE DE CIMA (MENU / NAVEGAÇÃO)
+   ESTILIZAÇÃO COMPLETA DA PARTE DE CIMA (MENU E NAVEGAÇÃO)
    ========================================================= */
 nav {
     background-color: #fffaf5;
@@ -67,8 +67,14 @@ nav a.link-ativo {
 }
 
 /* Logo no Menu */
+.logo-menu a {
+    display: flex;
+    align-items: center;
+    padding: 0 !important;
+}
+
 .logo-menu img {
-    height: 35px;
+    height: 38px;
     width: auto;
     display: block;
 }
@@ -81,7 +87,7 @@ nav a.link-ativo {
     border: 1px solid var(--zora-linha);
     border-radius: 99px;
     padding: 4px 6px 4px 16px;
-    width: 280px;
+    width: 300px;
 }
 
 .busca-container input {
@@ -101,12 +107,12 @@ nav a.link-ativo {
     padding: 4px 8px;
 }
 
-/* Botão do menu mobile (escondido no desktop) */
+/* Botão do menu mobile (hambúrguer) */
 .menu-button {
     display: none;
 }
 
-/* Sidebar Mobile */
+/* Sidebar / Menu Lateral Mobile */
 .sidebar {
     position: fixed;
     top: 0;
@@ -137,6 +143,41 @@ nav a.link-ativo {
     color: #333;
     text-decoration: none;
 }
+
+.sidebar-busca {
+    margin-bottom: 20px;
+}
+
+.busca-container-mobile input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--zora-linha);
+    border-radius: 99px;
+    background: #F5EFE6;
+    outline: none;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+/* Overlay de fundo escuro */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 1500;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.overlay.ativo {
+    opacity: 1;
+    visibility: visible;
+}
+
 
 /* ---------- Estrutura do Catálogo (Corpo) ---------- */
 .catalogo-pagina {
@@ -249,8 +290,19 @@ nav a.link-ativo {
 .catalogo-grid.colunas-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 /* =========================================================
-   ESTILIZAÇÃO UNIFICADA E FIXA DO CARRINHO DE PEDIDOS
+   ESTILIZAÇÃO UNIFICADA E FIXA DO CARRINHO DE PEDIDOS (Gaveta)
    ========================================================= */
+.caixa-pedidos {
+    position: fixed; top: 0; right: -400px; width: 380px; height: 100vh;
+    background: #fff; box-shadow: -5px 0 25px rgba(0,0,0,0.1); z-index: 2000;
+    display: flex; flex-direction: column; transition: right 0.3s ease;
+}
+.caixa-pedidos.ativo { right: 0; }
+
+.topo-pedidos { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.topo-pedidos h2 { font-size: 18px; margin: 0; }
+.topo-pedidos button { background: none; border: none; font-size: 20px; cursor: pointer; }
+
 #listaPedidos {
     flex: 1;
     list-style: none;
@@ -370,6 +422,23 @@ nav a.link-ativo {
     color: #d32f2f !important;
 }
 
+.rodape-pedidos {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    background: #fafafa;
+}
+.rodape-pedidos h3 {
+    margin: 0;
+    font-size: 16px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.PedidosPagar {
+    padding: 15px 20px 20px;
+    background: #fafafa;
+}
+
 .PedidosPagar button {
     width: 100%;
     padding: 14px;
@@ -395,7 +464,7 @@ nav a.link-ativo {
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-/* ---------- Responsivo do Menu e Layout ---------- */
+/* ---------- Responsividade (Mobile / Desktop) ---------- */
 @media (max-width: 900px) {
     .hideOnMobile { display: none !important; }
     .menu-button { display: block !important; }
