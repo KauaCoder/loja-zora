@@ -1,15 +1,9 @@
 // =====================================================
 // ZORA - CATÁLOGO, FILTROS, FAVORITOS E SACOLA
-// Localização do ficheiro: TelaCatalogo/js/catalogo.js
+// Localização: TelaCatalogo/js/catalogo.js
 // =====================================================
 
-// Mapeamento local inicial / fallback caso o servidor falhe
-let products = [
-  {id:1,name:"Vestido Infantil de Tule Bordado",category:"Vestidos",price:159.99,oldPrice:199.99,sizes:["P","M","G"],age:"4 a 12 anos",promo:"35% OFF - CUPOM",badge:"MAIS VENDIDO",image:"/img/img1.jpeg"},
-  {id:2,name:"Vestido Infantil de Algodão",category:"Vestidos",price:159.99,oldPrice:null,sizes:["P","M","G","GG"],age:"4 a 12 anos",promo:"ESQUENTABLACK",badge:"NOVO",image:"/img/img2.jpeg"},
-  {id:3,name:"Short Saia Infantil de Sarja",category:"Saias",price:129.99,oldPrice:149.99,sizes:["P","M","G"],age:"4 a 12 anos",promo:"35% OFF - CUPOM",badge:null,image:"/img/img3.jpeg"},
-  {id:4,name:"Short Saia Infantil Cós Elástico",category:"Saias",price:79.99,oldPrice:null,sizes:["P","M","G","GG"],age:"4 a 12 anos",promo:"35% OFF - CUPOM",badge:null,image:"/img/img4.jpeg"}
-];
+let products = [];
 
 const grid = document.querySelector("#productGrid");
 const filters = document.querySelector("#filters");
@@ -20,7 +14,7 @@ const toastEl = document.querySelector("#toast");
 
 let favorites = new Set();
 let cart = [];
-let visibleLimit = 100; // Limite para exibir todas as roupas
+let visibleLimit = 500; // Exibe todas as roupas cadastradas
 let currentColumns = 2;
 let favoritesOnly = false;
 let toastTimer;
@@ -28,7 +22,7 @@ let toastTimer;
 const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const checkedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
 
-// Tratamento de caminho de imagem (aceita URLs externas ou locais)
+// Trata imagens locais e URLs externas (Shopee, Supabase Storage, CDN)
 function tratarCaminhoImagem(imgSrc, id) {
   if (!imgSrc) return `/img/img${id || 1}.jpeg`;
   if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://") || imgSrc.startsWith("/")) {
@@ -37,7 +31,7 @@ function tratarCaminhoImagem(imgSrc, id) {
   return `/img/${imgSrc}`;
 }
 
-// Busca produtos no backend PHP / Supabase
+// Carrega todos os produtos do servidor
 async function carregarProdutosServidor() {
   try {
     let resposta = await fetch("/produtos_catalogo.php", {
@@ -305,7 +299,7 @@ if (openCart) openCart.addEventListener("click", () => { renderCart(); openPanel
 const openFavorites = document.querySelector("#openFavorites");
 if (openFavorites) openFavorites.addEventListener("click", () => {
   favoritesOnly = !favoritesOnly;
-  visibleLimit = 100;
+  visibleLimit = 500;
   renderProducts();
   const cat = document.querySelector("#catalogo");
   if (cat) cat.scrollIntoView({ behavior: "smooth" });
@@ -325,10 +319,10 @@ if (openSearch) openSearch.addEventListener("click", () => {
 });
 
 const searchPanel = document.querySelector("#searchPanel");
-if (searchPanel) searchPanel.addEventListener("submit", e => { e.preventDefault(); visibleLimit = 100; renderProducts(); });
+if (searchPanel) searchPanel.addEventListener("submit", e => { e.preventDefault(); visibleLimit = 500; renderProducts(); });
 
 const sortSelect = document.querySelector("#sortSelect");
-if (sortSelect) sortSelect.addEventListener("change", () => { visibleLimit = 100; renderProducts(); });
+if (sortSelect) sortSelect.addEventListener("change", () => { visibleLimit = 500; renderProducts(); });
 
 document.querySelectorAll(".view-button").forEach(btn => btn.addEventListener("click", () => {
   currentColumns = Number(btn.dataset.columns);
@@ -336,10 +330,10 @@ document.querySelectorAll(".view-button").forEach(btn => btn.addEventListener("c
   renderProducts();
 }));
 
-document.querySelectorAll('input[name="category"],input[name="size"]').forEach(el => el.addEventListener("change", () => { visibleLimit = 100; renderProducts(); }));
+document.querySelectorAll('input[name="category"],input[name="size"]').forEach(el => el.addEventListener("change", () => { visibleLimit = 500; renderProducts(); }));
 
 const applyPrice = document.querySelector("#applyPrice");
-if (applyPrice) applyPrice.addEventListener("click", () => { visibleLimit = 100; renderProducts(); });
+if (applyPrice) applyPrice.addEventListener("click", () => { visibleLimit = 500; renderProducts(); });
 
 const applyMobile = document.querySelector("#applyMobile");
 if (applyMobile) applyMobile.addEventListener("click", () => { renderProducts(); closePanels(); });
@@ -362,7 +356,7 @@ function clearFilters() {
   if (maxP) maxP.value = "";
   if (sIn) sIn.value = "";
   favoritesOnly = false;
-  visibleLimit = 100;
+  visibleLimit = 500;
   renderProducts();
 }
 
