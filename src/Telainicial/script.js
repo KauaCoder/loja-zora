@@ -943,3 +943,287 @@ document.addEventListener("DOMContentLoaded", () => {
         overlay.addEventListener("click", fecharTudo);
     }
 });
+
+/* ==========================================
+   PESQUISA DE PRODUTOS - ZORA
+   Desktop + Mobile
+========================================== */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const inputDesktop = document.getElementById("inputBusca");
+    const inputMobile = document.getElementById("inputBuscaMobile");
+
+    const resultadoDesktop = document.getElementById("resultadoBusca");
+    const resultadoMobile = document.getElementById("resultadoBuscaMobile");
+
+    const catalogo = document.getElementById("catalogoProdutos");
+
+    if (!catalogo) {
+        console.error("ZORA: catálogo de produtos não encontrado.");
+        return;
+    }
+
+    // Normaliza o texto para facilitar a pesquisa.
+    function normalizarTexto(texto) {
+        return (texto || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+    }
+
+    // Obtém os produtos existentes no catálogo.
+    function obterProdutos() {
+
+        const cards = catalogo.querySelectorAll(".produto");
+
+        return Array.from(cards).map(function (card) {
+
+            const titulo = card.querySelector("h3");
+            const preco = card.querySelector("p");
+            const imagem = card.querySelector("img");
+            const link = card.querySelector("a");
+
+            if (!titulo) {
+                return null;
+            }
+
+            return {
+                nome: titulo.textContent.trim(),
+
+                preco: preco
+                    ? preco.textContent.trim()
+                    : "",
+
+                imagem: imagem
+                    ? imagem.getAttribute("src")
+                    : "",
+
+                link: link
+                    ? link.getAttribute("href")
+                    : null,
+
+                elemento: card
+            };
+
+        }).filter(Boolean);
+    }
+
+    // Cria o menu suspenso de resultados.
+    function mostrarResultados(texto, caixa) {
+
+        if (!caixa) return;
+
+        caixa.replaceChildren();
+
+        const pesquisa = normalizarTexto(texto);
+
+        if (!pesquisa) {
+            caixa.style.display = "none";
+            return;
+        }
+
+        const produtos = obterProdutos();
+
+        const encontrados = produtos.filter(function (produto) {
+            return normalizarTexto(produto.nome).includes(pesquisa);
+        }).slice(0, 8);
+
+        caixa.style.display = "block";
+
+        if (encontrados.length === 0) {
+
+            const mensagem = document.createElement("div");
+
+            mensagem.className = "busca-item-vazio";
+            mensagem.textContent = produtos.length === 0
+                ? "Os produtos ainda estão carregando."
+                : "Nenhum produto encontrado.";
+
+            caixa.appendChild(mensagem);
+            return;
+        }
+
+        encontrados.forEach(function (produto) {
+
+            const item = document.createElement("a");
+
+            item.className = "busca-item-resultado";
+
+            // Abre a página do produto, quando houver um link.
+            if (produto.link) {
+                item.href = produto.link;
+            } else {
+                item.href = "#catalogoProdutos";
+            }
+
+            // Imagem do produto.
+            if (produto.imagem) {
+
+                const imagem = document.createElement("img");
+
+                imagem.src = produto.imagem;
+                imagem.alt = produto.nome;
+                imagem.loading = "lazy";
+
+                item.appendChild(imagem);
+            }
+
+            // Informações do produto.
+            const informacoes = document.createElement("div");
+
+            informacoes.className = "busca-item-info";
+
+            const nome = document.createElement("span");
+
+            nome.className = "busca-item-nome";
+            nome.textContent = produto.nome;
+
+            informacoes.appendChild(nome);
+
+            if (produto.preco) {
+
+                const preco = document.createElement("span");
+
+                preco.className = "busca-item-preco";
+                preco.textContent = produto.preco;
+
+                informacoes.appendChild(preco);
+            }
+
+            item.appendChild(informacoes);
+            caixa.appendChild(item);
+        });
+    }
+
+    // Conecta cada campo ao respectivo menu.
+    function configurarPesquisa(input, caixa, outroInput, outraCaixa) {
+
+        if (!input || !caixa) return;
+
+        input.addEventListener("input", function () {
+
+            mostrarResultados(input.value, caixa);
+
+            // Mantém a pesquisa sincronizada entre desktop e mobile.
+            if (outroInput && outraCaixa) {
+
+                outroInput.value = input.value;
+
+                mostrarResultados(input.value, outraCaixa);
+            }
+        });
+
+        input.addEventListener("focus", function () {
+
+            if (input.value.trim() !== "") {
+                mostrarResultados(input.value, caixa);
+            }
+        });
+
+        // Enter abre o primeiro resultado encontrado.
+        input.addEventListener("keydown", function (evento) {
+
+            if (evento.key === "Enter") {
+
+                evento.preventDefault();
+
+                const primeiroResultado = caixa.querySelector(
+                    ".busca-item-resultado"
+                );
+
+                if (primeiroResultado) {
+                    primeiroResultado.click();
+                }
+            }
+
+            if (evento.key === "Escape") {
+
+                caixa.style.display = "none";
+            }
+        });
+    }
+
+    configurarPesquisa(
+        inputDesktop,
+        resultadoDesktop,
+        inputMobile,
+        resultadoMobile
+    );
+
+    configurarPesquisa(
+        inputMobile,
+        resultadoMobile,
+        inputDesktop,
+        resultadoDesktop
+    );
+
+    // Botão da lupa no desktop.
+    const botaoLupa = document.querySelector(".btn-lupa");
+
+    if (botaoLupa && inputDesktop) {
+
+        botaoLupa.addEventListener("click", function () {
+
+            inputDesktop.focus();
+
+            mostrarResultados(
+                inputDesktop.value,
+                resultadoDesktop
+            );
+        });
+    }
+
+    // Fecha os resultados ao clicar fora da pesquisa.
+    document.addEventListener("click", function (evento) {
+
+        const clicouNaPesquisa = evento.target.closest(
+            ".nav-busca-item, .sidebar-busca"
+        );
+
+        if (!clicouNaPesquisa) {
+
+            if (resultadoDesktop) {
+                resultadoDesktop.style.display = "none";
+            }
+
+            if (resultadoMobile) {
+                resultadoMobile.style.display = "none";
+            }
+        }
+    });
+
+    // Atualiza os resultados quando os produtos são carregados
+    // dinamicamente no catálogo.
+    const observador = new MutationObserver(function () {
+
+        const campoAtivo = document.activeElement;
+
+        if (
+            campoAtivo === inputDesktop &&
+            inputDesktop.value.trim() !== ""
+        ) {
+            mostrarResultados(
+                inputDesktop.value,
+                resultadoDesktop
+            );
+        }
+
+        if (
+            campoAtivo === inputMobile &&
+            inputMobile.value.trim() !== ""
+        ) {
+            mostrarResultados(
+                inputMobile.value,
+                resultadoMobile
+            );
+        }
+    });
+
+    observador.observe(catalogo, {
+        childList: true,
+        subtree: true
+    });
+
+});
