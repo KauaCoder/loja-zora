@@ -122,7 +122,7 @@ async function checarEAtualizarMenu() {
         const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
 
         if (ehAdmin) {
-            texto = "📊 Dashboard Adm";
+            texto = "Painel do adm";
         } else {
             const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
             texto = `Olá, ${primeiroNome}`;
