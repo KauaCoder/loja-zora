@@ -1,5 +1,6 @@
 // =====================================================
 // ZORA - PÁGINA DO PRODUTO & INTEGRAÇÃO COM SITE/INDEX
+// Sistema com Suporte a Subpastas de Imagens e Tratamento de Resiliência
 // =====================================================
 
 // =====================================================
@@ -149,17 +150,17 @@ const detalhesProdutos = {
     9: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha", composicao: "Poliéster e Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
     10: { tamanhos: ["P", "M", "G", "GG"], tecido: "Fleece", composicao: "Poliéster", marca: "ZORA", colecao: "Coleção ZORA" },
     
-    // Novos Produtos Cadastrados (11 ao 20 do Supabase)
-    11: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Poliéster e Elastano", composicao: "Conjunto Cropped e Calça Alfaiataria", marca: "ZORA", colecao: "Coleção ZORA" },
-    12: { tamanhos: ["36", "38", "40", "42", "44"], tecido: "Jeans", composicao: "100% Algodão", marca: "ZORA", colecao: "Coleção ZORA" },
-    13: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Linho", composicao: "70% Viscose 30% Linho", marca: "ZORA", colecao: "Coleção ZORA" },
+    // Produtos Cadastrados (11 ao 20 do Supabase)
+    11: { tamanhos: ["P", "M", "G", "GG"], tecido: "Alfaiataria Premium", composicao: "95% Poliéster 5% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
+    12: { tamanhos: ["P", "M", "G", "GG"], tecido: "Linho Misto", composicao: "70% Viscose 30% Linho", marca: "ZORA", colecao: "Coleção ZORA" },
+    13: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Tecido Fluido", composicao: "100% Poliéster", marca: "ZORA", colecao: "Coleção ZORA" },
     14: { tamanhos: ["36", "38", "40", "42", "44"], tecido: "Alfaiataria", composicao: "95% Poliéster 5% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
-    15: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha Crepe", composicao: "96% Poliéster 4% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
-    16: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Linho", composicao: "70% Viscose 30% Linho", marca: "ZORA", colecao: "Coleção ZORA" },
-    17: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Crepe", composicao: "100% Poliéster", marca: "ZORA", colecao: "Coleção ZORA" },
-    18: { tamanhos: ["P", "M", "G", "GG"], tecido: "Couro Sintético", composicao: "100% Poliuretano", marca: "ZORA", colecao: "Coleção ZORA" },
-    19: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Moletinho", composicao: "Poliéster e Algodão", marca: "ZORA", colecao: "Coleção ZORA" },
-    20: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Flanela", composicao: "100% Algodão", marca: "ZORA", colecao: "Coleção ZORA" }
+    15: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha de Algodão", composicao: "96% Algodão 4% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
+    16: { tamanhos: ["36", "38", "40", "42", "44"], tecido: "Linho e Jeans", composicao: "70% Viscose 30% Linho e 100% Algodão", marca: "ZORA", colecao: "Coleção ZORA" },
+    17: { tamanhos: ["P", "M", "G", "GG"], tecido: "Moletinho Confort", composicao: "50% Algodão 50% Poliéster", marca: "ZORA", colecao: "Coleção ZORA" },
+    18: { tamanhos: ["P", "M", "G", "GG"], tecido: "Sintético Premium", composicao: "100% Poliéster com revestimento", marca: "ZORA", colecao: "Coleção ZORA" },
+    19: { tamanhos: ["36", "38", "40", "42", "44"], tecido: "Malha Ribana e Jeans", composicao: "98% Algodão 2% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
+    20: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha Canelada", composicao: "92% Viscose 8% Elastano", marca: "ZORA", colecao: "Coleção ZORA" }
 };
 
 const parametros = new URLSearchParams(window.location.search);
@@ -177,13 +178,68 @@ let detalhes = detalhesProdutos[idProduto] || {
 
 let tamanhoSelecionado = null;
 
+// Trata os caminhos de imagem aceitando /img/roupazora/, /img/ e URLs do proxy
 function tratarCaminhoImagem(imgSrc, id) {
-    if (!imgSrc) return `/img/img${id}.jpeg`;
-    if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://") || imgSrc.startsWith("/")) {
-        return imgSrc;
+    if (!imgSrc || imgSrc.trim() === "" || imgSrc === "null" || imgSrc === "undefined") {
+        return `/img/roupazora/img${id || 1}.jpeg`;
     }
-    return `/img/${imgSrc}`;
+
+    let src = imgSrc.trim();
+
+    if (src.startsWith("/")) {
+        return src;
+    }
+
+    if (src.startsWith("http://") || src.startsWith("https://")) {
+        if (src.includes("susercontent.com") || src.includes("shopee") || src.includes("down-br")) {
+            return `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
+        }
+        return src;
+    }
+
+    if (src.startsWith("roupazora/")) {
+        return `/img/${src}`;
+    }
+
+    return `/img/roupazora/${src}`;
 }
+
+// Manipulador de erros na imagem com fallback em cascata
+window.gerenciarFalhaImagem = function(imgElement, productId) {
+    if (!imgElement) return;
+
+    const tentativaAtual = Number(imgElement.dataset.tentativa || 0);
+    imgElement.dataset.tentativa = tentativaAtual + 1;
+
+    // Tentativa 1: Se falhou na pasta roupazora, busca na pasta /img/ raiz
+    if (tentativaAtual === 0) {
+        if (imgElement.src.includes("/img/roupazora/")) {
+            const nomeArquivo = imgElement.src.split("/img/roupazora/").pop();
+            imgElement.src = `/img/${nomeArquivo}`;
+            return;
+        }
+    }
+
+    // Tentativa 2: Busca por ID na pasta /img/roupazora/
+    if (tentativaAtual === 1) {
+        if (productId) {
+            imgElement.src = `/img/roupazora/img${productId}.jpeg`;
+            return;
+        }
+    }
+
+    // Tentativa 3: Busca por ID na pasta /img/
+    if (tentativaAtual === 2) {
+        if (productId) {
+            imgElement.src = `/img/img${productId}.jpeg`;
+            return;
+        }
+    }
+
+    // Tentativa Final: Logo ZORA
+    imgElement.onerror = null;
+    imgElement.src = "/img/Logo 1.png";
+};
 
 
 // =====================================================
@@ -213,7 +269,6 @@ async function carregarProduto() {
             throw new Error("Não foi possível carregar o produto.");
         }
 
-        // Mapeia colunas do Supabase: id_produto, nm_produto, preco, qtd_item, categoria, imagem
         const prodEncontrado = resultado.produtos.find(p => Number(p.id_produto) === Number(idProduto));
 
         if (!prodEncontrado) {
@@ -250,8 +305,7 @@ async function carregarProduto() {
             imagem.src = produto.imagem;
             imagem.alt = produto.nome;
             imagem.onerror = function () {
-                this.onerror = null;
-                this.src = "/img/Logo 1.png";
+                window.gerenciarFalhaImagem(this, produto.id_produto);
             };
         }
 
@@ -406,8 +460,7 @@ function renderizarPedidos() {
         foto.alt = p.nome;
         foto.className = "carrinho-foto";
         foto.onerror = function () {
-            this.onerror = null;
-            this.src = "/img/Logo 1.png";
+            window.gerenciarFalhaImagem(this, id);
         };
         linkFoto.appendChild(foto);
 
