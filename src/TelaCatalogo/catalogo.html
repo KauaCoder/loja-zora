@@ -7,9 +7,10 @@
     <meta name="description" content="Catálogo completo de moda feminina ZORA.">
     <title>Catálogo | ZORA</title>
 
+    <!-- Estilos compartilhados e específicos -->
+    <link rel="stylesheet" href="/Telainicial/style.css">
     <link rel="stylesheet" href="/EstiloBase.css">
-    <!-- Estilos específicos do catálogo -->
-    <link rel="stylesheet" href="catalogo-zora.css">
+    <link rel="stylesheet" href="css/catalogo.css">
 </head>
 
 <body>
@@ -17,14 +18,16 @@
     <!-- OVERLAY -->
     <div id="overlay" class="overlay" onclick="fecharTudo()"></div>
 
-    <!-- ========================= SACOLA (mesma da tela inicial) ========================= -->
+    <!-- ========================= SACOLA (Gaveta de Pedidos) ========================= -->
     <div id="Pedidos" class="caixa-pedidos">
         <div class="topo-pedidos">
             <h2>Meus Pedidos</h2>
             <button type="button" onclick="fecharPedidos()" aria-label="Fechar pedidos">✕</button>
         </div>
 
-        <ul id="listaPedidos"></ul>
+        <ul id="listaPedidos">
+            <!-- Os itens do carrinho são injetados aqui via JS -->
+        </ul>
 
         <div class="rodape-pedidos">
             <h3>Total: R$ <span id="total">0,00</span></h3>
@@ -62,39 +65,34 @@
             </li>
         </ul>
 
-        <!-- MENU PRINCIPAL -->
-        <ul>
-            <li class="logo-menu">
-                <a href="/Telainicial/index.html">
-                    <img src="/img/Logo 1.png" alt="ZORA - Logo Oficial">
-                </a>
-            </li>
+        <!-- MENU PRINCIPAL (DESKTOP) -->
+        <div class="nav-container">
+            <a href="/Telainicial/index.html" class="logo-menu">
+                <img src="/img/Logo 1.png" alt="ZORA - Logo Oficial">
+            </a>
 
-            <li class="hideOnMobile nav-busca-item">
+            <div class="hideOnMobile nav-busca-item">
                 <div class="busca-container">
                     <input type="text" id="inputBusca" placeholder="Pesquisar peças, vestidos..." autocomplete="off">
                     <button type="button" class="btn-lupa" aria-label="Pesquisar">🔍</button>
                 </div>
-            </li>
+            </div>
 
-            <li class="hideOnMobile"><a href="/TelaCatalogo/catalogo.html" class="link-ativo">Catálogo</a></li>
+            <ul class="nav-links hideOnMobile">
+                <li><a href="/TelaCatalogo/catalogo.html" class="link-ativo">Catálogo</a></li>
+                <li>
+                    <a href="#" onclick="abrirPedidos(); return false;">
+                        Pedidos <span class="badge-carrinho"></span>
+                    </a>
+                </li>
+                <li><a href="#rodape">Sobre</a></li>
+                <li><a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">Login</a></li>
+            </ul>
 
-            <li class="hideOnMobile">
-                <a href="#" onclick="abrirPedidos(); return false;">
-                    Pedidos <span class="badge-carrinho"></span>
-                </a>
-            </li>
-
-            <li class="hideOnMobile"><a href="#rodape">Sobre</a></li>
-
-            <li class="hideOnMobile">
-                <a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">Login</a>
-            </li>
-
-            <li class="menu-button">
+            <div class="menu-button">
                 <a href="#" onclick="showSidebar(); return false;" aria-label="Abrir menu">☰</a>
-            </li>
-        </ul>
+            </div>
+        </div>
     </nav>
 
     <!-- ========================= CATÁLOGO ========================= -->
@@ -115,8 +113,7 @@
 
         <div class="barra-ferramentas">
             <button type="button" class="btn-ferramenta" id="filterToggle">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg>
-                Filtrar por <span class="filtro-ponto" id="filterDot"></span>
+                ☰ Filtrar por <span class="filtro-ponto" id="filterDot"></span>
             </button>
 
             <label class="btn-ferramenta ordenar">
@@ -130,19 +127,19 @@
             </label>
 
             <button type="button" class="btn-ferramenta btn-favoritos" id="favToggle" aria-pressed="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.7c0 5.1-8.8 10.1-8.8 10.1S3.2 13.8 3.2 8.7A4.7 4.7 0 0 1 12 6.5a4.7 4.7 0 0 1 8.8 2.2Z"/></svg>
-                Favoritos <span class="mini-contador" id="favoriteCount">0</span>
+                ♡ Favoritos <span class="mini-contador" id="favoriteCount">0</span>
             </button>
 
             <div class="troca-visual" aria-label="Modo de visualização">
-                <button type="button" class="view-button" data-columns="4" aria-label="Quatro colunas"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
-                <button type="button" class="view-button" data-columns="3" aria-label="Três colunas"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="9.5" y="3" width="5" height="18" rx="1"/><rect x="16" y="3" width="5" height="18" rx="1"/></svg></button>
-                <button type="button" class="view-button" data-columns="2" aria-label="Duas colunas"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/></svg></button>
+                <button type="button" class="view-button" data-columns="4" aria-label="Quatro colunas">▦</button>
+                <button type="button" class="view-button" data-columns="3" aria-label="Três colunas">▥</button>
+                <button type="button" class="view-button" data-columns="2" aria-label="Duas colunas">▯▯</button>
             </div>
         </div>
 
         <div class="catalogo-layout">
 
+            <!-- Filtros Laterais -->
             <aside class="filtros-lateral" id="filtros" aria-label="Filtros">
                 <div class="filtros-cabecalho">
                     <h2>Filtros</h2>
@@ -171,6 +168,7 @@
                 <button type="button" class="btn-aplicar btn-aplicar-mobile" id="applyMobile">Ver produtos</button>
             </aside>
 
+            <!-- Área de Produtos -->
             <section class="produtos-area" aria-label="Lista de produtos">
                 <div class="filtros-ativos" id="activeFilters"></div>
 
@@ -235,9 +233,9 @@
         </div>
     </footer>
 
-    <!-- Mesma ordem de autenticação da tela inicial (ajuste para o caminho real do seu auth.js) -->
+    <!-- Scripts -->
     <script src="/js/auth.js"></script>
-    <script src="catalogo-zora.js"></script>
+    <script src="js/catalogo.js"></script>
 </body>
 
 </html>
