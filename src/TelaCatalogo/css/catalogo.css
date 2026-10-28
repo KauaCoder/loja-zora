@@ -30,8 +30,8 @@ body {
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
-/* =========================================================
-   ESTILIZAÇÃO COMPLETA DA PARTE DE CIMA (MENU E NAVEGAÇÃO)
+//* =========================================================
+   ESTILIZAÇÃO CORRIGIDA DA PARTE DE CIMA (MENU E NAVEGAÇÃO)
    ========================================================= */
 nav {
     background-color: #fffaf5;
@@ -42,41 +42,51 @@ nav {
     width: 100%;
 }
 
-nav ul {
-    list-style: none;
-    margin: 0;
-    padding: 0 30px;
+.nav-container {
+    max-width: 1700px;
+    width: 94%;
+    margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
     height: 75px;
 }
 
-nav ul li a {
-    text-decoration: none;
-    color: #444;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 8px 12px;
-    transition: color 0.2s;
-}
-
-nav a.link-ativo { 
-    color: #85552f; 
-    box-shadow: inset 0 -3px 0 var(--zora-dourado); 
-}
-
-/* Logo no Menu */
-.logo-menu a {
+/* Logo */
+.logo-menu {
     display: flex;
     align-items: center;
-    padding: 0 !important;
+    text-decoration: none;
 }
 
 .logo-menu img {
     height: 38px;
     width: auto;
     display: block;
+}
+
+/* Links de Navegação */
+.nav-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.nav-links li a {
+    text-decoration: none;
+    color: #444;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 4px;
+    transition: color 0.2s;
+}
+
+nav a.link-ativo { 
+    color: #85552f; 
+    box-shadow: inset 0 -3px 0 var(--zora-dourado); 
 }
 
 /* Container de Pesquisa no Menu */
@@ -127,6 +137,7 @@ nav a.link-ativo {
     padding: 20px;
     transition: right 0.3s ease;
     list-style: none;
+    margin: 0;
 }
 
 .sidebar.aberto {
@@ -159,25 +170,13 @@ nav a.link-ativo {
     box-sizing: border-box;
 }
 
-/* Overlay de fundo escuro */
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.4);
-    z-index: 1500;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+/* Responsivo para Telas Menores */
+@media (max-width: 900px) {
+    .hideOnMobile { display: none !important; }
+    .menu-button { display: block !important; }
+    .menu-button a { font-size: 24px; text-decoration: none; color: #222; }
+    .nav-container { padding: 0 16px; height: 65px; width: 100%; }
 }
-
-.overlay.ativo {
-    opacity: 1;
-    visibility: visible;
-}
-
 
 /* ---------- Estrutura do Catálogo (Corpo) ---------- */
 .catalogo-pagina {
