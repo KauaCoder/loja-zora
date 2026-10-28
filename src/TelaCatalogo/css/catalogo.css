@@ -30,9 +30,115 @@ body {
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
-nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado); }
+/* =========================================================
+   ESTILIZAÇÃO DA PARTE DE CIMA (MENU / NAVEGAÇÃO)
+   ========================================================= */
+nav {
+    background-color: #fffaf5;
+    border-bottom: 1px solid var(--zora-linha);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+}
 
-/* ---------- Estrutura do Catálogo ---------- */
+nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 75px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #444;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 12px;
+    transition: color 0.2s;
+}
+
+nav a.link-ativo { 
+    color: #85552f; 
+    box-shadow: inset 0 -3px 0 var(--zora-dourado); 
+}
+
+/* Logo no Menu */
+.logo-menu img {
+    height: 35px;
+    width: auto;
+    display: block;
+}
+
+/* Container de Pesquisa no Menu */
+.busca-container {
+    display: flex;
+    align-items: center;
+    background: #F5EFE6;
+    border: 1px solid var(--zora-linha);
+    border-radius: 99px;
+    padding: 4px 6px 4px 16px;
+    width: 280px;
+}
+
+.busca-container input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    width: 100%;
+    color: #333;
+}
+
+.btn-lupa {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+}
+
+/* Botão do menu mobile (escondido no desktop) */
+.menu-button {
+    display: none;
+}
+
+/* Sidebar Mobile */
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 280px;
+    height: 100vh;
+    background: #fffaf5;
+    z-index: 3000;
+    box-shadow: -5px 0 25px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    transition: right 0.3s ease;
+    list-style: none;
+}
+
+.sidebar.aberto {
+    right: 0;
+}
+
+.sidebar-fechar {
+    align-self: flex-end;
+    margin-bottom: 20px;
+}
+
+.sidebar-fechar a {
+    font-size: 22px;
+    color: #333;
+    text-decoration: none;
+}
+
+/* ---------- Estrutura do Catálogo (Corpo) ---------- */
 .catalogo-pagina {
     width: min(94%, 1700px);
     margin: 30px auto 40px;
@@ -145,8 +251,6 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
 /* =========================================================
    ESTILIZAÇÃO UNIFICADA E FIXA DO CARRINHO DE PEDIDOS
    ========================================================= */
-
-/* Fundo da gaveta e scroll */
 #listaPedidos {
     flex: 1;
     list-style: none;
@@ -155,7 +259,6 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
     overflow-y: auto;
 }
 
-/* Ficha de cada produto no carrinho */
 #listaPedidos li.item-carrinho {
     display: flex;
     align-items: center;
@@ -168,7 +271,6 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* Controlo da Imagem Miniatura (Fix para não esticar) */
 .carrinho-foto-link {
     display: block;
     width: 65px;
@@ -185,7 +287,6 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
     display: block;
 }
 
-/* Detalhes do produto (Nome e Preço Unitário) */
 .carrinho-detalhes {
     flex: 1;
     display: flex;
@@ -209,7 +310,6 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
     color: #888888;
 }
 
-/* Controlos de Quantidade (- 1 +) */
 .qtd-controle {
     display: flex;
     align-items: center;
@@ -242,7 +342,6 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
     text-align: center;
 }
 
-/* Acções do lado direito (Subtotal e Botão Remover) */
 .carrinho-acoes {
     display: flex;
     flex-direction: column;
@@ -271,7 +370,6 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
     color: #d32f2f !important;
 }
 
-/* Botão de Finalizar Compra no Rodapé */
 .PedidosPagar button {
     width: 100%;
     padding: 14px;
@@ -297,7 +395,13 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-/* ---------- Responsivo ---------- */
+/* ---------- Responsivo do Menu e Layout ---------- */
+@media (max-width: 900px) {
+    .hideOnMobile { display: none !important; }
+    .menu-button { display: block !important; }
+    nav ul { padding: 0 16px; height: 65px; }
+}
+
 @media (max-width: 1100px) {
     .catalogo-grid.colunas-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .catalogo-layout { grid-template-columns: 200px minmax(0, 1fr); gap: 22px; }
