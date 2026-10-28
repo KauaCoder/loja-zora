@@ -16,27 +16,32 @@
 <body>
 
     <!-- OVERLAY -->
-    <div id="overlay" class="overlay" onclick="fecharTudo()"></div>
+    <div id="overlay" class="overlay"></div>
 
     <!-- ========================= SACOLA (Gaveta de Pedidos) ========================= -->
-    <div id="Pedidos" class="caixa-pedidos">
-        <div class="topo-pedidos">
-            <h2>Meus Pedidos</h2>
-            <button type="button" onclick="fecharPedidos()" aria-label="Fechar pedidos">✕</button>
+    <aside class="cart-drawer caixa-pedidos" id="cartDrawer" aria-label="Carrinho de compras" aria-hidden="true">
+        <div class="drawer-head topo-pedidos">
+            <div>
+                <p class="eyebrow" style="margin:0 0 4px;">SUAS ESCOLHAS</p>
+                <h2>Minha sacola</h2>
+            </div>
+            <button type="button" class="close-drawer" data-close aria-label="Fechar pedidos">✕</button>
         </div>
 
-        <ul id="listaPedidos">
-            <!-- Os itens do carrinho são injetados aqui via JS -->
-        </ul>
-
-        <div class="rodape-pedidos">
-            <h3>Total: R$ <span id="total">0,00</span></h3>
+        <div id="cartItems" class="cart-items">
+            <p class="cart-empty">Sua sacola está vazia.</p>
         </div>
 
-        <div class="PedidosPagar">
-            <button type="button" onclick="pagarPedido()">Finalizar Compra</button>
+        <div class="cart-footer">
+            <div class="cart-total rodape-pedidos" style="border:none; background:none; padding:0 0 15px 0;">
+                <span>Total</span>
+                <strong id="cartTotal">R$ 0,00</strong>
+            </div>
+            <div class="PedidosPagar">
+                <button type="button" id="checkout">Finalizar Pedido</button>
+            </div>
         </div>
-    </div>
+    </aside>
 
     <!-- ========================= MENU ========================= -->
     <nav>
@@ -53,10 +58,10 @@
             </li>
 
             <li><a href="/Telainicial/index.html" onclick="hideSidebar();">Início</a></li>
-            <li><a href="/TelaCatalogo/catalogo.html" onclick="hideSidebar(); return false;">Catálogo</a></li>
+            <li><a href="/TelaCatalogo/catalogo.html" onclick="hideSidebar(); return false;" class="link-ativo">Catálogo</a></li>
             <li>
-                <a href="#" onclick="hideSidebar(); abrirPedidos(); return false;">
-                    Pedidos <span class="badge-carrinho"></span>
+                <a href="#" id="openCartMobile" onclick="hideSidebar(); openPanel('cart'); return false;">
+                    Pedidos <span class="mini-count" id="cartCountMobile">0</span>
                 </a>
             </li>
             <li><a href="#rodape" onclick="hideSidebar();">Sobre</a></li>
@@ -71,26 +76,31 @@
                 <img src="/img/Logo 1.png" alt="ZORA - Logo Oficial">
             </a>
 
-            <div class="hideOnMobile nav-busca-item">
-                <div class="busca-container">
-                    <input type="text" id="inputBusca" placeholder="Pesquisar peças, vestidos..." autocomplete="off">
+            <div class="nav-centro-itens">
+                <div class="busca-container hideOnMobile">
+                    <input type="text" id="searchInput" placeholder="Pesquisar peças, vestidos..." autocomplete="off">
                     <button type="button" class="btn-lupa" aria-label="Pesquisar">🔍</button>
                 </div>
+
+                <ul class="nav-links hideOnMobile">
+                    <li><a href="/TelaCatalogo/catalogo.html" class="link-ativo">Catálogo</a></li>
+                    <li>
+                        <a href="#" id="openCart" onclick="openPanel('cart'); return false;">
+                            Pedidos <span class="mini-count" id="cartCount">0</span>
+                        </a>
+                    </li>
+                    <li><a href="#rodape">Sobre</a></li>
+                    <li><a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">Login</a></li>
+                </ul>
             </div>
 
-            <ul class="nav-links hideOnMobile">
-                <li><a href="/TelaCatalogo/catalogo.html" class="link-ativo">Catálogo</a></li>
-                <li>
-                    <a href="#" onclick="abrirPedidos(); return false;">
-                        Pedidos <span class="badge-carrinho"></span>
-                    </a>
-                </li>
-                <li><a href="#rodape">Sobre</a></li>
-                <li><a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">Login</a></li>
-            </ul>
-
-            <div class="menu-button">
-                <a href="#" onclick="showSidebar(); return false;" aria-label="Abrir menu">☰</a>
+            <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+                <button class="icon-button" id="openFavorites" aria-label="Ver favoritos" style="background:none; border:0; cursor:pointer; position:relative;">
+                    ♡ <span class="mini-count" id="favoriteCount">0</span>
+                </button>
+                <div class="menu-button">
+                    <a href="#" onclick="showSidebar(); return false;" aria-label="Abrir menu">☰</a>
+                </div>
             </div>
         </div>
     </nav>
@@ -126,13 +136,9 @@
                 </select>
             </label>
 
-            <button type="button" class="btn-ferramenta btn-favoritos" id="favToggle" aria-pressed="false">
-                ♡ Favoritos <span class="mini-contador" id="favoriteCount">0</span>
-            </button>
-
             <div class="troca-visual" aria-label="Modo de visualização">
                 <button type="button" class="view-button" data-columns="4" aria-label="Quatro colunas">▦</button>
-                <button type="button" class="view-button" data-columns="3" aria-label="Três colunas">▥</button>
+                <button type="button" class="view-button active" data-columns="3" aria-label="Três colunas">▥</button>
                 <button type="button" class="view-button" data-columns="2" aria-label="Duas colunas">▯▯</button>
             </div>
         </div>
@@ -140,16 +146,19 @@
         <div class="catalogo-layout">
 
             <!-- Filtros Laterais -->
-            <aside class="filtros-lateral" id="filtros" aria-label="Filtros">
+            <aside class="filtros-lateral" id="filters" aria-label="Filtros">
                 <div class="filtros-cabecalho">
                     <h2>Filtros</h2>
                     <button type="button" id="clearFilters" class="btn-texto">Limpar tudo</button>
-                    <button type="button" class="btn-fechar-filtros" onclick="fecharTudo()" aria-label="Fechar filtros">✕</button>
+                    <button type="button" class="btn-fechar-filtros" data-close aria-label="Fechar filtros">✕</button>
                 </div>
 
                 <div class="filtro-grupo">
                     <h3>Categoria</h3>
-                    <div id="categoryFilters"><p class="filtro-vazio">Carregando...</p></div>
+                    <label class="filtro-check"><input type="checkbox" name="category" value="Vestidos"> Vestidos <span>(12)</span></label>
+                    <label class="filtro-check"><input type="checkbox" name="category" value="Blusas"> Blusas <span>(8)</span></label>
+                    <label class="filtro-check"><input type="checkbox" name="category" value="Saias"> Saias e Shorts <span>(5)</span></label>
+                    <label class="filtro-check"><input type="checkbox" name="category" value="Conjuntos"> Conjuntos <span>(4)</span></label>
                 </div>
 
                 <div class="filtro-grupo">
@@ -158,11 +167,17 @@
                         <label>De R$<input id="minPrice" type="number" min="0" placeholder="0"></label>
                         <label>Até R$<input id="maxPrice" type="number" min="0" placeholder="500"></label>
                     </div>
+                    <button type="button" class="apply-filter" id="applyPrice" style="margin-top:10px; width:100%; padding:8px; background:#222; color:#fff; border:0; border-radius:6px; cursor:pointer;">Aplicar preço</button>
                 </div>
 
                 <div class="filtro-grupo">
-                    <h3>Disponibilidade</h3>
-                    <label class="filtro-check"><input type="checkbox" id="onlyStock"> Somente em estoque</label>
+                    <h3>Tamanho</h3>
+                    <div class="size-options" style="display:flex; gap:6px;">
+                        <label><input type="checkbox" name="size" value="P"><span>P</span></label>
+                        <label><input type="checkbox" name="size" value="M"><span>M</span></label>
+                        <label><input type="checkbox" name="size" value="G"><span>G</span></label>
+                        <label><input type="checkbox" name="size" value="GG"><span>GG</span></label>
+                    </div>
                 </div>
 
                 <button type="button" class="btn-aplicar btn-aplicar-mobile" id="applyMobile">Ver produtos</button>
@@ -203,7 +218,7 @@
                 <ul>
                     <li><a href="/Telainicial/index.html">Início</a></li>
                     <li><a href="/TelaCatalogo/catalogo.html">Catálogo Completo</a></li>
-                    <li><a href="#" onclick="abrirPedidos(); return false;">Meus Pedidos</a></li>
+                    <li><a href="#" onclick="openPanel('cart'); return false;">Meus Pedidos</a></li>
                     <li><a href="#rodape">Sobre Nós</a></li>
                 </ul>
             </div>
@@ -233,7 +248,7 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
+    <!-- Scripts de Autenticação e Lógica -->
     <script src="/js/auth.js"></script>
     <script src="js/catalogo.js"></script>
 </body>
