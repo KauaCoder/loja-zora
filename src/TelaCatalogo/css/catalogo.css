@@ -1,8 +1,19 @@
 /* =====================================================
-   ZORA - CATÁLOGO
-   Complementa /Telainicial/style.css (menu, sacola, busca, cards, rodapé).
-   Mesma paleta: #fffaf5 / #F5EFE6 / dourado #d4af37 / rosa #d63384 / laranja #d35400
+   ZORA - CATÁLOGO & ESTILOS UNIFICADOS
+   Complementa /Telainicial/style.css e /EstiloBase.css
 ===================================================== */
+
+body {
+    background-color: #F5EFE6;
+    min-height: 100vh;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    color: #222;
+}
 
 :root {
     --zora-bege: #F5EFE6;
@@ -21,10 +32,10 @@
 
 nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado); }
 
-/* ---------- Estrutura ---------- */
+/* ---------- Estrutura do Catálogo ---------- */
 .catalogo-pagina {
     width: min(94%, 1700px);
-    margin: 30px auto 0;
+    margin: 30px auto 40px;
 }
 
 .breadcrumbs { font-size: 13px; color: var(--zora-muted); margin-bottom: 22px; }
@@ -37,8 +48,8 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
     gap: 20px; margin-bottom: 24px; flex-wrap: wrap;
 }
 
-.eyebrow { font-size: 11px; font-weight: bold; letter-spacing: 2px; color: var(--zora-dourado); margin-bottom: 8px; }
-.catalogo-topo h1 { font-size: clamp(26px, 3.5vw, 36px); color: #222; line-height: 1.15; }
+.eyebrow { font-size: 11px; font-weight: bold; letter-spacing: 2px; color: var(--zora-dourado); margin-bottom: 8px; text-transform: uppercase; }
+.catalogo-topo h1 { font-size: clamp(26px, 3.5vw, 36px); color: #222; line-height: 1.15; margin: 0; }
 .subtitulo { color: var(--zora-muted); margin-top: 8px; font-size: 15px; }
 .contagem-catalogo { font-size: 14px; color: #555; white-space: nowrap; }
 
@@ -75,22 +86,22 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
 }
 .view-button.ativo { background: #000; color: #fff; border-color: #000; }
 
-/* ---------- Layout ---------- */
+/* ---------- Layout (Grid / Filtros) ---------- */
 .catalogo-layout {
     display: grid; grid-template-columns: 240px minmax(0, 1fr);
     gap: 32px; padding: 28px 0 10px;
 }
 
-/* ---------- Filtros ---------- */
-.filtros-lateral { border-right: 1px solid var(--zora-linha); padding-right: 24px; align-self: start; }
+/* ---------- Filtros Laterais ---------- */
+.filtros-lateral { border-right: 1px solid var(--zora-linha); padding-right: 24px; align-self: start; background: transparent; }
 .filtros-cabecalho { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 10px; }
-.filtros-cabecalho h2 { font-size: 18px; color: #222; margin-right: auto; }
+.filtros-cabecalho h2 { font-size: 18px; color: #222; margin: 0; }
 .btn-texto { border: 0; background: none; text-decoration: underline; color: var(--zora-muted); font-size: 12px; cursor: pointer; }
 .btn-texto:hover { color: var(--zora-rosa); }
 .btn-fechar-filtros { display: none; border: 0; background: none; font-size: 22px; cursor: pointer; color: #555; }
 
 .filtro-grupo { padding: 18px 0; border-top: 1px solid var(--zora-linha); }
-.filtro-grupo h3 { font-size: 14px; margin-bottom: 12px; color: #222; }
+.filtro-grupo h3 { font-size: 14px; margin-bottom: 12px; color: #222; margin-top: 0; }
 .filtro-vazio { font-size: 13px; color: #999; }
 
 .filtro-check { display: flex; align-items: center; gap: 9px; margin: 11px 0; font-size: 14px; color: #555; cursor: pointer; }
@@ -102,6 +113,7 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
 .campos-preco input {
     display: block; width: 100%; min-width: 0; margin-top: 6px; padding: 10px 8px;
     border: 1px solid #ddd; border-radius: 8px; background: #fff; font-size: 14px; outline: none;
+    box-sizing: border-box;
 }
 .campos-preco input:focus { border-color: var(--zora-dourado); }
 
@@ -123,50 +135,159 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
 .chip-filtro button { border: 0; background: none; cursor: pointer; font-size: 15px; color: #777; padding: 0; }
 .chip-filtro button:hover { color: crimson; }
 
-/* ---------- Grid de produtos (usa o card .produto da tela inicial) ---------- */
+/* ---------- Grid de Produtos ---------- */
 .produtos-area { min-width: 0; }
-
 .catalogo-grid { display: grid; gap: 28px 22px; }
 .catalogo-grid.colunas-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .catalogo-grid.colunas-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .catalogo-grid.colunas-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-.catalogo-grid .produto { position: relative; height: 100%; }
-.catalogo-grid .produto img { height: auto; aspect-ratio: 0.8; }
-.catalogo-grid .produto h3 { font-size: 16px; min-height: 42px; }
-.catalogo-grid .produto .preco-antigo {
-    display: block; font-size: 13px; font-weight: normal; color: #aaa; text-decoration: line-through; margin: 0 0 2px;
+/* =========================================================
+   ESTILIZAÇÃO UNIFICADA E FIXA DO CARRINHO DE PEDIDOS
+   ========================================================= */
+
+/* Fundo da gaveta e scroll */
+#listaPedidos {
+    flex: 1;
+    list-style: none;
+    padding: 15px;
+    margin: 0;
+    overflow-y: auto;
 }
-.catalogo-grid .produto .preco { margin: 4px 0 14px; }
 
-.selo-produto {
-    position: absolute; left: 12px; top: 12px; z-index: 2; background: #fff; color: #222;
-    padding: 6px 10px; border-radius: 99px; font-size: 11px; font-weight: bold; letter-spacing: .5px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+/* Ficha de cada produto no carrinho */
+#listaPedidos li.item-carrinho {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #eeeeee;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
-.selo-produto.esgotado { background: #222; color: #fff; }
 
-.btn-favorito {
-    position: absolute; right: 12px; top: 12px; z-index: 2; width: 38px; height: 38px;
-    border: 0; border-radius: 50%; background: rgba(255,255,255,.92); cursor: pointer;
-    font-size: 20px; line-height: 1; color: #222; backdrop-filter: blur(4px);
-    transition: transform .26s, color .26s;
+/* Controlo da Imagem Miniatura (Fix para não esticar) */
+.carrinho-foto-link {
+    display: block;
+    width: 65px;
+    height: 65px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    overflow: hidden;
 }
-.btn-favorito:hover { transform: scale(1.1); }
-.btn-favorito.ativo { color: var(--zora-rosa); }
 
-.produto.sem-estoque img { filter: grayscale(.6); opacity: .8; }
-
-.estado-vazio { text-align: center; padding: 70px 20px; color: var(--zora-muted); }
-.estado-vazio > span { font-size: 3rem; }
-.estado-vazio h2 { color: #222; font-size: 22px; margin: 6px 0; }
-.estado-vazio .btn-aplicar { max-width: 220px; margin: 18px auto 0; display: block; }
-
-.btn-carregar-mais {
-    display: block; margin: 40px auto 0; padding: 14px 28px; border: 1px solid #222; border-radius: 99px;
-    background: #fff; font-weight: bold; font-size: 14px; cursor: pointer; transition: all .26s;
+.carrinho-foto {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block;
 }
-.btn-carregar-mais:hover { background: #000; color: #fff; }
+
+/* Detalhes do produto (Nome e Preço Unitário) */
+.carrinho-detalhes {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.carrinho-nome {
+    font-size: 14px;
+    font-weight: 700;
+    color: #171717;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.carrinho-preco-unitario {
+    font-size: 12px;
+    color: #888888;
+}
+
+/* Controlos de Quantidade (- 1 +) */
+.qtd-controle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.qtd-btn {
+    width: 26px;
+    height: 26px;
+    background: #f0f0f0;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qtd-btn:hover {
+    background: #e0e0e0;
+}
+
+.qtd-numero {
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Acções do lado direito (Subtotal e Botão Remover) */
+.carrinho-acoes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.carrinho-subtotal {
+    font-size: 14px;
+    font-weight: 700;
+    color: #c85c78;
+}
+
+.remover-item {
+    background: transparent !important;
+    border: none !important;
+    font-size: 16px;
+    cursor: pointer;
+    color: #888888;
+    padding: 2px;
+    transition: color 0.2s;
+}
+
+.remover-item:hover {
+    color: #d32f2f !important;
+}
+
+/* Botão de Finalizar Compra no Rodapé */
+.PedidosPagar button {
+    width: 100%;
+    padding: 14px;
+    background: #000000;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    transition: background 0.3s ease;
+}
+
+.PedidosPagar button:hover {
+    background: #222222;
+}
 
 /* ---------- Toast ---------- */
 .toast {
@@ -184,39 +305,19 @@ nav a.link-ativo { color: #85552f; box-shadow: inset 0 -3px 0 var(--zora-dourado
 
 @media (max-width: 800px) {
     .catalogo-pagina { width: 100%; padding-inline: 14px; margin-top: 20px; }
-    .catalogo-topo { margin-bottom: 16px; }
-    .contagem-catalogo { font-size: 13px; }
-
     #filterToggle { display: inline-flex; }
-    .barra-ferramentas { gap: 8px; }
-    .btn-ferramenta { padding: 0 14px; min-height: 44px; font-size: 13px; }
-    .troca-visual { margin-left: 0; width: 100%; justify-content: flex-end; }
-    .view-button[data-columns="4"] { display: none; }
-
     .catalogo-layout { display: block; padding-top: 20px; }
 
-    /* Filtros viram painel inferior (sobre o overlay) */
     .filtros-lateral {
         position: fixed; left: 0; right: 0; bottom: 0; z-index: 2100; max-height: 86vh; overflow-y: auto;
-        background: #fff; border-radius: 22px 22px 0 0; border-right: 0; padding: 22px 20px calc(24px + env(safe-area-inset-bottom));
-        box-shadow: 0 -10px 40px rgba(0,0,0,.15); transform: translateY(105%); transition: transform .3s cubic-bezier(.25,1,.5,1);
+        background: #fff; border-radius: 22px 22px 0 0; padding: 22px 20px;
+        box-shadow: 0 -10px 40px rgba(0,0,0,.15); transform: translateY(105%); transition: transform .3s;
     }
     .filtros-lateral.aberto { transform: translateY(0); }
     .btn-fechar-filtros { display: block; }
     .btn-aplicar-mobile { display: block; }
 
-    .catalogo-grid { gap: 22px 12px; }
     .catalogo-grid.colunas-4,
     .catalogo-grid.colunas-3,
     .catalogo-grid.colunas-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .catalogo-grid.colunas-3 .produto h3,
-    .catalogo-grid .produto h3 { font-size: 14px; min-height: 36px; margin: 10px 8px 4px; }
-    .catalogo-grid .produto .preco { font-size: 16px; margin: 4px 0 10px; }
-    .catalogo-grid .produto button.btn-comprar { margin: auto 8px 12px; padding: 9px 5px; font-size: 12px; }
-    .btn-favorito { width: 34px; height: 34px; font-size: 18px; right: 8px; top: 8px; }
-    .selo-produto { left: 8px; top: 8px; font-size: 10px; padding: 5px 8px; }
-}
-
-@media (max-width: 360px) {
-    .catalogo-grid { gap: 18px 8px; }
 }
