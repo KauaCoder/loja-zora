@@ -51,13 +51,10 @@ try {
 
     // =============================================
     // CONSULTA RESILIENTE AO POSTGRESQL (SUPABASE)
+    // Usa aspas duplas em "Produto" para evitar erro de Case-Sensitivity
     // =============================================
 
-    $sql = "
-        SELECT *
-        FROM public.produto
-        ORDER BY id_produto ASC
-    ";
+    $sql = 'SELECT * FROM public."Produto" ORDER BY id_produto ASC';
 
     $stmt = $conexao->prepare($sql);
     $stmt->execute();
@@ -67,18 +64,23 @@ try {
     $produtos = [];
 
     foreach ($dados as $produto) {
-        // Mapeamento dinâmico e seguro das colunas da tabela
+        // Mapeamento alinhado exatamente com o Supabase:
+        // Colunas reais: id_produto, nm_produto, preco, qtd_item, categoria, imagem
         $id        = $produto["id_produto"] ?? $produto["id"] ?? 0;
         $nome      = $produto["nm_produto"] ?? $produto["nome"] ?? $produto["nome_produto"] ?? "Produto ZORA";
         $preco     = $produto["preco"] ?? $produto["valor"] ?? 0;
-        $estoque   = $produto["estoque"] ?? $produto["qtd_item"] ?? $produto["quantidade"] ?? $produto["qtd"] ?? 99;
+        
+        // Dá prioridade a qtd_item para não pegar NULL caso a coluna estoque exista
+        $estoque   = $produto["qtd_item"] ?? $produto["estoque"] ?? $produto["quantidade"] ?? $produto["qtd"] ?? 99;
+        
         $categoria = $produto["categoria"] ?? "Geral";
         $imagem    = $produto["imagem"] ?? $produto["foto"] ?? "Logo 1.png";
-        $descricao = $produto["descricao"] ?? "";
+        $descricao = $produto["descricao"] ?? "Peça exclusiva ZORA com caimento e modelagem impecáveis.";
 
         $produtos[] = [
             "id_produto" => (int) $id,
             "nome"        => (string) $nome,
+            "nm_produto"  => (string) $nome,
             "preco"       => round((float) $preco, 2),
             "estoque"     => (int) $estoque,
             "qtd_item"    => (int) $estoque,
