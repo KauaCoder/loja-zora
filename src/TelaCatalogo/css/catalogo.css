@@ -55,12 +55,19 @@ nav {
     display: flex;
     align-items: center;
     text-decoration: none;
+    flex-shrink: 0;
 }
 
 .logo-menu img {
     height: 38px;
     width: auto;
     display: block;
+}
+
+.nav-centro-itens {
+    display: flex;
+    align-items: center;
+    gap: 30px;
 }
 
 .nav-links {
@@ -93,7 +100,7 @@ nav a.link-ativo {
     border: 1px solid var(--zora-linha);
     border-radius: 99px;
     padding: 4px 6px 4px 16px;
-    width: 300px;
+    width: 280px;
 }
 
 .busca-container input {
