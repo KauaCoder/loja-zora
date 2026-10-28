@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - CATÁLOGO, FILTROS, FAVORITOS E SACOLA
-// Localização do ficheiro: TelaCatalogo/js/
+// Localização do ficheiro: TelaCatalogo/js/catalogo.js
 // =====================================================
 
 // Mapeamento local inicial / fallback
@@ -28,7 +28,7 @@ const toastEl = document.querySelector("#toast");
 
 let favorites = new Set();
 let cart = [];
-let visibleLimit = 8;
+let visibleLimit = 100; // Limite expandido para exibir todas as peças
 let currentColumns = 2;
 let favoritesOnly = false;
 let toastTimer;
@@ -36,19 +36,29 @@ let toastTimer;
 const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const checkedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
 
-// Procura produtos no servidor (caminho ajustado para a raiz a partir de TelaCatalogo/js/)
+// Procura produtos no servidor (com resiliência de rota)
 async function carregarProdutosServidor() {
   try {
-    const resposta = await fetch("/produtos_catalogo.php", {
+    let resposta = await fetch("/produtos_catalogo.php", {
       headers: { "Accept": "application/json" }
     });
+
+    if (!resposta.ok) {
+      resposta = await fetch("../../produtos_catalogo.php", {
+        headers: { "Accept": "application/json" }
+      });
+    }
+
     const resultado = await resposta.json();
 
-    if (resposta.ok && resultado.sucesso && Array.isArray(resultado.produtos) && resultado.produtos.length > 0) {
+    if (resultado && resultado.sucesso && Array.isArray(resultado.produtos) && resultado.produtos.length > 0) {
       products = resultado.produtos.map(p => {
-        const cat = p.categoria || "Geral";
+        // Normaliza a categoria removendo prefixos como "Categoria: " do Supabase
+        const catBruta = p.categoria || "Geral";
+        const cat = catBruta.replace("Categoria: ", "").trim();
+
         let tamanhos = ["P", "M", "G", "GG"];
-        if (cat.toLowerCase().includes("calça") || cat.toLowerCase().includes("saia")) {
+        if (cat.toLowerCase().includes("calça") || cat.toLowerCase().includes("saia") || cat.toLowerCase().includes("calcas") || cat.toLowerCase().includes("saias")) {
           tamanhos = ["36", "38", "40", "42", "44"];
         }
 
@@ -68,7 +78,7 @@ async function carregarProdutosServidor() {
       renderProducts();
     }
   } catch (erro) {
-    console.warn("Aviso: a carregar produtos no modo fallback local.");
+    console.warn("Aviso: Falha ao procurar produtos no backend. A utilizar catálogo local.", erro);
   }
 }
 
@@ -94,7 +104,7 @@ function filteredProducts() {
   const sortSelect = document.querySelector("#sortSelect");
   const sort = sortSelect ? sortSelect.value : "";
   if (sort === "price-low") list.sort((a, b) => a.price - b.price);
-  if (sort === "price-high") list.sort((a,b) => b.price - a.price);
+  if (sort === "price-high") list.sort((a, b) => b.price - a.price);
   if (sort === "name") list.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   
   return list;
@@ -289,7 +299,7 @@ if (openCart) openCart.addEventListener("click", () => { renderCart(); openPanel
 const openFavorites = document.querySelector("#openFavorites");
 if (openFavorites) openFavorites.addEventListener("click", () => {
   favoritesOnly = !favoritesOnly;
-  visibleLimit = 8;
+  visibleLimit = 100;
   renderProducts();
   const cat = document.querySelector("#catalogo");
   if (cat) cat.scrollIntoView({ behavior: "smooth" });
@@ -309,10 +319,10 @@ if (openSearch) openSearch.addEventListener("click", () => {
 });
 
 const searchPanel = document.querySelector("#searchPanel");
-if (searchPanel) searchPanel.addEventListener("submit", e => { e.preventDefault(); visibleLimit = 8; renderProducts(); });
+if (searchPanel) searchPanel.addEventListener("submit", e => { e.preventDefault(); visibleLimit = 100; renderProducts(); });
 
 const sortSelect = document.querySelector("#sortSelect");
-if (sortSelect) sortSelect.addEventListener("change", () => { visibleLimit = 8; renderProducts(); });
+if (sortSelect) sortSelect.addEventListener("change", () => { visibleLimit = 100; renderProducts(); });
 
 document.querySelectorAll(".view-button").forEach(btn => btn.addEventListener("click", () => {
   currentColumns = Number(btn.dataset.columns);
@@ -320,10 +330,10 @@ document.querySelectorAll(".view-button").forEach(btn => btn.addEventListener("c
   renderProducts();
 }));
 
-document.querySelectorAll('input[name="category"],input[name="size"]').forEach(el => el.addEventListener("change", () => { visibleLimit = 8; renderProducts(); }));
+document.querySelectorAll('input[name="category"],input[name="size"]').forEach(el => el.addEventListener("change", () => { visibleLimit = 100; renderProducts(); }));
 
 const applyPrice = document.querySelector("#applyPrice");
-if (applyPrice) applyPrice.addEventListener("click", () => { visibleLimit = 8; renderProducts(); });
+if (applyPrice) applyPrice.addEventListener("click", () => { visibleLimit = 100; renderProducts(); });
 
 const applyMobile = document.querySelector("#applyMobile");
 if (applyMobile) applyMobile.addEventListener("click", () => { renderProducts(); closePanels(); });
@@ -335,7 +345,7 @@ const emptyReset = document.querySelector("#emptyReset");
 if (emptyReset) emptyReset.addEventListener("click", clearFilters);
 
 const loadMore = document.querySelector("#loadMore");
-if (loadMore) loadMore.addEventListener("click", () => { visibleLimit += 4; renderProducts(); });
+if (loadMore) loadMore.addEventListener("click", () => { visibleLimit += 8; renderProducts(); });
 
 function clearFilters() {
   document.querySelectorAll('input[name="category"],input[name="size"]').forEach(el => el.checked = false);
@@ -346,7 +356,7 @@ function clearFilters() {
   if (maxP) maxP.value = "";
   if (sIn) sIn.value = "";
   favoritesOnly = false;
-  visibleLimit = 8;
+  visibleLimit = 100;
   renderProducts();
 }
 
