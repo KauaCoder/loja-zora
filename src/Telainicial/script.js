@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - TELA INICIAL, CATÁLOGO, SLIDES, CARRINHO E PESQUISA
-// Versão Completa & Definitiva (Com Suporte a TelaCatalogo)
+// Versão Atualizada & Integrada (Com Suporte a Subpastas /img/roupazora/)
 // =====================================================
 
 
@@ -233,15 +233,15 @@ function reiniciarTemporizadorSlide() {
     if (temporizadorSlide) clearInterval(temporizadorSlide);
     temporizadorSlide = setInterval(() => {
         mostrarSlide(slideIndiceAtual + 1);
-    }, 6000); // Passa de slide automaticamente a cada 6 segundos
+    }, 6000); 
 }
 
 
 // =====================================================
-// 3. CATÁLOGO DE PRODUTOS E ROLAGEM HORIZONTAL
+// 3. CATÁLOGO DE PRODUTOS E GESTÃO DE IMAGENS
 // =====================================================
 
-let produtosGlobais = []; // Armazena a lista de produtos carregados para uso na busca
+let produtosGlobais = [];
 
 async function carregarCatalogo() {
     const container = document.getElementById("catalogoProdutos");
@@ -289,16 +289,31 @@ function formatarPreco(valor) {
         .replace(".", ",");
 }
 
+// Sistema inteligente de caminhos de imagem (Suporta /img/roupazora/, /img/ e CDNs externas)
 function obterImagemProduto(imagem) {
-    if (!imagem) {
-        return "/img/Logo%201.png";
+    if (!imagem || imagem.trim() === "" || imagem === "null") {
+        return "/img/Logo 1.png";
     }
 
-    if (/^(https?:\/\/|\/)/i.test(imagem)) {
-        return imagem;
+    const src = imagem.trim();
+
+    if (src.startsWith("/")) {
+        return src;
     }
 
-    return "/img/" + encodeURIComponent(imagem);
+    if (src.startsWith("http://") || src.startsWith("https://")) {
+        if (src.includes("susercontent.com") || src.includes("shopee") || src.includes("down-br")) {
+            return `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
+        }
+        return src;
+    }
+
+    if (src.startsWith("roupazora/")) {
+        return `/img/${src}`;
+    }
+
+    // Por padrão, busca na subpasta roupazora ou raiz
+    return `/img/roupazora/${src}`;
 }
 
 function renderizarCatalogo(produtos) {
@@ -318,9 +333,9 @@ function renderizarCatalogo(produtos) {
 
     produtos.forEach(produto => {
         const id = Number(produto.id_produto);
-        const nome = String(produto.nome || "Produto ZORA");
+        const nome = String(produto.nm_produto || produto.nome || "Produto ZORA");
         const preco = Number(produto.preco);
-        const estoque = Number(produto.estoque);
+        const estoque = Number(produto.qtd_item !== undefined ? produto.qtd_item : produto.estoque);
 
         if (!Number.isInteger(id) || id <= 0) {
             return;
@@ -343,7 +358,7 @@ function renderizarCatalogo(produtos) {
 
         imagem.onerror = function () {
             this.onerror = null;
-            this.src = "/img/Logo%201.png";
+            this.src = "/img/Logo 1.png";
         };
 
         link.appendChild(imagem);
@@ -388,7 +403,7 @@ function renderizarCatalogo(produtos) {
 function scrollProdutos(direcao) {
     const container = document.getElementById("catalogoProdutos");
     if (!container) return;
-    const larguraItem = 280; // Largura do card + gap
+    const larguraItem = 280; 
     container.scrollBy({
         left: direcao * larguraItem * 2,
         behavior: "smooth"
@@ -431,7 +446,6 @@ function configurarBusca() {
         });
     }
 
-    // Fecha os dropdowns ao clicar fora
     document.addEventListener("click", (e) => {
         if (inputDesktop && dropdownDesktop && !inputDesktop.contains(e.target) && !dropdownDesktop.contains(e.target)) {
             dropdownDesktop.style.display = "none";
@@ -454,7 +468,7 @@ function executarBusca(termo, containerDropdown) {
     }
 
     const resultados = produtosGlobais.filter(produto => {
-        const nome = String(produto.nome || "").toLowerCase();
+        const nome = String(produto.nm_produto || produto.nome || "").toLowerCase();
         const descricao = String(produto.descricao || "").toLowerCase();
         const categoria = String(produto.categoria || "").toLowerCase();
         return nome.includes(termoLimpo) || descricao.includes(termoLimpo) || categoria.includes(termoLimpo);
@@ -465,12 +479,15 @@ function executarBusca(termo, containerDropdown) {
     if (resultados.length === 0) {
         const itemVazio = document.createElement("div");
         itemVazio.className = "busca-item-vazio";
+        itemVazio.style.padding = "15px";
+        itemVazio.style.textAlign = "center";
+        itemVazio.style.color = "#777";
         itemVazio.textContent = "Nenhum produto encontrado";
         containerDropdown.appendChild(itemVazio);
     } else {
         resultados.forEach(produto => {
             const id = Number(produto.id_produto);
-            const nome = String(produto.nome || "Produto ZORA");
+            const nome = String(produto.nm_produto || produto.nome || "Produto ZORA");
             const preco = Number(produto.preco) || 0;
             const imagemSrc = obterImagemProduto(produto.imagem);
 
@@ -484,7 +501,7 @@ function executarBusca(termo, containerDropdown) {
             img.loading = "lazy";
             img.onerror = function() {
                 this.onerror = null;
-                this.src = "/img/Logo%201.png";
+                this.src = "/img/Logo 1.png";
             };
 
             const infoDiv = document.createElement("div");
@@ -536,8 +553,8 @@ function carregarCarrinho() {
                         1,
                         Math.floor(Number(produto.quantidade) || 1)
                     ),
-                    nome: String(produto.nome || "Produto ZORA"),
-                    imagem: produto.imagem || "/img/Logo%201.png",
+                    nome: String(produto.nome || produto.nm_produto || "Produto ZORA"),
+                    imagem: produto.imagem || "/img/Logo 1.png",
                     estoque: Number.isFinite(Number(produto.estoque)) ? Number(produto.estoque) : Infinity
                 }))
                 : [];
@@ -563,11 +580,7 @@ function salvarCarrinho() {
 
     } catch (erro) {
         console.error("Erro ao salvar carrinho:", erro);
-
-        alert(
-            "Não foi possível salvar o carrinho neste dispositivo."
-        );
-
+        alert("Não foi possível salvar o carrinho neste dispositivo.");
         return false;
     }
 }
@@ -576,7 +589,6 @@ function calcularTotal() {
     return pedidosArray.reduce((total, produto) => {
         const preco = Number(produto.preco) || 0;
         const quantidade = Number(produto.quantidade) || 0;
-
         return total + preco * quantidade;
     }, 0);
 }
@@ -631,8 +643,7 @@ function renderizarPedidos() {
         item.className = "item-carrinho";
 
         const linkFoto = document.createElement("a");
-        linkFoto.href =
-            `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
+        linkFoto.href = `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
         linkFoto.className = "carrinho-foto-link";
 
         const foto = document.createElement("img");
@@ -643,7 +654,7 @@ function renderizarPedidos() {
 
         foto.onerror = function () {
             this.onerror = null;
-            this.src = "/img/Logo%201.png";
+            this.src = "/img/Logo 1.png";
         };
 
         linkFoto.appendChild(foto);
@@ -652,8 +663,7 @@ function renderizarPedidos() {
         detalhes.className = "carrinho-detalhes";
 
         const linkNome = document.createElement("a");
-        linkNome.href =
-            `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
+        linkNome.href = `/TelaProdutos/produtos.html?id=${encodeURIComponent(id)}`;
         linkNome.className = "carrinho-nome";
 
         linkNome.textContent = produto.tamanho
@@ -708,8 +718,7 @@ function renderizarPedidos() {
 
         const subtotal = document.createElement("span");
         subtotal.className = "carrinho-subtotal";
-        subtotal.textContent =
-            `R$ ${formatarPreco(preco * quantidade)}`;
+        subtotal.textContent = `R$ ${formatarPreco(preco * quantidade)}`;
 
         const btnRemover = document.createElement("button");
         btnRemover.type = "button";
@@ -775,7 +784,7 @@ function adicionarPedidos(idProduto, nome, preco, imagem, estoqueDisponivel) {
             id_produto: id,
             nome: String(nome || "Produto ZORA"),
             preco: valor,
-            imagem: imagem || "/img/Logo%201.png",
+            imagem: imagem || "/img/Logo 1.png",
             quantidade: 1,
             estoque: limiteEstoque
         });
