@@ -1,99 +1,243 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Catálogo de produtos da sua loja.">
-  <title>Catálogo | ZORA</title>
-  <link rel="stylesheet" href="css/catalogo.css">
-  <script src="js/catalogo.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Catálogo completo de moda feminina ZORA.">
+    <title>Catálogo | ZORA</title>
+
+    <!-- Estilos compartilhados com a Tela Inicial (menu, sacola, busca, cards, rodapé) -->
+    <link rel="stylesheet" href="/Telainicial/style.css">
+    <link rel="stylesheet" href="/EstiloBase.css">
+    <!-- Estilos específicos do catálogo -->
+    <link rel="stylesheet" href="css/catalogo.css">
 </head>
+
 <body>
-  <header class="topbar">
-    <a class="logo" href="#" aria-label="ZORA - início">ZORA<span>.</span></a>
-    <nav class="desktop-nav" aria-label="Navegação principal">
-      <a href="#catalogo">Novidades</a>
-      <a href="#catalogo">Roupas</a>
-      <a href="#catalogo">Promoções</a>
+
+    <!-- OVERLAY -->
+    <div id="overlay" class="overlay" onclick="fecharTudo()"></div>
+
+    <!-- ========================= SACOLA (mesma da tela inicial) ========================= -->
+    <div id="Pedidos" class="caixa-pedidos">
+        <div class="topo-pedidos">
+            <h2>Meus Pedidos</h2>
+            <button type="button" onclick="fecharPedidos()" aria-label="Fechar pedidos">✕</button>
+        </div>
+
+        <ul id="listaPedidos"></ul>
+
+        <div class="rodape-pedidos">
+            <h3>Total: R$ <span id="total">0,00</span></h3>
+        </div>
+
+        <div class="PedidosPagar">
+            <button type="button" onclick="pagarPedido()">Finalizar Compra</button>
+        </div>
+    </div>
+
+    <!-- ========================= MENU ========================= -->
+    <nav>
+        <!-- MENU LATERAL MOBILE -->
+        <ul class="sidebar" id="sidebar">
+            <li class="sidebar-fechar">
+                <a href="#" onclick="hideSidebar(); return false;" aria-label="Fechar menu">✕</a>
+            </li>
+
+            <li class="sidebar-busca">
+                <div class="busca-container-mobile">
+                    <input type="text" id="inputBuscaMobile" placeholder="Pesquisar produtos..." autocomplete="off">
+                </div>
+            </li>
+
+            <li><a href="/Telainicial/index.html" onclick="hideSidebar();">Início</a></li>
+            <li><a href="/TelaCatalogo/catalogo.html" onclick="hideSidebar(); return false;">Catálogo</a></li>
+            <li>
+                <a href="#" onclick="hideSidebar(); abrirPedidos(); return false;">
+                    Pedidos <span class="badge-carrinho"></span>
+                </a>
+            </li>
+            <li><a href="#rodape" onclick="hideSidebar();">Sobre</a></li>
+            <li>
+                <a href="#" id="menuUsuarioMobile" onclick="hideSidebar(); abrirPerfil(); return false;">Login</a>
+            </li>
+        </ul>
+
+        <!-- MENU PRINCIPAL -->
+        <ul>
+            <li class="logo-menu">
+                <a href="/Telainicial/index.html">
+                    <img src="/img/Logo 1.png" alt="ZORA - Logo Oficial">
+                </a>
+            </li>
+
+            <li class="hideOnMobile nav-busca-item">
+                <div class="busca-container">
+                    <input type="text" id="inputBusca" placeholder="Pesquisar peças, vestidos..." autocomplete="off">
+                    <button type="button" class="btn-lupa" aria-label="Pesquisar">🔍</button>
+                </div>
+            </li>
+
+            <li class="hideOnMobile"><a href="/TelaCatalogo/catalogo.html" class="link-ativo">Catálogo</a></li>
+
+            <li class="hideOnMobile">
+                <a href="#" onclick="abrirPedidos(); return false;">
+                    Pedidos <span class="badge-carrinho"></span>
+                </a>
+            </li>
+
+            <li class="hideOnMobile"><a href="#rodape">Sobre</a></li>
+
+            <li class="hideOnMobile">
+                <a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">Login</a>
+            </li>
+
+            <li class="menu-button">
+                <a href="#" onclick="showSidebar(); return false;" aria-label="Abrir menu">☰</a>
+            </li>
+        </ul>
     </nav>
-    <div class="header-actions">
-      <button class="icon-button" id="openSearch" aria-label="Pesquisar"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg></button>
-      <button class="icon-button" id="openFavorites" aria-label="Ver favoritos"><svg viewBox="0 0 24 24"><path d="M20.8 8.7c0 5.1-8.8 10.1-8.8 10.1S3.2 13.8 3.2 8.7A4.7 4.7 0 0 1 12 6.5a4.7 4.7 0 0 1 8.8 2.2Z"></path></svg><span class="mini-count" id="favoriteCount">0</span></button>
-      <button class="icon-button cart-button" id="openCart" aria-label="Abrir carrinho"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg><span class="mini-count" id="cartCount">0</span></button>
-    </div>
-  </header>
 
-  <main id="catalogo">
-    <section class="catalog-head">
-      <div class="breadcrumbs">Início <span>/</span> Catálogo</div>
-      <div class="title-row">
-        <div>
-          <p class="eyebrow">ESCOLHAS DA TEMPORADA</p>
-          <h1>Catálogo de produtos</h1>
-          <p class="subtitle">Encontre suas próximas peças favoritas.</p>
-        </div>
-        <div class="catalog-count"><strong id="resultCount">12</strong> produtos</div>
-      </div>
-      <div class="toolbar">
-        <button class="toolbar-button" id="filterToggle"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="8" cy="6" r="2"></circle><circle cx="15" cy="12" r="2"></circle><circle cx="10" cy="18" r="2"></circle></svg>Filtrar por <span class="filter-dot" id="filterDot"></span></button>
-        <label class="sort-control"><svg viewBox="0 0 24 24"><path d="M5 4v15m-4-4 4 4 4-4M12 6h9M12 12h6M12 18h3"></path></svg><span class="sr-only">Ordenar produtos</span><select id="sortSelect"><option value="relevance">Relevância</option><option value="price-low">Menor preço</option><option value="price-high">Maior preço</option><option value="name">Nome A–Z</option></select></label>
-        <div class="view-switch" aria-label="Modo de visualização">
-          <button class="view-button" data-columns="3" aria-label="Três colunas"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"></rect><rect x="13" y="3" width="8" height="8" rx="1"></rect><rect x="3" y="13" width="8" height="8" rx="1"></rect><rect x="13" y="13" width="8" height="8" rx="1"></rect></svg></button>
-          <button class="view-button active" data-columns="2" aria-label="Duas colunas"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="18" rx="1"></rect><rect x="14" y="3" width="7" height="18" rx="1"></rect></svg></button>
-          <button class="view-button" data-columns="1" aria-label="Uma coluna"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg></button>
-        </div>
-      </div>
-      <form class="search-panel" id="searchPanel">
-        <input id="searchInput" type="search" placeholder="Buscar produto..." aria-label="Buscar produto">
-        <button type="submit">Buscar</button>
-      </form>
-    </section>
+    <!-- ========================= CATÁLOGO ========================= -->
+    <main class="catalogo-pagina" id="catalogo">
 
-    <div class="catalog-layout">
-      <aside class="filters" id="filters">
-        <div class="filter-heading"><h2>Filtros</h2><button id="clearFilters" class="text-button">Limpar tudo</button></div>
-        <div class="filter-group">
-          <h3>Categoria</h3>
-          <label><input type="checkbox" name="category" value="Vestidos"> Vestidos <span>4</span></label>
-          <label><input type="checkbox" name="category" value="Blusas"> Blusas <span>3</span></label>
-          <label><input type="checkbox" name="category" value="Saias"> Saias e shorts <span>3</span></label>
-          <label><input type="checkbox" name="category" value="Conjuntos"> Conjuntos <span>2</span></label>
+        <div class="breadcrumbs">
+            <a href="/Telainicial/index.html">Início</a> <span>/</span> Catálogo
         </div>
-        <div class="filter-group">
-          <h3>Faixa de preço</h3>
-          <div class="price-fields"><label>De R$<input id="minPrice" type="number" min="0" placeholder="0"></label><label>Até R$<input id="maxPrice" type="number" min="0" placeholder="300"></label></div>
-          <button class="apply-filter" id="applyPrice">Aplicar preço</button>
-        </div>
-        <div class="filter-group">
-          <h3>Tamanho</h3>
-          <div class="size-options">
-            <label><input type="checkbox" name="size" value="P"><span>P</span></label>
-            <label><input type="checkbox" name="size" value="M"><span>M</span></label>
-            <label><input type="checkbox" name="size" value="G"><span>G</span></label>
-            <label><input type="checkbox" name="size" value="GG"><span>GG</span></label>
-          </div>
-        </div>
-        <button class="apply-filter mobile-apply" id="applyMobile">Ver produtos</button>
-      </aside>
 
-      <section class="products-area" aria-label="Lista de produtos">
-        <div class="active-filters" id="activeFilters"></div>
-        <div class="product-grid columns-2" id="productGrid"></div>
-        <div class="empty-state" id="emptyState" hidden>
-          <span>⌕</span><h2>Nenhum produto encontrado</h2><p>Tente alterar os filtros ou a pesquisa.</p><button class="apply-filter" id="emptyReset">Limpar filtros</button>
-        </div>
-        <button class="load-more" id="loadMore">Carregar mais produtos</button>
-      </section>
-    </div>
-  </main>
+        <header class="catalogo-topo">
+            <div>
+                <p class="eyebrow">ESCOLHAS DA TEMPORADA</p>
+                <h1>Catálogo de produtos</h1>
+                <p class="subtitulo">Encontre suas próximas peças favoritas.</p>
+            </div>
+            <div class="contagem-catalogo"><strong id="resultCount">0</strong> produtos</div>
+        </header>
 
-  <div class="overlay" id="overlay"></div>
-  <aside class="cart-drawer" id="cartDrawer" aria-label="Carrinho de compras" aria-hidden="true">
-    <div class="drawer-head"><div><p class="eyebrow">SUAS ESCOLHAS</p><h2>Minha sacola</h2></div><button class="close-drawer" data-close aria-label="Fechar">×</button></div>
-    <div id="cartItems" class="cart-items"><p class="cart-empty">Sua sacola está vazia.</p></div>
-    <div class="cart-footer"><div class="cart-total"><span>Total</span><strong id="cartTotal">R$ 0,00</strong></div><button class="checkout-button" id="checkout">Finalizar pedido</button><small>Exemplo demonstrativo: conecte esta etapa ao seu sistema de pedidos.</small></div>
-  </aside>
-  <div class="toast" id="toast" role="status"></div>
-  <footer class="footer"><a class="logo" href="#">ZORA<span>.</span></a><p>Moda para expressar quem você é.</p><small>© <span id="year"></span> ZORA. Projeto demonstrativo.</small></footer>
+        <div class="barra-ferramentas">
+            <button type="button" class="btn-ferramenta" id="filterToggle">
+                ☰ Filtrar por <span class="filtro-ponto" id="filterDot"></span>
+            </button>
+
+            <label class="btn-ferramenta ordenar">
+                <span class="sr-only">Ordenar produtos</span>
+                <select id="sortSelect">
+                    <option value="relevance">Relevância</option>
+                    <option value="price-low">Menor preço</option>
+                    <option value="price-high">Maior preço</option>
+                    <option value="name">Nome A–Z</option>
+                </select>
+            </label>
+
+            <button type="button" class="btn-ferramenta btn-favoritos" id="favToggle" aria-pressed="false">
+                ♡ Favoritos <span class="mini-contador" id="favoriteCount">0</span>
+            </button>
+
+            <div class="troca-visual" aria-label="Modo de visualização">
+                <button type="button" class="view-button" data-columns="4" aria-label="Quatro colunas">▦</button>
+                <button type="button" class="view-button" data-columns="3" aria-label="Três colunas">▥</button>
+                <button type="button" class="view-button" data-columns="2" aria-label="Duas colunas">▯▯</button>
+            </div>
+        </div>
+
+        <div class="catalogo-layout">
+
+            <aside class="filtros-lateral" id="filtros" aria-label="Filtros">
+                <div class="filtros-cabecalho">
+                    <h2>Filtros</h2>
+                    <button type="button" id="clearFilters" class="btn-texto">Limpar tudo</button>
+                    <button type="button" class="btn-fechar-filtros" onclick="fecharTudo()" aria-label="Fechar filtros">✕</button>
+                </div>
+
+                <div class="filtro-grupo">
+                    <h3>Categoria</h3>
+                    <div id="categoryFilters"><p class="filtro-vazio">Carregando...</p></div>
+                </div>
+
+                <div class="filtro-grupo">
+                    <h3>Faixa de preço</h3>
+                    <div class="campos-preco">
+                        <label>De R$<input id="minPrice" type="number" min="0" placeholder="0"></label>
+                        <label>Até R$<input id="maxPrice" type="number" min="0" placeholder="500"></label>
+                    </div>
+                </div>
+
+                <div class="filtro-grupo">
+                    <h3>Disponibilidade</h3>
+                    <label class="filtro-check"><input type="checkbox" id="onlyStock"> Somente em estoque</label>
+                </div>
+
+                <button type="button" class="btn-aplicar btn-aplicar-mobile" id="applyMobile">Ver produtos</button>
+            </aside>
+
+            <section class="produtos-area" aria-label="Lista de produtos">
+                <div class="filtros-ativos" id="activeFilters"></div>
+
+                <div class="catalogo-grid colunas-3" id="productGrid">
+                    <p class="carregando">Carregando produtos...</p>
+                </div>
+
+                <div class="estado-vazio" id="emptyState" hidden>
+                    <span>⌕</span>
+                    <h2>Nenhum produto encontrado</h2>
+                    <p>Tente alterar os filtros ou a pesquisa.</p>
+                    <button type="button" class="btn-aplicar" id="emptyReset">Limpar filtros</button>
+                </div>
+
+                <button type="button" class="btn-carregar-mais" id="loadMore" hidden>Carregar mais produtos</button>
+            </section>
+        </div>
+    </main>
+
+    <div class="toast" id="toast" role="status"></div>
+
+    <!-- ========================= RODAPÉ ========================= -->
+    <footer class="rodape-principal" id="rodape">
+        <div class="rodape-conteudo">
+            <div class="rodape-coluna">
+                <img src="/img/Logo 1.png" alt="ZORA" class="logo-rodape">
+                <p>ZORA - Moda feminina pensada para destacar a sua elegância e estilo no dia a dia.</p>
+            </div>
+
+            <div class="rodape-coluna">
+                <h3>Navegação</h3>
+                <ul>
+                    <li><a href="/Telainicial/index.html">Início</a></li>
+                    <li><a href="/TelaCatalogo/catalogo.html">Catálogo Completo</a></li>
+                    <li><a href="#" onclick="abrirPedidos(); return false;">Meus Pedidos</a></li>
+                    <li><a href="#rodape">Sobre Nós</a></li>
+                </ul>
+            </div>
+
+            <div class="rodape-coluna">
+                <h3>Atendimento</h3>
+                <ul>
+                    <li>Email: contato@zora.com.br</li>
+                    <li>Atendimento: Seg a Sex, das 9h às 18h</li>
+                    <li>Trocas e Devoluções</li>
+                    <li>Política de Privacidade</li>
+                </ul>
+            </div>
+
+            <div class="rodape-coluna">
+                <h3>Siga a ZORA</h3>
+                <div class="redes-sociais">
+                    <a href="#" target="_blank" rel="noopener">Instagram</a>
+                    <span>•</span>
+                    <a href="#" target="_blank" rel="noopener">WhatsApp</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="rodape-copyright">
+            <p>&copy; <span id="year">2026</span> ZORA. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Mesma ordem de autenticação da tela inicial (ajuste para o caminho real do seu auth.js) -->
+    <script src="/js/auth.js"></script>
+    <script src="js/catalogo.js"></script>
 </body>
+
 </html>
