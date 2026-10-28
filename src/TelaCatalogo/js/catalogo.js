@@ -1,7 +1,7 @@
 // =====================================================
 // ZORA - CATÁLOGO, FILTROS, FAVORITOS E SACOLA
 // Localização: TelaCatalogo/js/catalogo.js
-// Sistema de Resiliência Multicamadas de Requisições e Imagens
+// Sistema de Resiliência Multicamadas de Requisições e Imagens (Com suporte a /img/roupazora/ e /img/)
 // =====================================================
 
 let products = [];
@@ -23,35 +23,39 @@ const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "curr
 const checkedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
 
 // =====================================================
-// GERENCIADOR DE IMAGENS RESILIENTE (MULTICAMADAS)
+// GERENCIADOR DE IMAGENS RESILIENTE (SUPORTE A SUBPASTAS)
 // =====================================================
 
 function tratarCaminhoImagem(imgSrc, id) {
-  if (!imgSrc || imgSrc.trim() === "") {
-    return `/img/img${id || 1}.jpeg`;
+  if (!imgSrc || imgSrc.trim() === "" || imgSrc === "null" || imgSrc === "undefined") {
+    return `/img/roupazora/img${id || 1}.jpeg`;
   }
 
-  const src = imgSrc.trim();
+  let src = imgSrc.trim();
 
-  // Se já for imagem local com /
+  // Se já tiver barra inicial ou o caminho completo
   if (src.startsWith("/")) {
     return src;
   }
 
-  // Se for URL externa (Shopee, Supabase Storage, CDN Externa)
+  // Se for URL externa (Shopee, Supabase Storage, CDNs)
   if (src.startsWith("http://") || src.startsWith("https://")) {
-    // Se for domínio da Shopee ou CDN com restrição de CORS/ORB, passa pelo proxy wsrv.nl em primeira instância
     if (src.includes("susercontent.com") || src.includes("shopee") || src.includes("down-br")) {
       return `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
     }
     return src;
   }
 
-  // Caso seja nome de arquivo direto ex: "foto1.jpg"
-  return `/img/${src}`;
+  // Se já especifica a subpasta roupazora/ no banco de dados
+  if (src.startsWith("roupazora/")) {
+    return `/img/${src}`;
+  }
+
+  // Por padrão, prioriza a busca dentro da pasta /img/roupazora/
+  return `/img/roupazora/${src}`;
 }
 
-// Manipulador de erros na tag <img> para trocar proxies dinamicamente caso haja falha de conexão
+// Manipulador de erros na tag <img> com fallback entre /img/roupazora/ e /img/
 window.gerenciarFalhaImagem = function(imgElement, productId) {
   if (!imgElement) return;
 
@@ -60,34 +64,42 @@ window.gerenciarFalhaImagem = function(imgElement, productId) {
 
   imgElement.dataset.tentativa = tentativaAtual + 1;
 
-  // CAMADA 1 -> Tenta Proxy WSRV.NL
+  // CAMADA 1 -> Se falhou em /img/roupazora/nome.jpg, tenta diretamente em /img/nome.jpg
   if (tentativaAtual === 0) {
+    if (imgElement.src.includes("/img/roupazora/")) {
+      const nomeArquivo = imgElement.src.split("/img/roupazora/").pop();
+      imgElement.src = `/img/${nomeArquivo}`;
+      return;
+    }
+  }
+
+  // CAMADA 2 -> Tenta Proxy WSRV.NL se for URL externa
+  if (tentativaAtual === 1) {
     if (urlOriginal.startsWith("http") && !urlOriginal.includes("wsrv.nl")) {
       imgElement.src = `https://wsrv.nl/?url=${encodeURIComponent(urlOriginal)}`;
       return;
     }
   }
 
-  // CAMADA 2 -> Tenta Proxy CorsProxy.io
-  if (tentativaAtual === 1) {
-    if (urlOriginal.startsWith("http")) {
-      const urlLimpa = urlOriginal.replace(/^https?:\/\//, "");
-      imgElement.src = `https://corsproxy.io/?${encodeURIComponent(urlOriginal)}`;
+  // CAMADA 3 -> Tenta Fallback para Imagem Local do ID na pasta roupazora
+  if (tentativaAtual === 2) {
+    if (productId) {
+      imgElement.src = `/img/roupazora/img${productId}.jpeg`;
       return;
     }
   }
 
-  // CAMADA 3 -> Tenta Fallback para Imagem Local correspondente ao ID do produto
-  if (tentativaAtual === 2) {
+  // CAMADA 4 -> Tenta Fallback para Imagem Local do ID na pasta img raiz
+  if (tentativaAtual === 3) {
     if (productId) {
       imgElement.src = `/img/img${productId}.jpeg`;
       return;
     }
   }
 
-  // CAMADA 4 -> Tenta Imagem Local Padrão Genérica
-  if (tentativaAtual === 3) {
-    imgElement.src = `/img/img1.jpeg`;
+  // CAMADA 5 -> Imagem Padrão Genérica
+  if (tentativaAtual === 4) {
+    imgElement.src = `/img/roupazora/5.jpeg`;
     return;
   }
 
@@ -109,7 +121,6 @@ async function carregarProdutosServidor() {
     "./produtos_catalogo.php"
   ];
 
-  let respostaSucesso = null;
   let dadosRetornados = null;
 
   for (const rota of rotasPossiveis) {
@@ -125,13 +136,12 @@ async function carregarProdutosServidor() {
       if (resposta.ok) {
         const json = await resposta.json();
         if (json && json.sucesso && Array.isArray(json.produtos)) {
-          respostaSucesso = resposta;
           dadosRetornados = json.produtos;
-          break; // Conexão bem-sucedida encontrada
+          break;
         }
       }
     } catch (e) {
-      // Continua para a próxima rota sem interromper a execução
+      // Avança para a próxima rota sem quebrar
     }
   }
 
@@ -170,7 +180,7 @@ async function carregarProdutosServidor() {
 
     renderProducts();
   } else {
-    console.warn("Aviso: Não foi possível obter produtos das APIs. Verifique as rotas do backend.");
+    console.warn("Aviso: Não foi possível obter produtos das APIs.");
   }
 }
 
@@ -488,17 +498,6 @@ document.addEventListener("DOMContentLoaded", function () {
         renderCart();
         renderProducts();
       }
-    });
-  }
-
-  const checkoutBtn = document.querySelector("#checkout");
-  if (checkoutBtn) {
-    checkoutBtn.addEventListener("click", () => {
-      if (!cart.length) {
-        showToast("Adicione produtos à sacola primeiro.");
-        return;
-      }
-      window.location.href = "/TelaEntrega/entrega.html";
     });
   }
 
