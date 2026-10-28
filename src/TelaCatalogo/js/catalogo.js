@@ -3,20 +3,12 @@
 // Localização do ficheiro: TelaCatalogo/js/catalogo.js
 // =====================================================
 
-// Mapeamento local inicial / fallback
+// Mapeamento local inicial / fallback caso o servidor falhe
 let products = [
   {id:1,name:"Vestido Infantil de Tule Bordado",category:"Vestidos",price:159.99,oldPrice:199.99,sizes:["P","M","G"],age:"4 a 12 anos",promo:"35% OFF - CUPOM",badge:"MAIS VENDIDO",image:"/img/img1.jpeg"},
   {id:2,name:"Vestido Infantil de Algodão",category:"Vestidos",price:159.99,oldPrice:null,sizes:["P","M","G","GG"],age:"4 a 12 anos",promo:"ESQUENTABLACK",badge:"NOVO",image:"/img/img2.jpeg"},
   {id:3,name:"Short Saia Infantil de Sarja",category:"Saias",price:129.99,oldPrice:149.99,sizes:["P","M","G"],age:"4 a 12 anos",promo:"35% OFF - CUPOM",badge:null,image:"/img/img3.jpeg"},
-  {id:4,name:"Short Saia Infantil Cós Elástico",category:"Saias",price:79.99,oldPrice:null,sizes:["P","M","G","GG"],age:"4 a 12 anos",promo:"35% OFF - CUPOM",badge:null,image:"/img/img4.jpeg"},
-  {id:5,name:"Blusa Básica de Algodão",category:"Blusas",price:59.99,oldPrice:null,sizes:["P","M","G","GG"],age:"Tamanhos P ao GG",promo:"Leve 2 com desconto",badge:null,image:"/img/img5.jpeg"},
-  {id:6,name:"Conjunto Blusa e Short",category:"Conjuntos",price:119.99,oldPrice:139.99,sizes:["P","M","G"],age:"4 a 12 anos",promo:"Oferta especial",badge:"OFERTA",image:"/img/img6.jpeg"},
-  {id:7,name:"Vestido Floral de Verão",category:"Vestidos",price:139.99,oldPrice:null,sizes:["P","M","G","GG"],age:"4 a 12 anos",promo:"Nova coleção",badge:"NOVO",image:"/img/img7.jpeg"},
-  {id:8,name:"Blusa com Manga Bufante",category:"Blusas",price:69.99,oldPrice:null,sizes:["P","M","G"],age:"Tamanhos P ao G",promo:"35% OFF - CUPOM",badge:null,image:"/img/img8.jpeg"},
-  {id:9,name:"Saia Plissada Estampada",category:"Saias",price:89.99,oldPrice:109.99,sizes:["P","M","G","GG"],age:"4 a 12 anos",promo:"Oferta especial",badge:null,image:"/img/img9.jpeg"},
-  {id:10,name:"Conjunto Casual de Verão",category:"Conjuntos",price:149.99,oldPrice:null,sizes:["P","M","G"],age:"Tamanhos P ao G",promo:"Nova coleção",badge:null,image:"/img/img10.jpeg"},
-  {id:11,name:"Blusa Regata Texturizada",category:"Blusas",price:49.99,oldPrice:null,sizes:["P","M","G","GG"],age:"Tamanhos P ao GG",promo:"Preço especial",badge:null,image:"/img/img5.jpeg"},
-  {id:12,name:"Vestido Festa Infantil",category:"Vestidos",price:189.99,oldPrice:229.99,sizes:["P","M","G"],age:"4 a 12 anos",promo:"35% OFF - CUPOM",badge:"DESTAQUE",image:"/img/img1.jpeg"}
+  {id:4,name:"Short Saia Infantil Cós Elástico",category:"Saias",price:79.99,oldPrice:null,sizes:["P","M","G","GG"],age:"4 a 12 anos",promo:"35% OFF - CUPOM",badge:null,image:"/img/img4.jpeg"}
 ];
 
 const grid = document.querySelector("#productGrid");
@@ -28,7 +20,7 @@ const toastEl = document.querySelector("#toast");
 
 let favorites = new Set();
 let cart = [];
-let visibleLimit = 100; // Limite expandido para exibir todas as peças
+let visibleLimit = 100; // Limite alto para renderizar todas as roupas
 let currentColumns = 2;
 let favoritesOnly = false;
 let toastTimer;
@@ -36,7 +28,16 @@ let toastTimer;
 const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const checkedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
 
-// Procura produtos no servidor (com resiliência de rota)
+// Função para tratar o caminho da imagem (aceita URLs externas ou locais)
+function tratarCaminhoImagem(imgSrc) {
+  if (!imgSrc) return "/img/Logo 1.png";
+  if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://") || imgSrc.startsWith("/")) {
+    return imgSrc;
+  }
+  return `/img/${imgSrc}`;
+}
+
+// Busca produtos no backend PHP / Supabase
 async function carregarProdutosServidor() {
   try {
     let resposta = await fetch("/produtos_catalogo.php", {
@@ -53,7 +54,13 @@ async function carregarProdutosServidor() {
 
     if (resultado && resultado.sucesso && Array.isArray(resultado.produtos) && resultado.produtos.length > 0) {
       products = resultado.produtos.map(p => {
-        // Normaliza a categoria removendo prefixos como "Categoria: " do Supabase
+        // Mapeamento exato com as colunas do Supabase:
+        // nm_produto, preco, categoria, imagem, qtd_item
+        const idProd = Number(p.id_produto);
+        const nomeProd = p.nm_produto || p.nome || "Produto ZORA";
+        const precoProd = Number(p.preco) || 0;
+        const estoqueProd = p.qtd_item !== undefined ? Number(p.qtd_item) : (p.estoque !== undefined ? Number(p.estoque) : 10);
+        
         const catBruta = p.categoria || "Geral";
         const cat = catBruta.replace("Categoria: ", "").trim();
 
@@ -63,22 +70,23 @@ async function carregarProdutosServidor() {
         }
 
         return {
-          id: Number(p.id_produto),
-          name: p.nome || "Produto ZORA",
+          id: idProd,
+          name: nomeProd,
           category: cat,
-          price: Number(p.preco) || 0,
+          price: precoProd,
           oldPrice: p.preco_antigo ? Number(p.preco_antigo) : null,
           sizes: tamanhos,
           age: "Coleção ZORA",
           promo: "Oferta Especial",
-          badge: Number(p.estoque) > 0 ? null : "ESGOTADO",
-          image: p.imagem ? (p.imagem.startsWith("/") ? p.imagem : `/img/${p.imagem}`) : "/img/Logo 1.png"
+          badge: estoqueProd > 0 ? null : "ESGOTADO",
+          image: tratarCaminhoImagem(p.imagem)
         };
       });
+
       renderProducts();
     }
   } catch (erro) {
-    console.warn("Aviso: Falha ao procurar produtos no backend. A utilizar catálogo local.", erro);
+    console.warn("Aviso: Falha ao carregar do servidor. Usando catálogo local.", erro);
   }
 }
 
@@ -94,7 +102,7 @@ function filteredProducts() {
   const max = maxInput && maxInput.value !== "" ? Number(maxInput.value) : Infinity;
 
   let list = products.filter(p =>
-    (!categories.length || categories.includes(p.category)) &&
+    (!categories.length || categories.some(c => p.category.toLowerCase().includes(c.toLowerCase()))) &&
     (!sizes.length || sizes.some(s => p.sizes.includes(s))) &&
     p.price >= min && p.price <= max &&
     (!query || `${p.name} ${p.category}`.toLocaleLowerCase("pt-BR").includes(query)) &&
