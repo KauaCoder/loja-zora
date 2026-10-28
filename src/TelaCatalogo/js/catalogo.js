@@ -1,5 +1,6 @@
 // =====================================================
-// ZORA - CATÁLOGOS, FILTROS, FAVORITOS E SACOLA
+// ZORA - CATÁLOGO, FILTROS, FAVORITOS E SACOLA
+// Localização do ficheiro: TelaCatalogo/js/
 // =====================================================
 
 // Mapeamento local inicial / fallback
@@ -35,7 +36,7 @@ let toastTimer;
 const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const checkedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
 
-// Sincroniza com os produtos vindos do backend Supabase/PostgreSQL
+// Procura produtos no servidor (caminho ajustado para a raiz a partir de TelaCatalogo/js/)
 async function carregarProdutosServidor() {
   try {
     const resposta = await fetch("/produtos_catalogo.php", {
@@ -67,7 +68,7 @@ async function carregarProdutosServidor() {
       renderProducts();
     }
   } catch (erro) {
-    console.warn("Aviso: carregando produtos no modo offline/fallback local.");
+    console.warn("Aviso: a carregar produtos no modo fallback local.");
   }
 }
 
@@ -93,7 +94,7 @@ function filteredProducts() {
   const sortSelect = document.querySelector("#sortSelect");
   const sort = sortSelect ? sortSelect.value : "";
   if (sort === "price-low") list.sort((a, b) => a.price - b.price);
-  if (sort === "price-high") list.sort((a, b) => b.price - a.price);
+  if (sort === "price-high") list.sort((a,b) => b.price - a.price);
   if (sort === "name") list.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   
   return list;
@@ -226,7 +227,6 @@ function renderCart() {
   const elCartCount = document.querySelector("#cartCount");
   if (elCartCount) elCartCount.textContent = cart.reduce((sum, item) => sum + item.qty, 0);
 
-  // Sincroniza com localStorage para compatibilidade global
   localStorage.setItem("carrinho", JSON.stringify(cart.map(i => ({
     id_produto: i.id,
     nome: i.name,
@@ -236,7 +236,6 @@ function renderCart() {
   }))));
 }
 
-// Carrega o carrinho salvo no localStorage ao abrir
 function carregarCarrinhoSalvo() {
   const salvo = localStorage.getItem("carrinho");
   if (salvo) {
