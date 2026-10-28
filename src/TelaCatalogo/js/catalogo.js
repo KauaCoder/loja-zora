@@ -20,7 +20,7 @@ const toastEl = document.querySelector("#toast");
 
 let favorites = new Set();
 let cart = [];
-let visibleLimit = 100; // Limite alto para renderizar todas as roupas
+let visibleLimit = 100; // Limite para exibir todas as roupas
 let currentColumns = 2;
 let favoritesOnly = false;
 let toastTimer;
@@ -28,9 +28,9 @@ let toastTimer;
 const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const checkedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
 
-// Função para tratar o caminho da imagem (aceita URLs externas ou locais)
-function tratarCaminhoImagem(imgSrc) {
-  if (!imgSrc) return "/img/Logo 1.png";
+// Tratamento de caminho de imagem (aceita URLs externas ou locais)
+function tratarCaminhoImagem(imgSrc, id) {
+  if (!imgSrc) return `/img/img${id || 1}.jpeg`;
   if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://") || imgSrc.startsWith("/")) {
     return imgSrc;
   }
@@ -54,8 +54,6 @@ async function carregarProdutosServidor() {
 
     if (resultado && resultado.sucesso && Array.isArray(resultado.produtos) && resultado.produtos.length > 0) {
       products = resultado.produtos.map(p => {
-        // Mapeamento exato com as colunas do Supabase:
-        // nm_produto, preco, categoria, imagem, qtd_item
         const idProd = Number(p.id_produto);
         const nomeProd = p.nm_produto || p.nome || "Produto ZORA";
         const precoProd = Number(p.preco) || 0;
@@ -79,7 +77,7 @@ async function carregarProdutosServidor() {
           age: "Coleção ZORA",
           promo: "Oferta Especial",
           badge: estoqueProd > 0 ? null : "ESGOTADO",
-          image: tratarCaminhoImagem(p.imagem)
+          image: tratarCaminhoImagem(p.imagem, idProd)
         };
       });
 
