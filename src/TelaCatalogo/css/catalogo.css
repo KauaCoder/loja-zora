@@ -626,3 +626,63 @@ nav a.link-ativo {
     .catalogo-grid.colunas-3,
     .catalogo-grid.colunas-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* =========================================================
+   CORREÇÃO DO GRID E LAYOUT DOS FILTROS
+   ========================================================= */
+
+.catalogo-layout {
+    display: grid !important;
+    grid-template-columns: 260px minmax(0, 1fr) !important;
+    gap: 32px !important;
+    padding: 28px 0 10px !important;
+    align-items: start !important;
+}
+
+/* Suporta tanto .filtros-lateral quanto #filters gerado pelo JS */
+.filtros-lateral, 
+#filters { 
+    background: transparent !important; 
+    border-right: 1px solid var(--zora-linha) !important; 
+    padding-right: 24px !important; 
+    position: sticky !important;
+    top: 95px !important;
+    display: block !important;
+    width: 100% !important;
+}
+
+.produtos-area {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+/* Responsivo para Dispositivos Móveis (telas abaixo de 800px) */
+@media (max-width: 800px) {
+    .catalogo-layout { 
+        display: block !important; 
+        padding-top: 10px !important; 
+    }
+
+    .filtros-lateral, 
+    #filters {
+        position: fixed !important; 
+        left: 0 !important; 
+        right: 0 !important; 
+        bottom: 0 !important; 
+        z-index: 2100 !important; 
+        max-height: 85vh !important; 
+        overflow-y: auto !important;
+        background: #fff !important; 
+        border-radius: 24px 24px 0 0 !important; 
+        border-right: none !important;
+        padding: 24px 20px calc(24px + env(safe-area-inset-bottom)) !important;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.15) !important; 
+        transform: translateY(105%) !important; 
+        transition: transform .3s cubic-bezier(.25,1,.5,1) !important;
+    }
+
+    .filtros-lateral.aberto, 
+    #filters.open { 
+        transform: translateY(0) !important; 
+    }
+}
