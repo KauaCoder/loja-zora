@@ -1,6 +1,6 @@
 // =====================================================
 // ZORA - TELA INICIAL, CATÁLOGO, SLIDES, CARRINHO E PESQUISA
-// Versão Atualizada & Integrada (Com Suporte a Subpastas /img/roupazora/)
+// Versão Atualizada & Integrada (Com Suporte Híbrido /img/ e /img/roupazora/)
 // =====================================================
 
 
@@ -238,7 +238,7 @@ function reiniciarTemporizadorSlide() {
 
 
 // =====================================================
-// 3. CATÁLOGO DE PRODUTOS E GESTÃO DE IMAGENS
+// 3. CATÁLOGO DE PRODUTOS E GESTÃO INTELIGENTE DE IMAGENS
 // =====================================================
 
 let produtosGlobais = [];
@@ -289,9 +289,9 @@ function formatarPreco(valor) {
         .replace(".", ",");
 }
 
-// Sistema inteligente de caminhos de imagem (Suporta /img/roupazora/, /img/ e CDNs externas)
+// Sistema inteligente Híbrido (Suporta /img/, /img/roupazora/ e CDNs)
 function obterImagemProduto(imagem) {
-    if (!imagem || imagem.trim() === "" || imagem === "null") {
+    if (!imagem || imagem.trim() === "" || imagem === "null" || imagem === "undefined") {
         return "/img/Logo 1.png";
     }
 
@@ -312,9 +312,46 @@ function obterImagemProduto(imagem) {
         return `/img/${src}`;
     }
 
-    // Por padrão, busca na subpasta roupazora ou raiz
+    // Por padrão, prioriza a pasta /img/roupazora/ para os novos itens
     return `/img/roupazora/${src}`;
 }
+
+// Sistema de resiliência em cascata caso a imagem falhe ao carregar
+window.gerenciarFalhaImagem = function(imgElement, productId) {
+    if (!imgElement) return;
+
+    const tentativaAtual = Number(imgElement.dataset.tentativa || 0);
+    imgElement.dataset.tentativa = tentativaAtual + 1;
+
+    // Tentativa 1: Se falhou em roupazora, tenta buscar na pasta raiz /img/
+    if (tentativaAtual === 0) {
+        if (imgElement.src.includes("/img/roupazora/")) {
+            const nomeArquivo = imgElement.src.split("/img/roupazora/").pop();
+            imgElement.src = `/img/${nomeArquivo}`;
+            return;
+        }
+    }
+
+    // Tentativa 2: Tenta pelo ID exato na pasta roupazora
+    if (tentativaAtual === 1) {
+        if (productId) {
+            imgElement.src = `/img/roupazora/${productId}.jpeg`;
+            return;
+        }
+    }
+
+    // Tentativa 3: Tenta formato img{id}.jpeg na pasta roupazora
+    if (tentativaAtual === 2) {
+        if (productId) {
+            imgElement.src = `/img/roupazora/img${productId}.jpeg`;
+            return;
+        }
+    }
+
+    // Tentativa Final: Logo ZORA Oficial
+    imgElement.onerror = null;
+    imgElement.src = "/img/Logo 1.png";
+};
 
 function renderizarCatalogo(produtos) {
     const container = document.getElementById("catalogoProdutos");
@@ -355,10 +392,10 @@ function renderizarCatalogo(produtos) {
         imagem.src = imagemSrc;
         imagem.alt = nome;
         imagem.loading = "lazy";
+        imagem.dataset.productId = id;
 
         imagem.onerror = function () {
-            this.onerror = null;
-            this.src = "/img/Logo 1.png";
+            window.gerenciarFalhaImagem(this, id);
         };
 
         link.appendChild(imagem);
@@ -500,8 +537,7 @@ function executarBusca(termo, containerDropdown) {
             img.alt = nome;
             img.loading = "lazy";
             img.onerror = function() {
-                this.onerror = null;
-                this.src = "/img/Logo 1.png";
+                window.gerenciarFalhaImagem(this, id);
             };
 
             const infoDiv = document.createElement("div");
@@ -653,8 +689,7 @@ function renderizarPedidos() {
         foto.loading = "lazy";
 
         foto.onerror = function () {
-            this.onerror = null;
-            this.src = "/img/Logo 1.png";
+            window.gerenciarFalhaImagem(this, id);
         };
 
         linkFoto.appendChild(foto);
