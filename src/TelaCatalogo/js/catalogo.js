@@ -21,11 +21,22 @@ const toastEl = document.querySelector("#toast");
 const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const checkedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
 
+// Trata caminhos locais, URLs absolutas e aplica proxy contra bloqueio de CORS/ORB da Shopee/CDNs
 function tratarCaminhoImagem(imgSrc, id) {
   if (!imgSrc) return `/img/img${id || 1}.jpeg`;
-  if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://") || imgSrc.startsWith("/")) {
+
+  // Se for URL externa do Shopee / CDN bloqueada, passa pelo proxy gratuito wsrv.nl para contornar ORB/CORS
+  if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://")) {
+    if (imgSrc.includes("susercontent.com") || imgSrc.includes("shopee")) {
+      return `https://wsrv.nl/?url=${encodeURIComponent(imgSrc)}`;
+    }
     return imgSrc;
   }
+
+  if (imgSrc.startsWith("/")) {
+    return imgSrc;
+  }
+
   return `/img/${imgSrc}`;
 }
 
@@ -118,7 +129,7 @@ function productCard(p) {
   return `<article class="product-card">
     <div class="product-image-wrap">
       <a href="/TelaProdutos/produtos.html?id=${p.id}">
-        <img class="product-image" src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src='/img/Logo 1.png'">
+        <img class="product-image" src="${p.image}" alt="${p.name}" loading="lazy" onerror="if(!this.dataset.triedProxy && this.src.startsWith('http')){this.dataset.triedProxy=true;this.src='https://wsrv.nl/?url='+encodeURIComponent(this.src);}else{this.onerror=null;this.src='/img/Logo 1.png';}">
       </a>
       <div class="product-image-fallback" hidden>ZORA</div>
       ${p.badge ? `<span class="product-badge">${p.badge}</span>` : ""}
