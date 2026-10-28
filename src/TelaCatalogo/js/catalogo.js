@@ -1,6 +1,7 @@
 // =====================================================
 // ZORA - CATÁLOGO, FILTROS, FAVORITOS E SACOLA
 // Localização: TelaCatalogo/js/catalogo.js
+// Sistema de Resiliência Multicamadas de Requisições e Imagens (Com suporte a /img/roupazora/ e /img/)
 // =====================================================
 
 let products = [];
@@ -21,52 +22,95 @@ const toastEl = document.querySelector("#toast");
 const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const checkedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
 
+// =====================================================
+// GERENCIADOR DE IMAGENS RESILIENTE (SUPORTE A SUBPASTAS)
+// =====================================================
+
 function tratarCaminhoImagem(imgSrc, id) {
   if (!imgSrc || imgSrc.trim() === "" || imgSrc === "null" || imgSrc === "undefined") {
     return `/img/roupazora/img${id || 1}.jpeg`;
   }
+
   let src = imgSrc.trim();
-  if (src.startsWith("/")) return src;
+
+  // Se já tiver barra inicial ou o caminho completo
+  if (src.startsWith("/")) {
+    return src;
+  }
+
+  // Se for URL externa (Shopee, Supabase Storage, CDNs)
   if (src.startsWith("http://") || src.startsWith("https://")) {
     if (src.includes("susercontent.com") || src.includes("shopee") || src.includes("down-br")) {
       return `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
     }
     return src;
   }
-  if (src.startsWith("roupazora/")) return `/img/${src}`;
+
+  // Se já especifica a subpasta roupazora/ no banco de dados
+  if (src.startsWith("roupazora/")) {
+    return `/img/${src}`;
+  }
+
+  // Por padrão, prioriza a busca dentro da pasta /img/roupazora/
   return `/img/roupazora/${src}`;
 }
 
+// Manipulador de erros na tag <img> com fallback entre /img/roupazora/ e /img/
 window.gerenciarFalhaImagem = function(imgElement, productId) {
   if (!imgElement) return;
+
   const tentativaAtual = Number(imgElement.dataset.tentativa || 0);
   const urlOriginal = imgElement.dataset.originalUrl || imgElement.src;
+
   imgElement.dataset.tentativa = tentativaAtual + 1;
 
-  if (tentativaAtual === 0 && imgElement.src.includes("/img/roupazora/")) {
-    const nomeArquivo = imgElement.src.split("/img/roupazora/").pop();
-    imgElement.src = `/img/${nomeArquivo}`;
-    return;
+  // CAMADA 1 -> Se falhou em /img/roupazora/nome.jpg, tenta diretamente em /img/nome.jpg
+  if (tentativaAtual === 0) {
+    if (imgElement.src.includes("/img/roupazora/")) {
+      const nomeArquivo = imgElement.src.split("/img/roupazora/").pop();
+      imgElement.src = `/img/${nomeArquivo}`;
+      return;
+    }
   }
-  if (tentativaAtual === 1 && urlOriginal.startsWith("http") && !urlOriginal.includes("wsrv.nl")) {
-    imgElement.src = `https://wsrv.nl/?url=${encodeURIComponent(urlOriginal)}`;
-    return;
+
+  // CAMADA 2 -> Tenta Proxy WSRV.NL se for URL externa
+  if (tentativaAtual === 1) {
+    if (urlOriginal.startsWith("http") && !urlOriginal.includes("wsrv.nl")) {
+      imgElement.src = `https://wsrv.nl/?url=${encodeURIComponent(urlOriginal)}`;
+      return;
+    }
   }
-  if (tentativaAtual === 2 && productId) {
-    imgElement.src = `/img/roupazora/img${productId}.jpeg`;
-    return;
+
+  // CAMADA 3 -> Tenta Fallback para Imagem Local do ID na pasta roupazora
+  if (tentativaAtual === 2) {
+    if (productId) {
+      imgElement.src = `/img/roupazora/img${productId}.jpeg`;
+      return;
+    }
   }
-  if (tentativaAtual === 3 && productId) {
-    imgElement.src = `/img/img${productId}.jpeg`;
-    return;
+
+  // CAMADA 4 -> Tenta Fallback para Imagem Local do ID na pasta img raiz
+  if (tentativaAtual === 3) {
+    if (productId) {
+      imgElement.src = `/img/img${productId}.jpeg`;
+      return;
+    }
   }
+
+  // CAMADA 5 -> Imagem Padrão Genérica
   if (tentativaAtual === 4) {
     imgElement.src = `/img/roupazora/5.jpeg`;
     return;
   }
+
+  // CAMADA FINAL -> Logo Oficial ZORA (Evita loop infinito zerando o onerror)
   imgElement.onerror = null;
   imgElement.src = `/img/Logo 1.png`;
 };
+
+// =====================================================
+// CARREGAMENTO RESILIENTE DE PRODUTOS DO SERVIDOR
+// =====================================================
 
 async function carregarProdutosServidor() {
   const rotasPossiveis = [
@@ -78,9 +122,17 @@ async function carregarProdutosServidor() {
   ];
 
   let dadosRetornados = null;
+
   for (const rota of rotasPossiveis) {
     try {
-      const resposta = await fetch(rota, { method: "GET", headers: { "Accept": "application/json", "Cache-Control": "no-cache" } });
+      const resposta = await fetch(rota, {
+        method: "GET",
+        headers: { 
+          "Accept": "application/json",
+          "Cache-Control": "no-cache" 
+        }
+      });
+
       if (resposta.ok) {
         const json = await resposta.json();
         if (json && json.sucesso && Array.isArray(json.produtos)) {
@@ -88,7 +140,9 @@ async function carregarProdutosServidor() {
           break;
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // Avança para a próxima rota sem quebrar
+    }
   }
 
   if (dadosRetornados && dadosRetornados.length > 0) {
@@ -97,6 +151,7 @@ async function carregarProdutosServidor() {
       const nomeProd = p.nm_produto || p.nome || p.nome_produto || "Produto ZORA";
       const precoProd = Number(p.preco || p.valor || 0);
       const estoqueProd = p.qtd_item !== undefined ? Number(p.qtd_item) : (p.estoque !== undefined ? Number(p.estoque) : 10);
+      
       const catBruta = p.categoria || "Geral";
       const cat = catBruta.replace("Categoria: ", "").trim();
 
@@ -107,6 +162,7 @@ async function carregarProdutosServidor() {
       }
 
       const imgBruta = p.imagem || p.foto || "";
+
       return {
         id: idProd,
         name: nomeProd,
@@ -121,9 +177,16 @@ async function carregarProdutosServidor() {
         image: tratarCaminhoImagem(imgBruta, idProd)
       };
     });
+
     renderProducts();
+  } else {
+    console.warn("Aviso: Não foi possível obter produtos das APIs.");
   }
 }
+
+// =====================================================
+// FILTRAGEM E ORDENAÇÃO
+// =====================================================
 
 function filteredProducts() {
   const categories = checkedValues("category");
@@ -153,12 +216,23 @@ function filteredProducts() {
   return list;
 }
 
+// =====================================================
+// RENDERIZAÇÃO DE CARDS DE PRODUTO
+// =====================================================
+
 function productCard(p) {
   const isFavorite = favorites.has(p.id);
+  
   return `<article class="product-card">
     <div class="product-image-wrap">
       <a href="/TelaProdutos/produtos.html?id=${p.id}">
-        <img class="product-image" src="${p.image}" alt="${p.name}" loading="lazy" data-original-url="${p.imageRaw || p.image}" data-product-id="${p.id}" onerror="window.gerenciarFalhaImagem(this, ${p.id})">
+        <img class="product-image" 
+             src="${p.image}" 
+             alt="${p.name}" 
+             loading="lazy"
+             data-original-url="${p.imageRaw || p.image}"
+             data-product-id="${p.id}"
+             onerror="window.gerenciarFalhaImagem(this, ${p.id})">
       </a>
       <div class="product-image-fallback" hidden>ZORA</div>
       ${p.badge ? `<span class="product-badge">${p.badge}</span>` : ""}
@@ -183,6 +257,7 @@ function productCard(p) {
 function renderProducts() {
   const gridEl = document.querySelector("#productGrid") || grid;
   if (!gridEl) return;
+
   const list = filteredProducts();
 
   const elResultCount = document.querySelector("#resultCount");
@@ -194,6 +269,13 @@ function renderProducts() {
   const elCartCount = document.querySelector("#cartCount");
   if (elCartCount) elCartCount.textContent = cart.reduce((sum, item) => sum + item.qty, 0);
 
+  const filterDot = document.querySelector("#filterDot");
+  if (filterDot) {
+    const minVal = document.querySelector("#minPrice") ? document.querySelector("#minPrice").value : "";
+    const maxVal = document.querySelector("#maxPrice") ? document.querySelector("#maxPrice").value : "";
+    filterDot.classList.toggle("visible", checkedValues("category").length > 0 || checkedValues("size").length > 0 || minVal !== "" || maxVal !== "");
+  }
+
   gridEl.className = `product-grid columns-${currentColumns}`;
   gridEl.innerHTML = list.slice(0, visibleLimit).map(productCard).join("");
 
@@ -202,20 +284,27 @@ function renderProducts() {
 
   const loadMore = document.querySelector("#loadMore");
   if (loadMore) loadMore.hidden = list.length <= visibleLimit;
+
   renderActiveFilters();
 }
 
 function renderActiveFilters() {
   const holder = document.querySelector("#activeFilters");
   if (!holder) return;
+
   const active = [
     ...[...document.querySelectorAll('input[name="category"]:checked')].map(el => ({ label: el.value, clear: () => { el.checked = false; renderProducts(); } })),
     ...[...document.querySelectorAll('input[name="size"]:checked')].map(el => ({ label: `Tam. ${el.value}`, clear: () => { el.checked = false; renderProducts(); } })),
     ...(favoritesOnly ? [{ label: "Favoritos", clear: () => { favoritesOnly = false; renderProducts(); } }] : [])
   ];
-  holder.innerHTML = active.map((item, i) => `<span class="filter-chip">${item.label}<button data-clear-chip="${i}" aria-label="Remover filtro">×</button></span>`).join("");
+
+  holder.innerHTML = active.map((item, i) => `<span class="filter-chip">${item.label}<button data-clear-chip="${i}" aria-label="Remover filtro ${item.label}">×</button></span>`).join("");
   holder.querySelectorAll("[data-clear-chip]").forEach(btn => btn.addEventListener("click", () => active[Number(btn.dataset.clearChip)].clear()));
 }
+
+// =====================================================
+// INTERFACE DE USUÁRIO (PAINÉIS, SACOLA E TOAST)
+// =====================================================
 
 function showToast(message) {
   if (!toastEl) return;
@@ -237,12 +326,16 @@ function openPanel(panel) {
 
 function closePanels() {
   if (overlay) overlay.classList.remove("open");
-  if (drawer) { drawer.classList.remove("open"); drawer.setAttribute("aria-hidden", "true"); }
+  if (drawer) {
+    drawer.classList.remove("open");
+    drawer.setAttribute("aria-hidden", "true");
+  }
   if (filters) filters.classList.remove("open");
 }
 
 function renderCart() {
   if (!cartItemsEl) return;
+
   if (!cart.length) {
     cartItemsEl.innerHTML = '<p class="cart-empty">Sua sacola está vazia.</p>';
   } else {
@@ -252,21 +345,27 @@ function renderCart() {
         <h3>${item.name}</h3>
         <p>${money(item.price)}</p>
         <div class="quantity-controls">
-          <button data-qty="${item.id}" data-delta="-1" aria-label="Diminuir">−</button>
+          <button data-qty="${item.id}" data-delta="-1" aria-label="Diminuir quantidade">−</button>
           <span>${item.qty}</span>
-          <button data-qty="${item.id}" data-delta="1" aria-label="Aumentar">+</button>
+          <button data-qty="${item.id}" data-delta="1" aria-label="Aumentar quantidade">+</button>
         </div>
       </div>
-      <button class="remove-line" data-remove="${item.id}" aria-label="Remover">×</button>
+      <button class="remove-line" data-remove="${item.id}" aria-label="Remover produto">×</button>
     </div>`).join("");
   }
+
   const elCartTotal = document.querySelector("#cartTotal");
   if (elCartTotal) elCartTotal.textContent = money(cart.reduce((sum, item) => sum + item.price * item.qty, 0));
+
   const elCartCount = document.querySelector("#cartCount");
   if (elCartCount) elCartCount.textContent = cart.reduce((sum, item) => sum + item.qty, 0);
 
   localStorage.setItem("carrinho", JSON.stringify(cart.map(i => ({
-    id_produto: i.id, nome: i.name, preco: i.price, quantidade: i.qty, imagem: i.image
+    id_produto: i.id,
+    nome: i.name,
+    preco: i.price,
+    quantidade: i.qty,
+    imagem: i.image
   }))));
 }
 
@@ -284,12 +383,19 @@ function carregarCarrinhoSalvo() {
           image: i.imagem || i.image || "/img/Logo 1.png"
         }));
       }
-    } catch (e) { cart = []; }
+    } catch (e) {
+      cart = [];
+    }
   }
 }
 
+// =====================================================
+// EVENTOS E INICIALIZAÇÃO
+// =====================================================
+
 document.addEventListener("DOMContentLoaded", function () {
   const gridEl = document.querySelector("#productGrid");
+
   if (gridEl) {
     gridEl.addEventListener("click", e => {
       const fav = e.target.closest("[data-favorite]");
@@ -300,6 +406,7 @@ document.addEventListener("DOMContentLoaded", function () {
         showToast(favorites.has(id) ? "Adicionado aos favoritos" : "Removido dos favoritos");
         return;
       }
+
       const add = e.target.closest("[data-add]");
       if (add) {
         const p = products.find(item => item.id === Number(add.dataset.add));
@@ -324,6 +431,8 @@ document.addEventListener("DOMContentLoaded", function () {
     favoritesOnly = !favoritesOnly;
     visibleLimit = 500;
     renderProducts();
+    const cat = document.querySelector("#catalogo");
+    if (cat) cat.scrollIntoView({ behavior: "smooth" });
     showToast(favoritesOnly ? "Mostrando seus favoritos" : "Mostrando todos os produtos");
   });
 
@@ -395,6 +504,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const yearEl = document.querySelector("#year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  // Inicialização encadeada
   carregarCarrinhoSalvo();
   carregarProdutosServidor();
 });
