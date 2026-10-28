@@ -7,11 +7,9 @@
     <meta name="description" content="Catálogo completo de moda feminina ZORA.">
     <title>Catálogo | ZORA</title>
 
-    <!-- Estilos compartilhados com a Tela Inicial (menu, sacola, busca, cards, rodapé) -->
-    <link rel="stylesheet" href="/Telainicial/style.css">
     <link rel="stylesheet" href="/EstiloBase.css">
     <!-- Estilos específicos do catálogo -->
-    <link rel="stylesheet" href="css/catalogo.css">
+    <link rel="stylesheet" href="catalogo-zora.css">
 </head>
 
 <body>
@@ -117,7 +115,8 @@
 
         <div class="barra-ferramentas">
             <button type="button" class="btn-ferramenta" id="filterToggle">
-                ☰ Filtrar por <span class="filtro-ponto" id="filterDot"></span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg>
+                Filtrar por <span class="filtro-ponto" id="filterDot"></span>
             </button>
 
             <label class="btn-ferramenta ordenar">
@@ -131,13 +130,14 @@
             </label>
 
             <button type="button" class="btn-ferramenta btn-favoritos" id="favToggle" aria-pressed="false">
-                ♡ Favoritos <span class="mini-contador" id="favoriteCount">0</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.7c0 5.1-8.8 10.1-8.8 10.1S3.2 13.8 3.2 8.7A4.7 4.7 0 0 1 12 6.5a4.7 4.7 0 0 1 8.8 2.2Z"/></svg>
+                Favoritos <span class="mini-contador" id="favoriteCount">0</span>
             </button>
 
             <div class="troca-visual" aria-label="Modo de visualização">
-                <button type="button" class="view-button" data-columns="4" aria-label="Quatro colunas">▦</button>
-                <button type="button" class="view-button" data-columns="3" aria-label="Três colunas">▥</button>
-                <button type="button" class="view-button" data-columns="2" aria-label="Duas colunas">▯▯</button>
+                <button type="button" class="view-button" data-columns="4" aria-label="Quatro colunas"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
+                <button type="button" class="view-button" data-columns="3" aria-label="Três colunas"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="9.5" y="3" width="5" height="18" rx="1"/><rect x="16" y="3" width="5" height="18" rx="1"/></svg></button>
+                <button type="button" class="view-button" data-columns="2" aria-label="Duas colunas"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/></svg></button>
             </div>
         </div>
 
@@ -237,7 +237,7 @@
 
     <!-- Mesma ordem de autenticação da tela inicial (ajuste para o caminho real do seu auth.js) -->
     <script src="/js/auth.js"></script>
-    <script src="js/catalogo.js"></script>
+    <script src="catalogo-zora.js"></script>
 </body>
 
 </html>
