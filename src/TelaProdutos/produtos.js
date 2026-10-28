@@ -149,17 +149,17 @@ const detalhesProdutos = {
     9: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha", composicao: "Poliéster e Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
     10: { tamanhos: ["P", "M", "G", "GG"], tecido: "Fleece", composicao: "Poliéster", marca: "ZORA", colecao: "Coleção ZORA" },
     
-    // Novos Produtos Cadastrados
-    59: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Poliéster e Elastano", composicao: "Conjunto Alfaiataria Premium", marca: "ZORA", colecao: "Coleção ZORA" },
-    60: { tamanhos: ["36", "38", "40", "42", "44"], tecido: "Jeans / Sarja", composicao: "98% Algodão 2% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
-    61: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Viscose", composicao: "100% Viscose", marca: "ZORA", colecao: "Coleção ZORA" },
-    62: { tamanhos: ["36", "38", "40", "42", "44"], tecido: "Alfaiataria", composicao: "95% Poliéster 5% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
-    63: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha Crepe", composicao: "96% Poliéster 4% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
-    64: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Linho", composicao: "70% Viscose 30% Linho", marca: "ZORA", colecao: "Coleção ZORA" },
-    65: { tamanhos: ["36", "38", "40", "42", "44"], tecido: "Jeans", composicao: "100% Algodão", marca: "ZORA", colecao: "Coleção ZORA" },
-    66: { tamanhos: ["P", "M", "G", "GG"], tecido: "Lã Batida / Fleece", composicao: "100% Poliéster", marca: "ZORA", colecao: "Coleção ZORA" },
-    67: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Crepe", composicao: "100% Poliéster", marca: "ZORA", colecao: "Coleção ZORA" },
-    68: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Tricô / Viscose", composicao: "Composição Especial ZORA", marca: "ZORA", colecao: "Coleção ZORA" }
+    // Novos Produtos Cadastrados (11 ao 20 do Supabase)
+    11: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Poliéster e Elastano", composicao: "Conjunto Cropped e Calça Alfaiataria", marca: "ZORA", colecao: "Coleção ZORA" },
+    12: { tamanhos: ["36", "38", "40", "42", "44"], tecido: "Jeans", composicao: "100% Algodão", marca: "ZORA", colecao: "Coleção ZORA" },
+    13: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Linho", composicao: "70% Viscose 30% Linho", marca: "ZORA", colecao: "Coleção ZORA" },
+    14: { tamanhos: ["36", "38", "40", "42", "44"], tecido: "Alfaiataria", composicao: "95% Poliéster 5% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
+    15: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha Crepe", composicao: "96% Poliéster 4% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
+    16: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Linho", composicao: "70% Viscose 30% Linho", marca: "ZORA", colecao: "Coleção ZORA" },
+    17: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Crepe", composicao: "100% Poliéster", marca: "ZORA", colecao: "Coleção ZORA" },
+    18: { tamanhos: ["P", "M", "G", "GG"], tecido: "Couro Sintético", composicao: "100% Poliuretano", marca: "ZORA", colecao: "Coleção ZORA" },
+    19: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Moletinho", composicao: "Poliéster e Algodão", marca: "ZORA", colecao: "Coleção ZORA" },
+    20: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Flanela", composicao: "100% Algodão", marca: "ZORA", colecao: "Coleção ZORA" }
 };
 
 const parametros = new URLSearchParams(window.location.search);
@@ -167,7 +167,6 @@ const idProduto = parametros.get("id");
 
 let produto = null;
 
-// Fallback dinâmico para produtos que não estão no objeto mapeado
 let detalhes = detalhesProdutos[idProduto] || {
     tamanhos: ["PP", "P", "M", "G", "GG"],
     tecido: "Algodão e Poliéster",
@@ -178,9 +177,17 @@ let detalhes = detalhesProdutos[idProduto] || {
 
 let tamanhoSelecionado = null;
 
+function tratarCaminhoImagem(imgSrc, id) {
+    if (!imgSrc) return `/img/img${id}.jpeg`;
+    if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://") || imgSrc.startsWith("/")) {
+        return imgSrc;
+    }
+    return `/img/${imgSrc}`;
+}
+
 
 // =====================================================
-// 3. CARREGAR DETALHES DO PRODUTO (BD POSTGRESQL)
+// 3. CARREGAR DETALHES DO PRODUTO (BD POSTGRESQL / SUPABASE)
 // =====================================================
 
 async function carregarProduto() {
@@ -190,22 +197,39 @@ async function carregarProduto() {
     }
 
     try {
-        const resposta = await fetch("/produtos_catalogo.php", {
+        let resposta = await fetch("/produtos_catalogo.php", {
             headers: { "Accept": "application/json" }
         });
+
+        if (!resposta.ok) {
+            resposta = await fetch("../produtos_catalogo.php", {
+                headers: { "Accept": "application/json" }
+            });
+        }
+
         const resultado = await resposta.json();
 
-        if (!resposta.ok || !resultado.sucesso || !Array.isArray(resultado.produtos)) {
+        if (!resultado || !resultado.sucesso || !Array.isArray(resultado.produtos)) {
             throw new Error("Não foi possível carregar o produto.");
         }
 
-        produto = resultado.produtos.find(p => Number(p.id_produto) === Number(idProduto));
+        // Mapeia colunas do Supabase: id_produto, nm_produto, preco, qtd_item, categoria, imagem
+        const prodEncontrado = resultado.produtos.find(p => Number(p.id_produto) === Number(idProduto));
 
-        if (!produto) {
+        if (!prodEncontrado) {
             throw new Error("Produto não encontrado.");
         }
 
-        // Se a categoria do produto for Calças ou Saias e não houver tamanhos manuais, ajusta para tamanhos numéricos
+        produto = {
+            id_produto: Number(prodEncontrado.id_produto),
+            nome: prodEncontrado.nm_produto || prodEncontrado.nome || "Produto ZORA",
+            preco: Number(prodEncontrado.preco) || 0,
+            estoque: prodEncontrado.qtd_item !== undefined ? Number(prodEncontrado.qtd_item) : Number(prodEncontrado.estoque || 0),
+            categoria: prodEncontrado.categoria || "Geral",
+            imagem: tratarCaminhoImagem(prodEncontrado.imagem, prodEncontrado.id_produto),
+            descricao: prodEncontrado.descricao || "Peça exclusiva ZORA com modelagem e caimento impecáveis."
+        };
+
         if (!detalhesProdutos[idProduto] && produto.categoria) {
             const catLower = String(produto.categoria).toLowerCase();
             if (catLower.includes("calça") || catLower.includes("saia") || catLower.includes("calcas") || catLower.includes("saias")) {
@@ -218,13 +242,12 @@ async function carregarProduto() {
 
         const elPreco = document.getElementById("precoProduto");
         if (elPreco) {
-            elPreco.textContent = `R$ ${Number(produto.preco).toFixed(2).replace(".", ",")}`;
+            elPreco.textContent = `R$ ${produto.preco.toFixed(2).replace(".", ",")}`;
         }
 
         const imagem = document.getElementById("imagemProduto");
         if (imagem) {
-            const nomeFoto = produto.imagem || `img${produto.id_produto}.jpeg`;
-            imagem.src = produto.imagem && produto.imagem.startsWith("/") ? produto.imagem : `/img/${nomeFoto}`;
+            imagem.src = produto.imagem;
             imagem.alt = produto.nome;
             imagem.onerror = function () {
                 this.onerror = null;
@@ -233,7 +256,7 @@ async function carregarProduto() {
         }
 
         const elDescricao = document.getElementById("descricaoProduto");
-        if (elDescricao) elDescricao.textContent = produto.descricao || "Sem descrição informada.";
+        if (elDescricao) elDescricao.textContent = produto.descricao;
 
         const elTecido = document.getElementById("tecidoProduto");
         if (elTecido) elTecido.textContent = detalhes.tecido;
@@ -279,9 +302,7 @@ function atualizarBotaoEstoque() {
     const botao = document.getElementById("botaoComprar");
     if (!botao || !produto) return;
 
-    const estoque = Number(produto.estoque) || 0;
-
-    if (estoque <= 0) {
+    if (produto.estoque <= 0) {
         botao.disabled = true;
         botao.textContent = "Produto esgotado";
         return;
@@ -532,7 +553,6 @@ function abrirPedidos() {
         pedidos.classList.add("ativo");
     }
 
-    // Fecha a sidebar se estiver aberta para não sobrepor o carrinho
     const sidebar = obterSidebar();
     if (sidebar) {
         sidebar.classList.remove("ativo", "active");
@@ -603,8 +623,6 @@ async function adicionarAoCarrinhoPágina() {
         return;
     }
 
-    const imagemSrc = produto.imagem ? (produto.imagem.startsWith("/") ? produto.imagem : `/img/${produto.imagem}`) : "/img/Logo 1.png";
-
     if (itemExistente) {
         itemExistente.quantidade = qtdAtual + 1;
         itemExistente.tamanho = tamanhoSelecionado;
@@ -614,7 +632,7 @@ async function adicionarAoCarrinhoPágina() {
             nome: produto.nome,
             preco: Number(produto.preco),
             tamanho: tamanhoSelecionado,
-            imagem: imagemSrc,
+            imagem: produto.imagem,
             quantidade: 1
         });
     }
@@ -640,7 +658,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         botaoComprar.addEventListener("click", adicionarAoCarrinhoPágina);
     }
 
-    // Associa o clique no fundo escuro para fechar o menu ou o carrinho
     const overlay = obterOverlay();
     if (overlay) {
         overlay.addEventListener("click", fecharTudo);
