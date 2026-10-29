@@ -921,6 +921,11 @@ async function adicionarAoCarrinho() {
         return;
     }
 
+    // Só quem está logado pode comprar (aviso e função ficam no login-obrigatorio.js)
+    if (typeof exigirLogin === "function" && !(await exigirLogin())) {
+        return;
+    }
+
     if (detalhes.tamanhos && detalhes.tamanhos.length > 0 && !tamanhoSelecionado) {
         mostrarErroTamanho();
         return;
