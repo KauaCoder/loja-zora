@@ -22,7 +22,7 @@
 <div id="Pedidos" class="caixa-pedidos">
     <div class="topo-pedidos">
         <h2>Meus Pedidos</h2>
-        <button onclick="fecharPedidos()">✖</button>
+        <button onclick="fecharPedidos()" aria-label="Fechar pedidos">✖</button>
     </div>
 
     <ul id="listaPedidos"></ul>
@@ -37,12 +37,28 @@
 </div>
 
 <!-- =========================================================
+     TABELA DE MEDIDAS (MODAL)
+========================================================= -->
+<div id="modalMedidas" class="modal-medidas" aria-hidden="true">
+    <div class="modal-medidas-caixa" role="dialog" aria-labelledby="tituloMedidas">
+        <div class="modal-medidas-topo">
+            <h3 id="tituloMedidas">Tabela de medidas</h3>
+            <button type="button" onclick="fecharMedidas()" aria-label="Fechar tabela de medidas">✕</button>
+        </div>
+        <p class="modal-medidas-aviso">Medidas do corpo em centímetros. Em caso de dúvida, escolha o tamanho maior.</p>
+        <div class="tabela-rolagem">
+            <table id="tabelaMedidas"></table>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
      MENU DE NAVEGAÇÃO
 ========================================================= -->
 <nav>
     <!-- MENU LATERAL (MOBILE) -->
     <ul class="sidebar" id="sidebar">
-        <li>
+        <li class="sidebar-fechar">
             <a href="#" onclick="hideSidebar()">✕</a>
         </li>
         <li>
@@ -71,7 +87,7 @@
             </a>
         </li>
 
-        <!-- PRODUTOS -->
+        <!-- HOME -->
         <li class="hideOnMobile">
             <a href="/Telainicial/index.html">home</a>
         </li>
@@ -105,39 +121,104 @@
      PÁGINA DO PRODUTO
 ========================================================= -->
 <main class="produto-page">
-    <!-- IMAGEM DO PRODUTO -->
-    <div class="imagem-produto">
-        <img id="imagemProduto" src="" alt="Produto">
+
+    <!-- GALERIA (desktop: grade de fotos / mobile: carrossel) -->
+    <div class="galeria-wrapper">
+        <div class="galeria" id="galeria">
+            <div class="galeria-item">
+                <img id="imagemProduto" src="" alt="Produto">
+            </div>
+        </div>
+
+        <!-- Pontinhos do carrossel (mobile) -->
+        <div class="galeria-pontos" id="galeriaPontos"></div>
+
+        <!-- Atalho flutuante (mobile) -->
+        <button type="button" class="atalho-comprar" id="atalhoComprar">Comprar</button>
     </div>
 
     <!-- INFORMAÇÕES DO PRODUTO -->
     <div class="informacoes">
-        <h1 id="nomeProduto">Carregando produto...</h1>
 
-        <p class="preco" id="precoProduto"></p>
+        <div class="topo-info">
+            <div class="topo-info-texto">
+                <p class="preco" id="precoProduto"></p>
+                <h1 id="nomeProduto">Carregando produto...</h1>
+                <p class="entrega">Entregue por <strong>ZORA</strong></p>
+            </div>
 
-        <div class="descricao-produto">
-            <h3>Descrição</h3>
-            <p id="descricaoProduto">Carregando descrição...</p>
+            <div class="acoes-topo">
+                <button type="button" class="icone-btn" id="btnFavorito" aria-label="Favoritar" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+                        <path d="M12 20.5s-7.5-4.6-9.2-9.3C1.6 7.8 3.6 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.4 0 5.4 3.3 4.2 6.7-1.7 4.7-9.2 9.3-9.2 9.3z"/>
+                    </svg>
+                </button>
+                <button type="button" class="icone-btn" id="btnCompartilhar" aria-label="Compartilhar">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+                        <path d="M21.5 2.5 2.5 10l7.3 3 3 7.5 8.7-18z"/>
+                        <path d="M9.8 13 21.5 2.5"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <div class="detalhes-produto">
-            <p><strong>Tecido:</strong> <span id="tecidoProduto">-</span></p>
-            <p><strong>Composição:</strong> <span id="composicaoProduto">-</span></p>
-            <p id="linhaMarca"><strong>Marca:</strong> <span id="marcaProduto">-</span></p>
-            <p id="linhaColecao"><strong>Coleção:</strong> <span id="colecaoProduto">-</span></p>
+        <!-- COR (só aparece se o produto tiver cor cadastrada) -->
+        <div class="bloco-opcao" id="blocoCor" hidden>
+            <p class="rotulo-opcao">Cor <strong id="corProduto">-</strong></p>
+            <div class="cores">
+                <span class="cor-bolinha selecionada" id="corBolinha"></span>
+            </div>
         </div>
 
         <!-- TAMANHOS -->
-        <div class="area-tamanho">
-            <p><strong>Escolha seu tamanho:</strong></p>
+        <div class="bloco-opcao area-tamanho">
+            <p class="rotulo-opcao">Tamanho</p>
             <div class="tamanhos" id="tamanhosProduto"></div>
+            <p class="erro-tamanho" id="erroTamanho" role="alert" hidden>Escolha um tamanho para continuar.</p>
+        </div>
+
+        <!-- ATALHOS -->
+        <div class="atalhos-info">
+            <button type="button" class="pilula-btn" onclick="abrirMedidas()">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+                    <rect x="2.5" y="7" width="19" height="10" rx="1.5"/>
+                    <path d="M6 7v4M9.5 7v3M13 7v4M16.5 7v3M20 7v2"/>
+                </svg>
+                Tabela de Medidas
+            </button>
         </div>
 
         <!-- BOTÃO COMPRAR -->
         <button class="comprar" id="botaoComprar" type="button">
-            Adicionar ao carrinho
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round">
+                <path d="M5 8h14l-1 12H6L5 8z"/>
+                <path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>
+            </svg>
+            <span id="textoBotaoComprar">Adicionar à sacola</span>
         </button>
+
+        <!-- DESCRIÇÃO -->
+        <div class="descricao-produto">
+            <h3>Descrição</h3>
+            <p id="descricaoProduto" class="recolhida">Carregando descrição...</p>
+            <button type="button" class="ver-mais" id="btnVerMais" hidden>Ver mais</button>
+        </div>
+
+        <!-- SANFONAS -->
+        <details class="sanfona" open>
+            <summary>Especificações</summary>
+            <div class="detalhes-produto">
+                <p><strong>Tecido</strong> <span id="tecidoProduto">-</span></p>
+                <p><strong>Composição</strong> <span id="composicaoProduto">-</span></p>
+                <p id="linhaMarca"><strong>Marca</strong> <span id="marcaProduto">-</span></p>
+                <p id="linhaColecao"><strong>Coleção</strong> <span id="colecaoProduto">-</span></p>
+            </div>
+        </details>
+
+        <details class="sanfona">
+            <summary>Troca e devolução</summary>
+            <p class="sanfona-texto">Troca fácil e devolução grátis.</p>
+        </details>
     </div>
 </main>
 
