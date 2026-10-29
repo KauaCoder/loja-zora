@@ -153,7 +153,7 @@ async function carregarDadosAdmin() {
             tabela.innerHTML = `
                 <tr>
                     <td colspan="8" class="erro-tabela" style="color:red; text-align:center;">
-                        ⚠️ Erro nos produtos: ${erro.message}
+                         Erro nos produtos: ${erro.message}
                     </td>
                 </tr>
             `;
@@ -163,7 +163,7 @@ async function carregarDadosAdmin() {
             tabelaPedidos.innerHTML = `
                 <tr>
                     <td colspan="6" style="color:red; text-align:center; padding:20px; font-weight:bold;">
-                        ⚠️ Erro ao carregar métricas/pedidos: ${erro.message}
+                        Erro ao carregar métricas/pedidos: ${erro.message}
                     </td>
                 </tr>
             `;
@@ -380,12 +380,12 @@ function renderizarProdutos(produtos) {
             btnWhatsapp.style.cssText = "display:inline-block; padding:4px 8px; background:#25D366; color:#fff; border-radius:4px; font-size:12px; font-weight:bold; text-decoration:none;";
             btnWhatsapp.textContent = "📱 WPP ADM";
 
-            const msg = `⚠️ *ALERTA DE ESTOQUE BAIXO - ZORA*\n\n` +
-                `📦 *Produto:* ${nomeProduto} (ID: ${produto.id_produto})\n` +
-                `📊 *Estoque Restante:* ${quantidade} de ${maximo} unidades (${percentualAtual.toFixed(1)}%)\n\n` +
-                `🏭 *Fornecedor:* ${produto.fornecedor || 'Não cadastrado'}\n` +
+            const msg = ` *ALERTA DE ESTOQUE BAIXO - ZORA*\n\n` +
+                ` *Produto:* ${nomeProduto} (ID: ${produto.id_produto})\n` +
+                ` *Estoque Restante:* ${quantidade} de ${maximo} unidades (${percentualAtual.toFixed(1)}%)\n\n` +
+                ` *Fornecedor:* ${produto.fornecedor || 'Não cadastrado'}\n` +
                 `📞 *Contato Fornecedor:* ${produto.contato || 'Sem contato'}\n\n` +
-                `💡 *Ação:* Favor solicitar reabastecimento junto ao fornecedor.`;
+                ` *Ação:* Favor solicitar reabastecimento junto ao fornecedor.`;
 
             btnWhatsapp.href = `https://wa.me/${TELEFONE_ADMIN_WHATSAPP}?text=${encodeURIComponent(msg)}`;
             grupoAcoes.appendChild(btnWhatsapp);
