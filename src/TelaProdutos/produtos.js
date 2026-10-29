@@ -962,7 +962,7 @@ function pagarPedido() {
         alert("Seu carrinho está vazio!");
         return;
     }
-    window.location.href = "/TelaPagamento/pagamento.html";
+    window.location.href = "/TelaEntrega/entrega.html";
 }
 
 
