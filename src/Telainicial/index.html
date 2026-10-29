@@ -1,62 +1,64 @@
-<!DOCTYPE html> 
-<html lang="pt-br"> 
+<!DOCTYPE html>
+<html lang="pt-br">
 
-<head> 
-    <meta charset="UTF-8"> 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>ZORA - Loja Feminina</title> 
+    <title>ZORA - Loja Feminina</title>
 
-    <link rel="stylesheet" href="style.css"> 
-    <link rel="stylesheet" href="/EstiloBase.css"> 
-</head> 
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/EstiloBase.css">
+</head>
 
-<body> 
+<body>
 
-    <!-- OVERLAY ESCURO DE FUNDO --> 
-    <div id="overlay" class="overlay" onclick="fecharTudo()"></div> 
+    <!-- OVERLAY ESCURO DE FUNDO -->
+    <div id="overlay" class="overlay" onclick="fecharTudo()"></div>
 
-    <!-- ========================= 
-         CAIXA DE PEDIDOS (CARRINHO) 
-    ========================== --> 
+    <!-- =========================
+         CAIXA DE PEDIDOS (CARRINHO)
+    ========================== -->
 
-    <div id="Pedidos" class="caixa-pedidos"> 
+    <div id="Pedidos" class="caixa-pedidos">
 
-        <div class="topo-pedidos"> 
-            <h2>Meus Pedidos</h2> 
-            <button type="button" onclick="fecharPedidos()" aria-label="Fechar pedidos">✕</button> 
-        </div> 
+        <div class="topo-pedidos">
+            <h2>Meus Pedidos</h2>
+            <button type="button" onclick="fecharPedidos()" aria-label="Fechar pedidos">✕</button>
+        </div>
 
-        <ul id="listaPedidos"></ul> 
+        <!-- A barra de frete grátis é inserida aqui pelo diferenciais.js -->
 
-        <div class="rodape-pedidos"> 
-            <h3> 
-                Total: R$ <span id="total">0,00</span> 
-            </h3> 
-        </div> 
+        <ul id="listaPedidos"></ul>
 
-        <div class="PedidosPagar"> 
-            <button type="button" onclick="pagarPedido()"> 
-                Finalizar Compra 
-            </button> 
-        </div> 
+        <div class="rodape-pedidos">
+            <h3>
+                Total: R$ <span id="total">0,00</span>
+            </h3>
+        </div>
 
-    </div> 
+        <div class="PedidosPagar">
+            <button type="button" onclick="pagarPedido()">
+                Finalizar Compra
+            </button>
+        </div>
+
+    </div>
 
 
-    <!-- ========================= 
-         MENU / NAV 
-    ========================== --> 
+    <!-- =========================
+         MENU / NAV
+    ========================== -->
 
-    <nav> 
+    <nav>
 
-        <!-- MENU LATERAL MOBILE --> 
+        <!-- MENU LATERAL MOBILE -->
 
-        <ul class="sidebar" id="sidebar"> 
+        <ul class="sidebar" id="sidebar">
 
-            <li class="sidebar-fechar"> 
-                <a href="#" onclick="hideSidebar(); return false;" aria-label="Fechar menu">✕</a> 
-            </li> 
+            <li class="sidebar-fechar">
+                <a href="#" onclick="hideSidebar(); return false;" aria-label="Fechar menu">✕</a>
+            </li>
 
             <!-- BARRA DE PESQUISA MOBILE -->
             <li class="sidebar-busca">
@@ -66,43 +68,46 @@
                 </div>
             </li>
 
-            <li> 
-                <a href="/TelaCatalogo/catalogo.html" onclick="hideSidebar();">Catálogo</a> 
-            </li> 
+            <li>
+                <a href="/TelaCatalogo/catalogo.html" onclick="hideSidebar();">Catálogo</a>
+            </li>
 
-            <li> 
-                <a href="#" onclick="hideSidebar(); abrirPedidos(); return false;"> 
-                    Pedidos 
-                    <span class="badge-carrinho"></span> 
-                </a> 
-            </li> 
+            <li>
+                <a href="#estilo" onclick="hideSidebar();">Meu estilo</a>
+            </li>
 
-            <li> 
-                <a href="/TelaSobre/sobre.html" onclick="hideSidebar();">Sobre</a> 
-            </li> 
+            <li>
+                <a href="#" onclick="hideSidebar(); abrirPedidos(); return false;">
+                    Pedidos
+                    <span class="badge-carrinho"></span>
+                </a>
+            </li>
 
-            <li> 
-                <a href="#" id="menuUsuarioMobile" onclick="hideSidebar(); abrirPerfil(); return false;"> 
-                    Login 
-                </a> 
-            </li> 
+            <li>
+                <a href="/TelaSobre/sobre.html" onclick="hideSidebar();">Sobre</a>
+            </li>
 
-        </ul> 
+            <li>
+                <a href="#" id="menuUsuarioMobile" onclick="hideSidebar(); abrirPerfil(); return false;">
+                    Login
+                </a>
+            </li>
+
+        </ul>
 
 
-        <!-- MENU PRINCIPAL --> 
+        <!-- MENU PRINCIPAL -->
 
-        <ul> 
-           
+        <ul>
 
-            <!-- LOGO --> 
-            <li class="logo-menu"> 
-                <a href="/Telainicial/index.html"> 
-                    <img src="/img/Logo 1.png" alt="ZORA - Logo Oficial"> 
-                </a> 
-            </li> 
+            <!-- LOGO -->
+            <li class="logo-menu">
+                <a href="/Telainicial/index.html">
+                    <img src="/img/Logo 1.png" alt="ZORA - Logo Oficial">
+                </a>
+            </li>
 
-              <!-- BARRA DE PESQUISA DESKTOP -->
+            <!-- BARRA DE PESQUISA DESKTOP -->
             <li class="hideOnMobile nav-busca-item">
                 <div class="busca-container">
                     <input type="text" id="inputBusca" placeholder="Pesquisar peças, vestidos..." autocomplete="off">
@@ -112,197 +117,245 @@
                 </div>
             </li>
 
+            <!-- CATÁLOGO -->
+            <li class="hideOnMobile">
+                <a href="/TelaCatalogo/catalogo.html">Catálogo</a>
+            </li>
 
-            <!-- CATÁLOGO --> 
-            <li class="hideOnMobile"> 
-                <a href="/TelaCatalogo/catalogo.html">Catálogo</a> 
-            </li> 
+            <!-- MEU ESTILO -->
+            <li class="hideOnMobile">
+                <a href="#estilo">Meu estilo</a>
+            </li>
 
-            <!-- PEDIDOS --> 
-            <li class="hideOnMobile"> 
-                <a href="#" onclick="abrirPedidos(); return false;"> 
-                    Pedidos 
-                    <span class="badge-carrinho"></span> 
-                </a> 
-            </li> 
+            <!-- PEDIDOS -->
+            <li class="hideOnMobile">
+                <a href="#" onclick="abrirPedidos(); return false;">
+                    Pedidos
+                    <span class="badge-carrinho"></span>
+                </a>
+            </li>
 
-            <!-- SOBRE --> 
-            <li class="hideOnMobile"> 
-                <a href="/TelaSobre/sobre.html">Sobre</a> 
-            </li> 
+            <!-- SOBRE -->
+            <li class="hideOnMobile">
+                <a href="/TelaSobre/sobre.html">Sobre</a>
+            </li>
 
-            <!-- LOGIN / PERFIL --> 
-            <li class="hideOnMobile"> 
-                <a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;"> 
-                    Login 
-                </a> 
-            </li> 
+            <!-- LOGIN / PERFIL -->
+            <li class="hideOnMobile">
+                <a href="#" id="menuUsuario" onclick="abrirPerfil(); return false;">
+                    Login
+                </a>
+            </li>
 
-            <!-- MENU MOBILE BUTTON --> 
-            <li class="menu-button"> 
-                <a href="#" onclick="showSidebar(); return false;" aria-label="Abrir menu">☰</a> 
-            </li> 
+            <!-- MENU MOBILE BUTTON -->
+            <li class="menu-button">
+                <a href="#" onclick="showSidebar(); return false;" aria-label="Abrir menu">☰</a>
+            </li>
 
-        </ul> 
+        </ul>
 
-    </nav> 
-
-
-    <!-- ========================= 
-         CARROSSEL DE PROMOÇÕES 
-    ========================== --> 
-
-    <section class="carousel-promocoes"> 
-
-        <div class="promocao-track"> 
-
-            <!-- PROMOÇÃO 1 --> 
-            <div class="promocao-slide ativo"> 
-                <img src="/img/img10.jpeg" alt="Produto em promoção"> 
-                <div class="promocao-info"> 
-                    <span class="promocao-tag">OFERTA ESPECIAL</span> 
-                    <h2>Promoção ZORA</h2> 
-                    <p>Produtos selecionados com condições especiais.</p> 
-                    <a href="/TelaProdutos/produtos.html?id=10">Ver produto</a> 
-                </div> 
-            </div> 
-
-            <!-- PROMOÇÃO 2 --> 
-            <div class="promocao-slide"> 
-                <img src="/img/img8.jpeg" alt="Produto em promoção"> 
-                <div class="promocao-info"> 
-                    <span class="promocao-tag">DESTAQUE</span> 
-                    <h2>Novidades ZORA</h2> 
-                    <p>Confira nossa seleção de peças.</p> 
-                    <a href="/TelaProdutos/produtos.html?id=8">Ver produto</a> 
-                </div> 
-            </div> 
-
-            <!-- PROMOÇÃO 3 --> 
-            <div class="promocao-slide"> 
-                <img src="/img/img7.jpeg" alt="Produto em promoção"> 
-                <div class="promocao-info"> 
-                    <span class="promocao-tag">OFERTA</span> 
-                    <h2>Estilo ZORA</h2> 
-                    <p>Escolha sua próxima peça favorita.</p> 
-                    <a href="/TelaProdutos/produtos.html?id=7">Ver produto</a> 
-                </div> 
-            </div> 
-
-            <!-- PROMOÇÃO 4 --> 
-            <div class="promocao-slide"> 
-                <img src="/img/img10.jpeg" alt="Produto em promoção"> 
-                <div class="promocao-info"> 
-                    <span class="promocao-tag">IMPERDÍVEL</span> 
-                    <h2>Seleção ZORA</h2> 
-                    <p>Aproveite enquanto estiver disponível.</p> 
-                    <a href="/TelaProdutos/produtos.html?id=10">Ver produto</a> 
-                </div> 
-            </div> 
-
-        </div> 
-
-        <!-- CONTROLES DO CARROSSEL DE PROMOÇÕES --> 
-        <button type="button" class="carousel-btn anterior" onclick="slideAnterior()" aria-label="Slide anterior">❮</button> 
-        <button type="button" class="carousel-btn proximo" onclick="proximoSlide()" aria-label="Próximo slide">❯</button> 
-
-        <!-- INDICADORES --> 
-        <div class="carousel-indicadores"> 
-            <span class="indicador ativo" onclick="irParaSlide(0)"></span> 
-            <span class="indicador" onclick="irParaSlide(1)"></span> 
-            <span class="indicador" onclick="irParaSlide(2)"></span> 
-            <span class="indicador" onclick="irParaSlide(3)"></span> 
-        </div> 
-
-    </section> 
+    </nav>
 
 
-    <!-- ========================= 
-         CATÁLOGO DE PRODUTOS 
-    ========================== --> 
+    <!-- =========================
+         CARROSSEL DE PROMOÇÕES
+    ========================== -->
 
-    <section class="catalogo"> 
+    <section class="carousel-promocoes">
 
-        <div class="catalogo-cabecalho"> 
-            <h2>Nossos Produtos</h2> 
-            <span class="dica-mobile">Arraste para o lado ➔</span> 
-        </div> 
+        <div class="promocao-track">
 
-        <div class="produtos-wrapper"> 
-            <!-- Botões auxiliares de navegação no mobile --> 
-            <button type="button" class="nav-produtos-btn prev-produtos" onclick="scrollProdutos(-1)" aria-label="Anterior">❮</button> 
+            <!-- PROMOÇÃO 1 -->
+            <div class="promocao-slide ativo">
+                <img src="/img/img10.jpeg" alt="Produto em promoção">
+                <div class="promocao-info">
+                    <span class="promocao-tag">OFERTA ESPECIAL</span>
+                    <h2>Promoção ZORA</h2>
+                    <p>Produtos selecionados com condições especiais.</p>
+                    <a href="/TelaProdutos/produtos.html?id=10">Ver produto</a>
+                </div>
+            </div>
 
-            <div class="produtos" id="catalogoProdutos"> 
-                <p class="carregando">Carregando produtos...</p> 
-            </div> 
+            <!-- PROMOÇÃO 2 -->
+            <div class="promocao-slide">
+                <img src="/img/img8.jpeg" alt="Produto em promoção">
+                <div class="promocao-info">
+                    <span class="promocao-tag">DESTAQUE</span>
+                    <h2>Novidades ZORA</h2>
+                    <p>Confira nossa seleção de peças.</p>
+                    <a href="/TelaProdutos/produtos.html?id=8">Ver produto</a>
+                </div>
+            </div>
 
-            <button type="button" class="nav-produtos-btn next-produtos" onclick="scrollProdutos(1)" aria-label="Próximo">❯</button> 
-        </div> 
+            <!-- PROMOÇÃO 3 -->
+            <div class="promocao-slide">
+                <img src="/img/img7.jpeg" alt="Produto em promoção">
+                <div class="promocao-info">
+                    <span class="promocao-tag">OFERTA</span>
+                    <h2>Estilo ZORA</h2>
+                    <p>Escolha sua próxima peça favorita.</p>
+                    <a href="/TelaProdutos/produtos.html?id=7">Ver produto</a>
+                </div>
+            </div>
 
-    </section> 
+            <!-- PROMOÇÃO 4 -->
+            <div class="promocao-slide">
+                <img src="/img/img10.jpeg" alt="Produto em promoção">
+                <div class="promocao-info">
+                    <span class="promocao-tag">IMPERDÍVEL</span>
+                    <h2>Seleção ZORA</h2>
+                    <p>Aproveite enquanto estiver disponível.</p>
+                    <a href="/TelaProdutos/produtos.html?id=10">Ver produto</a>
+                </div>
+            </div>
 
+        </div>
 
-    <!-- ========================= 
-         RODAPÉ (FOOTER) 
-    ========================== --> 
+        <!-- CONTROLES DO CARROSSEL DE PROMOÇÕES -->
+        <button type="button" class="carousel-btn anterior" onclick="slideAnterior()" aria-label="Slide anterior">❮</button>
+        <button type="button" class="carousel-btn proximo" onclick="proximoSlide()" aria-label="Próximo slide">❯</button>
 
-    <footer class="rodape-principal" id="rodape"> 
+        <!-- INDICADORES -->
+        <div class="carousel-indicadores">
+            <span class="indicador ativo" onclick="irParaSlide(0)"></span>
+            <span class="indicador" onclick="irParaSlide(1)"></span>
+            <span class="indicador" onclick="irParaSlide(2)"></span>
+            <span class="indicador" onclick="irParaSlide(3)"></span>
+        </div>
 
-        <div class="rodape-conteudo"> 
-
-            <div class="rodape-coluna"> 
-                <img src="/img/Logo 1.png" alt="ZORA" class="logo-rodape"> 
-                <p>ZORA - Moda feminina pensada para destacar a sua elegância e estilo no dia a dia.</p> 
-            </div> 
-
-            <div class="rodape-coluna"> 
-                <h3>Navegação</h3> 
-                <ul> 
-                    <li><a href="/Telainicial/index.html">Início</a></li> 
-                    <li><a href="#catalogoProdutos">Produtos</a></li> 
-                    <li><a href="/TelaCatalogo/catalogo.html">Catálogo Complete</a></li> 
-                    <li><a href="#" onclick="abrirPedidos(); return false;">Meus Pedidos</a></li> 
-                    <li><a href="#rodape">Sobre Nós</a></li> 
-                </ul> 
-            </div> 
-
-            <div class="rodape-coluna"> 
-                <h3>Atendimento</h3> 
-                <ul> 
-                    <li>Email: contato@zora.com.br</li> 
-                    <li>Atendimento: Seg a Sex, das 9h às 18h</li> 
-                    <li>Trocas e Devoluções</li> 
-                    <li>Política de Privacidade</li> 
-                </ul> 
-            </div> 
-
-            <div class="rodape-coluna"> 
-                <h3>Siga a ZORA</h3> 
-                <div class="redes-sociais"> 
-                    <a href="#" target="_blank" rel="noopener">Instagram</a> 
-                    <span>•</span> 
-                    <a href="#" target="_blank" rel="noopener">WhatsApp</a> 
-                </div> 
-            </div> 
-
-        </div> 
-
-        <div class="rodape-copyright"> 
-            <p>&copy; 2026 ZORA. Todos os direitos reservados.</p> 
-        </div> 
-
-    </footer> 
+    </section>
 
 
-    <!-- ========================= 
-         JAVASCRIPT DE CONTROLE 
-    ========================== --> 
+    <!-- =========================
+         FAIXA DE BENEFÍCIOS
+    ========================== -->
 
-    <script src="/auth.js"></script> 
-    <script src="script.js"></script> 
-    <!-- Mude de <script src="auth.js"></script> ou <script src="/auth.js"></script> para o caminho real: -->
-<script src="/js/auth.js"></script>
+    <section class="beneficios" aria-label="Vantagens da ZORA">
+        <div class="beneficio">
+            <strong>Frete grátis</strong>
+            <span>Em compras acima de R$ 299,00</span>
+        </div>
+        <div class="beneficio">
+            <strong>Troca fácil</strong>
+            <span>Devolução grátis</span>
+        </div>
+        <div class="beneficio">
+            <strong>Atendimento</strong>
+            <span>Seg a Sex, das 9h às 18h</span>
+        </div>
+    </section>
 
-</body> 
+
+    <!-- =========================
+         CATÁLOGO DE PRODUTOS
+    ========================== -->
+
+    <section class="catalogo">
+
+        <div class="catalogo-cabecalho">
+            <h2>Nossos Produtos</h2>
+            <span class="dica-mobile">Arraste para o lado ➔</span>
+        </div>
+
+        <div class="produtos-wrapper">
+            <!-- Botões auxiliares de navegação no mobile -->
+            <button type="button" class="nav-produtos-btn prev-produtos" onclick="scrollProdutos(-1)" aria-label="Anterior">❮</button>
+
+            <div class="produtos" id="catalogoProdutos">
+                <p class="carregando">Carregando produtos...</p>
+            </div>
+
+            <button type="button" class="nav-produtos-btn next-produtos" onclick="scrollProdutos(1)" aria-label="Próximo">❯</button>
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         PROVADOR DE ESTILO (DIFERENCIAL ZORA)
+    ========================== -->
+
+    <section class="estilo" id="estilo">
+        <div class="estilo-inner">
+
+            <div class="estilo-intro">
+                <h2>Qual é o seu estilo ZORA?</h2>
+                <p>Responda 3 perguntas rápidas e a gente separa peças da loja para você.</p>
+            </div>
+
+            <div class="estilo-painel">
+                <!-- Perguntas (montadas pelo diferenciais.js) -->
+                <div id="estiloQuiz" class="estilo-quiz"></div>
+            </div>
+
+        </div>
+
+        <!-- Resultado -->
+        <div class="estilo-inner estilo-resultado" id="estiloResultado" hidden></div>
+    </section>
+
+
+    <!-- =========================
+         RODAPÉ (FOOTER)
+    ========================== -->
+
+    <footer class="rodape-principal" id="rodape">
+
+        <div class="rodape-conteudo">
+
+            <div class="rodape-coluna">
+                <img src="/img/Logo 1.png" alt="ZORA" class="logo-rodape">
+                <p>ZORA - Moda feminina pensada para destacar a sua elegância e estilo no dia a dia.</p>
+            </div>
+
+            <div class="rodape-coluna">
+                <h3>Navegação</h3>
+                <ul>
+                    <li><a href="/Telainicial/index.html">Início</a></li>
+                    <li><a href="#catalogoProdutos">Produtos</a></li>
+                    <li><a href="#estilo">Meu estilo</a></li>
+                    <li><a href="/TelaCatalogo/catalogo.html">Catálogo Completo</a></li>
+                    <li><a href="#" onclick="abrirPedidos(); return false;">Meus Pedidos</a></li>
+                    <li><a href="#rodape">Sobre Nós</a></li>
+                </ul>
+            </div>
+
+            <div class="rodape-coluna">
+                <h3>Atendimento</h3>
+                <ul>
+                    <li>Email: contato@zora.com.br</li>
+                    <li>Atendimento: Seg a Sex, das 9h às 18h</li>
+                    <li>Trocas e Devoluções</li>
+                    <li>Política de Privacidade</li>
+                </ul>
+            </div>
+
+            <div class="rodape-coluna">
+                <h3>Siga a ZORA</h3>
+                <div class="redes-sociais">
+                    <a href="#" target="_blank" rel="noopener">Instagram</a>
+                    <span>•</span>
+                    <a href="#" target="_blank" rel="noopener">WhatsApp</a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="rodape-copyright">
+            <p>&copy; 2026 ZORA. Todos os direitos reservados.</p>
+        </div>
+
+    </footer>
+
+
+    <!-- =========================
+         JAVASCRIPT DE CONTROLE
+    ========================== -->
+
+    <script src="/auth.js"></script>
+    <script src="script.js"></script>
+    <script src="diferenciais.js"></script>
+
+</body>
 
 </html>
