@@ -31,14 +31,58 @@ document.addEventListener("DOMContentLoaded", function () {
     if (categoria) categoria.addEventListener("change", aplicarFiltros);
 });
 
-// Tratamento de caminho de imagem (locais vs URLs externas do Supabase)
+// Tratamento robusto de caminho de imagem (Compatível com /img/roupazora/, /img/ e Supabase/URLs externas)
 function tratarCaminhoImagemAdmin(imgSrc, id) {
-    if (!imgSrc) return `/img/img${id || 1}.jpeg`;
-    if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://") || imgSrc.startsWith("/")) {
-        return imgSrc;
+    if (!imgSrc || imgSrc.trim() === "" || imgSrc === "null" || imgSrc === "undefined") {
+        return `/img/roupazora/img${id || 1}.jpeg`;
     }
-    return `/img/${imgSrc}`;
+
+    let src = imgSrc.trim();
+
+    if (src.startsWith("/")) {
+        return src;
+    }
+
+    if (src.startsWith("http://") || src.startsWith("https://")) {
+        if (src.includes("susercontent.com") || src.includes("shopee") || src.includes("down-br")) {
+            return `https://wsrv.nl/?url=${encodeURIComponent(src)}`;
+        }
+        return src;
+    }
+
+    if (src.startsWith("roupazora/")) {
+        return `/img/${src}`;
+    }
+
+    return `/img/roupazora/${src}`;
 }
+
+// Manipulador de erro para tentar buscar a foto na pasta raiz /img/ caso falhe na subpasta
+window.gerenciarFalhaImagemAdmin = function(imgElement, productId) {
+    if (!imgElement) return;
+
+    const tentativaAtual = Number(imgElement.dataset.tentativa || 0);
+    imgElement.dataset.tentativa = tentativaAtual + 1;
+
+    if (tentativaAtual === 0 && imgElement.src.includes("/img/roupazora/")) {
+        const nomeArquivo = imgElement.src.split("/img/roupazora/").pop();
+        imgElement.src = `/img/${nomeArquivo}`;
+        return;
+    }
+
+    if (tentativaAtual === 1 && productId) {
+        imgElement.src = `/img/roupazora/img${productId}.jpeg`;
+        return;
+    }
+
+    if (tentativaAtual === 2 && productId) {
+        imgElement.src = `/img/img${productId}.jpeg`;
+        return;
+    }
+
+    imgElement.onerror = null;
+    imgElement.src = "/img/Logo 1.png";
+};
 
 // =====================================================
 // 1. CARREGAR PRODUTOS, PEDIDOS E INVENTÁRIO (UNIFICADO)
@@ -264,7 +308,7 @@ function renderizarProdutos(produtos) {
         const colProduto = document.createElement("td");
         colProduto.innerHTML = `
             <div class="produto-info">
-                <img src="${imgUrl}" alt="${nomeProduto}" onerror="this.onerror=null;this.src='/img/Logo 1.png'">
+                <img src="${imgUrl}" alt="${nomeProduto}" onerror="window.gerenciarFalhaImagemAdmin(this, ${produto.id_produto})">
                 <div>
                     <strong>${nomeProduto}</strong>
                     <small>Código #${produto.id_produto}</small>
