@@ -747,8 +747,8 @@ async function enviarAvaliacao() {
     };
 
     try {
-        // Tenta primeiro o caminho relativo dentro de TelaProdutos/ e fallback para a raiz
-        let resposta = await fetch("salvar_avaliacao.php", {
+        // Busca na mesma pasta TelaProdutos/
+        const resposta = await fetch("salvar_avaliacao.php", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -756,17 +756,6 @@ async function enviarAvaliacao() {
             },
             body: JSON.stringify(dadosEnviar)
         });
-
-        if (!resposta.ok) {
-            resposta = await fetch("/salvar_avaliacao.php", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify(dadosEnviar)
-            });
-        }
 
         const textoBruto = await resposta.text();
         let resultado;
@@ -798,16 +787,10 @@ async function carregarAvaliacoes() {
     if (!idProduto) return;
 
     try {
-        // Tenta primeiro o caminho relativo dentro de TelaProdutos/ e fallback para a raiz
-        let resposta = await fetch(`obter_avaliacoes.php?id_produto=${idProduto}`, {
+        // Busca na mesma pasta TelaProdutos/
+        const resposta = await fetch(`obter_avaliacoes.php?id_produto=${idProduto}`, {
             headers: { "Accept": "application/json" }
         });
-
-        if (!resposta.ok) {
-            resposta = await fetch(`/obter_avaliacoes.php?id_produto=${idProduto}`, {
-                headers: { "Accept": "application/json" }
-            });
-        }
 
         const textoBruto = await resposta.text();
         let resultado;
