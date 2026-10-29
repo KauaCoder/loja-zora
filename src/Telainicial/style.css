@@ -1078,6 +1078,8 @@ nav a:hover {
 
 .estilo-resultado[hidden] { display: none; }
 
+.estilo-resultado { scroll-margin-top: 24px; }
+
 .resultado-topo {
     display: flex;
     justify-content: space-between;
