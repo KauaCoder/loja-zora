@@ -1,7 +1,5 @@
 <?php
 header("Content-Type: application/json; charset=UTF-8");
-
-// Permite chamadas via fetch
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type");
 
@@ -10,7 +8,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Obtém os dados enviados em formato JSON
+// Inclui o arquivo conexao.php que está na raiz do projeto
+require_once __DIR__ . '/../conexao.php';
+
 $dados = json_decode(file_get_contents("php://input"), true);
 
 if (!$dados || !isset($dados['id_produto']) || !isset($dados['estrelas'])) {
@@ -29,18 +29,8 @@ if ($estrelas < 1 || $estrelas > 5) {
     exit;
 }
 
-// Configurações da base de dados PostgreSQL / Supabase
-$host = getenv('DB_HOST') ?: "localhost";
-$dbname = getenv('DB_NAME') ?: "postgres";
-$user = getenv('DB_USER') ?: "postgres";
-$pass = getenv('DB_PASSWORD') ?: "";
-$port = getenv('DB_PORT') ?: "5432";
-
 try {
-    $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-
+    // Utiliza a variável $pdo criada dentro do conexao.php da raiz
     $sql = "INSERT INTO avalia (id_produto, id_cliente, nome_cliente, estrelas, comentario, data_avaliacao) 
             VALUES (:id_produto, :id_cliente, :nome_cliente, :estrelas, :comentario, NOW())";
     
@@ -56,6 +46,6 @@ try {
     echo json_encode(["sucesso" => true, "mensagem" => "Avaliação enviada com sucesso!"]);
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(["sucesso" => false, "mensagem" => "Erro na base de dados: " . $e->getMessage()]);
+    echo json_encode(["sucesso" => false, "mensagem" => "Erro no banco de dados: " . $e->getMessage()]);
 }
 ?>
