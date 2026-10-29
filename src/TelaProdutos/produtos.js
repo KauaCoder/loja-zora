@@ -328,6 +328,7 @@ async function carregarProduto() {
 
         carregarTamanhos();
         atualizarBotaoEstoque();
+        carregarAvaliacoes();
 
     } catch (erro) {
         console.error("Erro ao carregar produto:", erro);
@@ -552,24 +553,23 @@ async function alterarQuantidade(indice, delta) {
     if (delta > 0) {
         const estoqueBD = await obterEstoqueBD(item.id_produto);
         if (estoqueBD !== null && novaQuantidade > estoqueBD) {
-            alert(`Quantidade máxima em estoque atingida (${estoqueBD} unidades disponíveis).`);
+            alert(`Quantidade máxima em estoque atingida (${estoqueBD} unidades).`);
             return;
         }
     }
 
-    item.quantidade = novaQuantidade;
-
-    if (item.quantidade <= 0) {
-        pedidosArray.splice(indice, 1);
+    if (novaQuantidade <= 0) {
+        removerPedido(indice);
+        return;
     }
 
+    item.quantidade = novaQuantidade;
     salvarCarrinho();
     renderizarPedidos();
     atualizarBadge();
 }
 
 function removerPedido(indice) {
-    if (indice < 0 || indice >= pedidosArray.length) return;
     pedidosArray.splice(indice, 1);
     salvarCarrinho();
     renderizarPedidos();
@@ -577,38 +577,35 @@ function removerPedido(indice) {
 }
 
 function atualizarTotal() {
-    const total = calcularTotal();
-    const elemento = document.getElementById("total");
-    if (elemento) {
-        elemento.textContent = total.toFixed(2).replace(".", ",");
+    const totalElemento = document.getElementById("total");
+    if (totalElemento) {
+        totalElemento.textContent = calcularTotal().toFixed(2).replace(".", ",");
     }
 }
 
 function atualizarBadge() {
-    const quantidadeTotal = pedidosArray.reduce(
-        (soma, p) => soma + (Number(p.quantidade) || 0), 0
-    );
+    const badges = document.querySelectorAll(".badge-carrinho");
+    const totalItens = pedidosArray.reduce((acc, p) => acc + (Number(p.quantidade) || 1), 0);
 
-    document.querySelectorAll(".badge-carrinho").forEach(badge => {
-        if (quantidadeTotal > 0) {
-            badge.textContent = quantidadeTotal;
-            badge.classList.add("show");
+    badges.forEach(badge => {
+        if (totalItens > 0) {
+            badge.textContent = totalItens;
+            badge.style.display = "inline-flex";
         } else {
             badge.textContent = "";
-            badge.classList.remove("show");
+            badge.style.display = "none";
         }
     });
 }
 
 function abrirPedidos() {
     const pedidos = document.getElementById("Pedidos");
+    const sidebar = obterSidebar();
+
+    if (sidebar) sidebar.classList.remove("ativo", "active");
+
     if (pedidos) {
         pedidos.classList.add("ativo");
-    }
-
-    const sidebar = obterSidebar();
-    if (sidebar) {
-        sidebar.classList.remove("ativo", "active");
     }
 
     sincronizarOverlay();
@@ -619,73 +616,41 @@ function fecharPedidos() {
     if (pedidos) {
         pedidos.classList.remove("ativo");
     }
-    
     sincronizarOverlay();
 }
 
-async function pagarPedido() {
-    if (!pedidosArray || pedidosArray.length === 0) {
-        alert("Seu carrinho está vazio.");
-        return;
-    }
-
-    if (typeof estaLogado === "function") {
-        const logado = await estaLogado();
-        if (!logado) {
-            alert("Você precisa estar logado para fazer um pedido!");
-            window.location.href = "/TelaLogin/login.html";
-            return;
-        }
-    }
-
-    const total = calcularTotal();
-    localStorage.setItem("totalPedido", total.toFixed(2));
-    localStorage.setItem("pedidos", JSON.stringify(pedidosArray));
-
-    window.location.href = "/TelaEntrega/entrega.html";
-}
-
-
-// =====================================================
-// 5. BOTÃO ADICIONAR AO CARRINHO (PÁGINA DO PRODUTO)
-// =====================================================
-
-async function adicionarAoCarrinhoPágina() {
+async function adicionarAoCarrinho() {
     if (!produto) {
-        alert("Produto não encontrado.");
+        alert("Produto não disponível.");
         return;
     }
 
-    if (Number(produto.estoque) <= 0) {
-        alert("Este produto está esgotado.");
+    if (detalhes.tamanhos && detalhes.tamanhos.length > 0 && !tamanhoSelecionado) {
+        alert("Por favor, selecione um tamanho antes de adicionar ao carrinho.");
         return;
     }
 
-    if (!tamanhoSelecionado) {
-        alert("Escolha um tamanho antes de comprar.");
-        return;
-    }
+    const estoqueBD = await obterEstoqueBD(produto.id_produto);
+    const estoqueDisponivel = estoqueBD !== null ? estoqueBD : produto.estoque;
 
-    const itemExistente = pedidosArray.find(p => Number(p.id_produto) === Number(produto.id_produto));
-    const qtdAtual = itemExistente ? Number(itemExistente.quantidade) : 0;
+    const idProd = Number(produto.id_produto);
+    const itemExistente = pedidosArray.find(p => Number(p.id_produto) === idProd && p.tamanho === tamanhoSelecionado);
+    const quantidadeAtual = itemExistente ? (Number(itemExistente.quantidade) || 1) : 0;
 
-    const estoqueDisponivel = await obterEstoqueBD(produto.id_produto) || Number(produto.estoque);
-
-    if (qtdAtual + 1 > estoqueDisponivel) {
-        alert(`Desculpe, apenas ${estoqueDisponivel} unidade(s) disponível(is) em estoque.`);
+    if (quantidadeAtual + 1 > estoqueDisponivel) {
+        alert(`Não é possível adicionar mais unidades. Estoque disponível: ${estoqueDisponivel}.`);
         return;
     }
 
     if (itemExistente) {
-        itemExistente.quantidade = qtdAtual + 1;
-        itemExistente.tamanho = tamanhoSelecionado;
+        itemExistente.quantidade = quantidadeAtual + 1;
     } else {
         pedidosArray.push({
-            id_produto: Number(produto.id_produto),
+            id_produto: idProd,
             nome: produto.nome,
-            preco: Number(produto.preco),
-            tamanho: tamanhoSelecionado,
+            preco: produto.preco,
             imagem: produto.imagem,
+            tamanho: tamanhoSelecionado,
             quantidade: 1
         });
     }
@@ -696,61 +661,51 @@ async function adicionarAoCarrinhoPágina() {
     abrirPedidos();
 }
 
-
-// =====================================================
-// 6. INICIALIZAÇÃO DA PÁGINA DO PRODUTO
-// =====================================================
-
-document.addEventListener("DOMContentLoaded", async function () {
-    await checarEAtualizarMenu();
-    carregarCarrinho();
-    carregarProduto();
-
-    const botaoComprar = document.getElementById("botaoComprar");
-    if (botaoComprar) {
-        botaoComprar.addEventListener("click", adicionarAoCarrinhoPágina);
+function pagarPedido() {
+    if (pedidosArray.length === 0) {
+        alert("Seu carrinho está vazio!");
+        return;
     }
+    window.location.href = "/TelaPagamento/pagamento.html";
+}
 
-    const overlay = obterOverlay();
-    if (overlay) {
-        overlay.addEventListener("click", fecharTudo);
-    }
-});
 
 // =====================================================
-// 5. SISTEMA DE AVALIAÇÃO DE PRODUTOS
+// 5. SISTEMA DE AVALIAÇÃO DO PRODUTO (TABELA AVALIA)
 // =====================================================
 
 let notaSelecionada = 0;
 
-// Inicializa a interatividade das estrelas
-document.addEventListener("DOMContentLoaded", function () {
-    const estrelas = document.querySelectorAll("#estrelasContainer .estrela");
-    
-    estrelas.forEach(estrela => {
-        estrela.addEventListener("click", function () {
-            notaSelecionada = Number(this.getAttribute("data-valor"));
+function inicializarBotoesEstrelas() {
+    const botoesEstrelas = document.querySelectorAll("#estrelasEscolha button");
+
+    botoesEstrelas.forEach(btn => {
+        btn.addEventListener("click", function () {
+            notaSelecionada = Number(this.getAttribute("data-nota"));
             atualizarEstrelasVisual();
         });
 
-        estrela.addEventListener("mouseover", function () {
-            const valorHover = Number(this.getAttribute("data-valor"));
-            destacarEstrelas(valorHover);
+        btn.addEventListener("mouseover", function () {
+            const notaHover = Number(this.getAttribute("data-nota"));
+            destacarEstrelas(notaHover);
         });
 
-        estrela.addEventListener("mouseout", function () {
+        btn.addEventListener("mouseout", function () {
             destacarEstrelas(notaSelecionada);
         });
     });
-});
+}
 
 function destacarEstrelas(qtd) {
-    const estrelas = document.querySelectorAll("#estrelasContainer .estrela");
-    estrelas.forEach((estrela, index) => {
-        if (index < qtd) {
-            estrela.classList.add("ativa");
+    const botoesEstrelas = document.querySelectorAll("#estrelasEscolha button");
+    botoesEstrelas.forEach(btn => {
+        const notaBtn = Number(btn.getAttribute("data-nota"));
+        if (notaBtn <= qtd) {
+            btn.textContent = "★";
+            btn.classList.add("ativa");
         } else {
-            estrela.classList.remove("ativa");
+            btn.textContent = "☆";
+            btn.classList.remove("ativa");
         }
     });
 }
@@ -759,7 +714,6 @@ function atualizarEstrelasVisual() {
     destacarEstrelas(notaSelecionada);
 }
 
-// Função para enviar a avaliação para o backend
 async function enviarAvaliacao() {
     if (!idProduto) {
         alert("Produto não identificado.");
@@ -767,13 +721,13 @@ async function enviarAvaliacao() {
     }
 
     if (notaSelecionada === 0) {
-        alert("Por favor, selecione ao menos 1 estrela para avaliar o produto.");
+        alert("Por favor, selecione uma nota de 1 a 5 estrelas.");
         return;
     }
 
-    const comentario = document.getElementById("textoComentario") ? document.getElementById("textoComentario").value.trim() : "";
+    const campoComentario = document.getElementById("comentario");
+    const textoComentario = campoComentario ? campoComentario.value.trim() : "";
 
-    // Recupera informações do usuário logado
     let usuario = null;
     const dadosLocais = localStorage.getItem("usuarioLogado");
     if (dadosLocais) {
@@ -789,7 +743,7 @@ async function enviarAvaliacao() {
         id_cliente: usuario ? (usuario.id_cliente || usuario.id || null) : null,
         nome_cliente: usuario ? (usuario.nome || usuario.email || "Cliente Anônimo") : "Cliente Anônimo",
         estrelas: notaSelecionada,
-        comentario: comentario
+        comentario: textoComentario
     };
 
     try {
@@ -806,18 +760,92 @@ async function enviarAvaliacao() {
 
         if (resposta.ok && resultado.sucesso) {
             alert("Sua avaliação foi enviada com sucesso!");
-            
-            // Reseta os campos
             notaSelecionada = 0;
             atualizarEstrelasVisual();
-            if (document.getElementById("textoComentario")) {
-                document.getElementById("textoComentario").value = "";
-            }
+            if (campoComentario) campoComentario.value = "";
+            carregarAvaliacoes();
         } else {
-            alert(resultado.mensagem || "Erro ao salvar avaliação.");
+            alert(resultado.mensagem || "Erro ao salvar a avaliação.");
         }
     } catch (erro) {
         console.error("Erro ao enviar avaliação:", erro);
-        alert("Ocorreu um erro ao conectar com o servidor.");
+        alert("Erro de conexão ao enviar avaliação.");
     }
 }
+
+async function carregarAvaliacoes() {
+    if (!idProduto) return;
+
+    try {
+        const resposta = await fetch(`/obter_avaliacoes.php?id_produto=${idProduto}`);
+        const resultado = await resposta.json();
+
+        if (resposta.ok && resultado.sucesso) {
+            renderizarAvaliacoes(resultado.avaliacoes || [], resultado.media || 0);
+        }
+    } catch (erro) {
+        console.error("Erro ao carregar avaliações:", erro);
+    }
+}
+
+function renderizarAvaliacoes(lista, media) {
+    const elMedia = document.getElementById("mediaNota");
+    const elEstrelasMedia = document.getElementById("estrelasMedia");
+    const elQtd = document.getElementById("quantidadeAvaliacoes");
+    const containerComentarios = document.getElementById("comentarios");
+
+    if (elMedia) elMedia.textContent = Number(media).toFixed(1).replace(".", ",");
+    if (elQtd) elQtd.textContent = `${lista.length} ${lista.length === 1 ? 'avaliação' : 'avaliações'}`;
+
+    if (elEstrelasMedia) {
+        const mediaArredondada = Math.round(Number(media));
+        elEstrelasMedia.textContent = "★".repeat(mediaArredondada) + "☆".repeat(5 - mediaArredondada);
+    }
+
+    if (!containerComentarios) return;
+
+    containerComentarios.innerHTML = "";
+
+    if (lista.length === 0) {
+        containerComentarios.innerHTML = `<p class="sem-avaliacoes">Ainda não existem avaliações para este produto.</p>`;
+        return;
+    }
+
+    lista.forEach(item => {
+        const divItem = document.createElement("div");
+        divItem.className = "item-comentario";
+
+        const estrelas = "★".repeat(item.estrelas) + "☆".repeat(5 - item.estrelas);
+        const dataFormatada = item.data_avaliacao 
+            ? new Date(item.data_avaliacao).toLocaleDateString("pt-BR") 
+            : "";
+
+        divItem.innerHTML = `
+            <div class="topo-comentario">
+                <strong>${item.nome_cliente || "Anônimo"}</strong>
+                <span class="estrelas-item">${estrelas}</span>
+                <small class="data-item">${dataFormatada}</small>
+            </div>
+            <p class="texto-comentario">${item.comentario || "<em>Sem comentário escrito.</em>"}</p>
+        `;
+
+        containerComentarios.appendChild(divItem);
+    });
+}
+
+
+// =====================================================
+// 6. INICIALIZAÇÃO DA PÁGINA
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    checarEAtualizarMenu();
+    carregarProduto();
+    carregarCarrinho();
+    inicializarBotoesEstrelas();
+
+    const botaoComprar = document.getElementById("botaoComprar");
+    if (botaoComprar) {
+        botaoComprar.addEventListener("click", adicionarAoCarrinho);
+    }
+});
