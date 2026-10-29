@@ -17,3 +17,46 @@ button,input,select{font:inherit}button,a,select{-webkit-tap-highlight-color:tra
 @media(max-width:900px){.desktop-nav{gap:18px}.catalog-layout{grid-template-columns:190px minmax(0,1fr);gap:18px}.filters{padding-right:15px}.product-grid.columns-3{grid-template-columns:repeat(2,minmax(0,1fr))}.view-switch{gap:6px}.toolbar{grid-template-columns:1fr 1fr auto;gap:7px}.toolbar-button,.sort-control{padding:0 12px;gap:8px}}
 @media(max-width:640px){.topbar{height:62px;padding:0 18px}.desktop-nav{display:none}.header-actions{gap:7px}.icon-button{width:32px}.catalog-head{padding:21px 18px 0}.breadcrumbs{margin-bottom:20px}.title-row{align-items:flex-end;margin-bottom:20px}.title-row h1{font-size:1.7rem}.subtitle{font-size:.82rem}.catalog-count{font-size:.77rem}.toolbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:14px 0;gap:10px}.toolbar-button,.sort-control{min-height:48px;font-size:.9rem}.view-switch{grid-column:1/-1;justify-content:flex-end;padding:0 4px}.view-button svg{width:26px;height:26px}.catalog-layout{display:block;padding:18px 18px 45px}.filters{position:fixed;z-index:32;left:0;right:0;bottom:0;max-height:84vh;overflow:auto;background:#fff;border-radius:20px 20px 0 0;padding:24px 22px 28px;box-shadow:0 -10px 40px #00000014;transform:translateY(105%);transition:transform .25s}.filters.open{transform:translateY(0)}.filter-heading{margin-bottom:10px}.filter-group{padding:17px 0}.mobile-apply{display:block;padding:14px}.product-grid{gap:27px 12px}.product-grid.columns-2,.product-grid.columns-3{grid-template-columns:repeat(2,minmax(0,1fr))}.product-image-wrap{border-radius:7px;aspect-ratio:.79}.product-badge{top:7px;left:7px;padding:5px 6px;font-size:.57rem}.favorite-button{right:7px;bottom:7px;width:34px;height:34px}.product-info{padding-top:10px}.product-name{font-size:.78rem}.product-info .favorite-button{width:24px}.product-price{font-size:.94rem;margin-top:6px}.product-detail{font-size:.76rem;margin-top:7px}.product-detail p{margin:4px 0}.add-cart{display:block;padding:9px 5px;font-size:.75rem}.columns-1 .product-card{grid-template-columns:120px minmax(0,1fr);gap:12px}.columns-1 .product-image-wrap{aspect-ratio:.75}.columns-1 .product-info{padding-top:4px}.columns-1 .add-cart{max-width:100%}.footer{gap:12px}.footer p{width:100%;order:3}.footer small{margin-left:auto}}
 @media(max-width:360px){.catalog-count{display:none}.product-grid.columns-2,.product-grid.columns-3{gap:22px 9px}.product-name{font-size:.73rem}.product-price{font-size:.88rem}.product-detail{font-size:.71rem}}
+
+:root {
+  --ink: #2b1a0c;     /* marrom escuro: botões, textos, checkbox */
+  --muted: #7a6a58;
+  --line: #e2d7c6;
+  --green: #a9823c;   /* era verde: eyebrow, bolinha do filtro, ponto do logo → dourado */
+  --blue: #a9823c;    /* hover do menu */
+  --pink: #d6347f;    /* rosa do selo DESTAQUE da home */
+  --gold: #cba35c;
+}
+[hidden] { display: none !important; } /* corrige o "Carregar mais" que nunca some */
+
+/* Fonte igual à da tela principal */
+body, .logo, .title-row h1, .filter-heading h2, .drawer-head h2,
+.empty-state h2, .product-image-fallback { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+.title-row h1 { letter-spacing: -.03em; }
+
+/* Topbar + logo (sem mexer no HTML: o ponto verde some e entra o ícone) */
+.topbar, .footer { background: #faf6f0; }
+.logo { display: inline-flex; align-items: center; gap: 10px; font-size: 1rem; letter-spacing: .32em; color: #472e15; }
+.logo span { display: none; }
+.logo::before { content: ""; width: 44px; height: 44px; background: url('/img/logo-mark.png') center / contain no-repeat; }
+.desktop-nav a:hover { color: var(--green); }
+
+/* Destaques em rosa */
+.mini-count, .filter-dot { background: var(--pink); }
+.product-badge { background: var(--pink); color: #fff; border-radius: 999px; padding: 6px 11px; letter-spacing: .1em; }
+.favorite-button:hover, .favorite-button.active { color: var(--pink); }
+.favorite-button.active svg { fill: var(--pink); stroke: var(--pink); }
+.product-detail .promo { color: var(--pink); font-weight: 600; }
+
+/* Cards e controles */
+.product-image-wrap { background: #ebe1d2; border-radius: 12px; box-shadow: 0 6px 20px rgba(71,46,21,.08); }
+.product-name { color: var(--ink); font-weight: 600; }
+.filter-chip { background: #ebe1d2; }
+.toolbar-button:hover, .sort-control:hover, .load-more:hover { border-color: var(--gold); }
+.apply-filter:hover, .checkout-button:hover { background: #a9823c; border-color: #a9823c; }
+.toast { border-radius: 999px; }
+
+/* Sacola e filtros mobile no creme */
+.cart-drawer { background: #faf6f0; }
+.overlay { background: rgba(43,26,12,.45); }
+@media (max-width: 640px) { .filters { background: #faf6f0; } }
