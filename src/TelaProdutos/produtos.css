@@ -830,3 +830,41 @@ nav a:hover {
 body.painel-aberto {
     overflow: hidden;
 }
+
+/* =====================================================
+   ESTILOS PARA AS ESTRELAS DE AVALIAÇÃO
+   ===================================================== */
+
+.estrelas-escolha {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.estrelas-escolha button {
+    background: none;
+    border: none;
+    font-size: 32px;
+    color: #ccc; /* Cor cinzenta por defeito para estrelas inativas */
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s ease, transform 0.1s ease;
+    line-height: 1;
+}
+
+/* Cor amarela/dourada quando a estrela está ativa */
+.estrelas-escolha button.ativa {
+    color: #ffc107 !important;
+}
+
+.estrelas-escolha button:hover {
+    transform: scale(1.15);
+}
+
+/* Estrelas amarelas nos comentários e na média do topo */
+.estrelas-item,
+.estrelas {
+    color: #ffc107;
+    font-size: 18px;
+    letter-spacing: 2px;
+}
