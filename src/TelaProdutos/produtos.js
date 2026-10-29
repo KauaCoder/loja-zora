@@ -747,7 +747,8 @@ async function enviarAvaliacao() {
     };
 
     try {
-        const resposta = await fetch("/salvar_avaliacao.php", {
+        // Tenta primeiro o caminho relativo dentro de TelaProdutos/ e fallback para a raiz
+        let resposta = await fetch("salvar_avaliacao.php", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -756,7 +757,27 @@ async function enviarAvaliacao() {
             body: JSON.stringify(dadosEnviar)
         });
 
-        const resultado = await resposta.json();
+        if (!resposta.ok) {
+            resposta = await fetch("/salvar_avaliacao.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(dadosEnviar)
+            });
+        }
+
+        const textoBruto = await resposta.text();
+        let resultado;
+
+        try {
+            resultado = JSON.parse(textoBruto);
+        } catch (e) {
+            console.error("Erro ao converter JSON ao salvar avaliação. Resposta recebida:", textoBruto);
+            alert("O servidor respondeu com um formato inesperado. Verifique os logs.");
+            return;
+        }
 
         if (resposta.ok && resultado.sucesso) {
             alert("Sua avaliação foi enviada com sucesso!");
@@ -777,8 +798,26 @@ async function carregarAvaliacoes() {
     if (!idProduto) return;
 
     try {
-        const resposta = await fetch(`/obter_avaliacoes.php?id_produto=${idProduto}`);
-        const resultado = await resposta.json();
+        // Tenta primeiro o caminho relativo dentro de TelaProdutos/ e fallback para a raiz
+        let resposta = await fetch(`obter_avaliacoes.php?id_produto=${idProduto}`, {
+            headers: { "Accept": "application/json" }
+        });
+
+        if (!resposta.ok) {
+            resposta = await fetch(`/obter_avaliacoes.php?id_produto=${idProduto}`, {
+                headers: { "Accept": "application/json" }
+            });
+        }
+
+        const textoBruto = await resposta.text();
+        let resultado;
+
+        try {
+            resultado = JSON.parse(textoBruto);
+        } catch (e) {
+            console.error("Erro ao converter JSON de avaliações. Resposta recebida:", textoBruto);
+            return;
+        }
 
         if (resposta.ok && resultado.sucesso) {
             renderizarAvaliacoes(resultado.avaliacoes || [], resultado.media || 0);
