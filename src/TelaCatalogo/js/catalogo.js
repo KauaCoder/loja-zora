@@ -390,6 +390,66 @@ function carregarCarrinhoSalvo() {
 }
 
 // =====================================================
+// CHECKOUT: VERIFICAÇÃO DE LOGIN E REDIRECIONAMENTO
+// =====================================================
+
+async function checarLoginFinalizacao() {
+  // 1. Verifica se a sacola tem produtos
+  if (cart.length === 0) {
+      showToast("Sua sacola está vazia!");
+      return;
+  }
+
+  let idClienteLocal = null;
+  
+  // 2. Verifica o localStorage
+  try {
+      const usuarioLogado = JSON.parse(localStorage.getItem("usuarioLogado"));
+      if (usuarioLogado && usuarioLogado.id_cliente) {
+          idClienteLocal = usuarioLogado.id_cliente;
+      }
+  } catch (e) {
+      console.error("Erro ao ler usuário logado do localStorage.");
+  }
+
+  // 3. Se não tem login no localStorage, vai pro Login
+  if (!idClienteLocal) {
+      alert("Você precisa fazer login para finalizar o seu pedido.");
+      window.location.href = "/TelaLogin/login.html";
+      return;
+  }
+
+  // 4. Valida a sessão no PHP
+  try {
+      const resposta = await fetch(`/verificar_sessao.php?id_cliente=${idClienteLocal}`, {
+          method: "GET",
+          credentials: "include" 
+      });
+
+      const resultado = await resposta.json();
+
+      if (resposta.ok && resultado.sucesso && resultado.logado) {
+          if (resultado.is_admin) {
+              const prosseguir = confirm("Você está logado como Administrador. Deseja prosseguir para a compra como cliente normal?");
+              if (!prosseguir) return;
+          }
+          // TUDO CERTO! Redireciona para o checkout
+          window.location.href = "/TelaEntrega/telaentrega.html";
+      } else {
+          // Sessão expirou
+          localStorage.removeItem("usuarioLogado"); 
+          alert("A sua sessão expirou ou é inválida. Por favor, faça login novamente.");
+          window.location.href = "/TelaLogin/login.html";
+      }
+      
+  } catch (erro) {
+      console.error("Erro ao verificar sessão no servidor:", erro);
+      // Fallback: se houver falha de rede mas o localStorage existir, avança.
+      window.location.href = "/TelaEntrega/telaentrega.html";
+  }
+}
+
+// =====================================================
 // EVENTOS E INICIALIZAÇÃO
 // =====================================================
 
@@ -498,6 +558,15 @@ document.addEventListener("DOMContentLoaded", function () {
         renderCart();
         renderProducts();
       }
+    });
+  }
+
+  // EVENTO DE CLIQUE DO BOTÃO FINALIZAR COMPRA
+  const btnFinalizar = document.querySelector("#finalizar-compra") || document.querySelector("#checkoutBtn") || document.querySelector(".checkout-button");
+  if (btnFinalizar) {
+    btnFinalizar.addEventListener("click", function(e) {
+      e.preventDefault();
+      checarLoginFinalizacao();
     });
   }
 
