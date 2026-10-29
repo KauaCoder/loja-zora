@@ -210,6 +210,7 @@
 
     let passoAtual = 0;
     let respostas = [];
+    let tentativasCatalogo = 0;
 
     function pegarProdutos() {
         // produtosGlobais é preenchido pelo script.js quando o catálogo carrega
@@ -250,6 +251,19 @@
             .sort((a, b) => b.pontos - a.pontos);
 
         const dentroDaFaixa = pontuados.filter(item => item.preco >= faixa[0] && item.preco <= faixa[1]);
+
+        // Nenhuma peça na faixa escolhida: mostra as que mais combinam com o estilo,
+        // das mais próximas do valor pretendido para as mais distantes
+        if (dentroDaFaixa.length === 0 && pontuados.length > 0) {
+            const distancia = item => item.preco < faixa[0] ? faixa[0] - item.preco : item.preco - faixa[1];
+
+            const maisProximas = pontuados
+                .slice()
+                .sort((a, b) => (b.pontos - a.pontos) || (distancia(a) - distancia(b)))
+                .slice(0, 4);
+
+            return { itens: maisProximas, semFaixa: true };
+        }
 
         // Primeiro quem combina com o estilo e cabe no preço; depois completa com o resto da faixa
         let escolhidos = dentroDaFaixa.filter(item => item.pontos > 0).slice(0, 4);
@@ -347,6 +361,22 @@
         const resultado = document.getElementById("estiloResultado");
         if (!quiz || !resultado) return;
 
+        // Se o catálogo ainda não chegou, espera um pouco em vez de mostrar tela vazia
+        if (pegarProdutos().length === 0 && tentativasCatalogo < 12) {
+            tentativasCatalogo += 1;
+
+            quiz.replaceChildren();
+            const aguarde = document.createElement("p");
+            aguarde.className = "estilo-pergunta";
+            aguarde.textContent = "Separando as peças para você...";
+            quiz.appendChild(aguarde);
+
+            setTimeout(mostrarResultado, 500);
+            return;
+        }
+
+        tentativasCatalogo = 0;
+
         const { itens, semFaixa } = calcularSugestoes();
 
         resultado.replaceChildren();
@@ -380,18 +410,15 @@
             const vazio = document.createElement("p");
             vazio.className = "resultado-nota";
             vazio.textContent = pegarProdutos().length === 0
-                ? "Os produtos ainda estão carregando. Tente de novo em instantes."
+                ? "Não foi possível carregar as peças agora. Atualize a página e tente de novo."
                 : "Não encontramos peças disponíveis agora. Veja o catálogo completo.";
             resultado.appendChild(vazio);
         } else {
-            if (semFaixa) {
-                // não deve acontecer, mas evita uma tela vazia
-                console.warn("ZORA: nenhum produto na faixa de preço escolhida.");
-            }
-
             const nota = document.createElement("p");
             nota.className = "resultado-nota";
-            nota.textContent = "Toque em uma peça para ver detalhes e escolher o tamanho.";
+            nota.textContent = semFaixa
+                ? "Não temos peças nessa faixa de preço agora. Estas são as que mais combinam com o seu estilo."
+                : "Toque em uma peça para ver detalhes e escolher o tamanho.";
             resultado.appendChild(nota);
 
             const grade = document.createElement("div");
@@ -439,7 +466,7 @@
         }
 
         resultado.hidden = false;
-        resultado.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        resultado.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function iniciarQuiz() {
