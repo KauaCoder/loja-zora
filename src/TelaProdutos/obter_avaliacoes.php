@@ -6,22 +6,8 @@ header("Access-Control-Allow-Headers: Content-Type");
 // Inclui o conexao.php da raiz
 require_once __DIR__ . '/../conexao.php';
 
-// Mapeia qual variável de conexão foi criada dentro do conexao.php
-if (!isset($pdo)) {
-    if (isset($conn) && $conn instanceof PDO) {
-        $pdo = $conn;
-    } elseif (isset($conexao) && $conexao instanceof PDO) {
-        $pdo = $conexao;
-    } elseif (isset($db) && $db instanceof PDO) {
-        $pdo = $db;
-    }
-}
-
-if (!isset($pdo) || !($pdo instanceof PDO)) {
-    http_response_code(500);
-    echo json_encode(["sucesso" => false, "mensagem" => "A variável de conexão \$pdo não foi inicializada corretamente pelo conexao.php."]);
-    exit;
-}
+// Atribui a variável $conexao do seu conexao.php para $pdo
+$pdo = $conexao;
 
 $id_produto = isset($_GET['id_produto']) ? intval($_GET['id_produto']) : 0;
 
