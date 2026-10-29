@@ -716,3 +716,108 @@ document.addEventListener("DOMContentLoaded", async function () {
         overlay.addEventListener("click", fecharTudo);
     }
 });
+
+// =====================================================
+// 5. SISTEMA DE AVALIAÇÃO DE PRODUTOS
+// =====================================================
+
+let notaSelecionada = 0;
+
+// Inicializa a interatividade das estrelas
+document.addEventListener("DOMContentLoaded", function () {
+    const estrelas = document.querySelectorAll("#estrelasContainer .estrela");
+    
+    estrelas.forEach(estrela => {
+        estrela.addEventListener("click", function () {
+            notaSelecionada = Number(this.getAttribute("data-valor"));
+            atualizarEstrelasVisual();
+        });
+
+        estrela.addEventListener("mouseover", function () {
+            const valorHover = Number(this.getAttribute("data-valor"));
+            destacarEstrelas(valorHover);
+        });
+
+        estrela.addEventListener("mouseout", function () {
+            destacarEstrelas(notaSelecionada);
+        });
+    });
+});
+
+function destacarEstrelas(qtd) {
+    const estrelas = document.querySelectorAll("#estrelasContainer .estrela");
+    estrelas.forEach((estrela, index) => {
+        if (index < qtd) {
+            estrela.classList.add("ativa");
+        } else {
+            estrela.classList.remove("ativa");
+        }
+    });
+}
+
+function atualizarEstrelasVisual() {
+    destacarEstrelas(notaSelecionada);
+}
+
+// Função para enviar a avaliação para o backend
+async function enviarAvaliacao() {
+    if (!idProduto) {
+        alert("Produto não identificado.");
+        return;
+    }
+
+    if (notaSelecionada === 0) {
+        alert("Por favor, selecione ao menos 1 estrela para avaliar o produto.");
+        return;
+    }
+
+    const comentario = document.getElementById("textoComentario") ? document.getElementById("textoComentario").value.trim() : "";
+
+    // Recupera informações do usuário logado
+    let usuario = null;
+    const dadosLocais = localStorage.getItem("usuarioLogado");
+    if (dadosLocais) {
+        try {
+            usuario = JSON.parse(dadosLocais);
+        } catch (e) {
+            usuario = null;
+        }
+    }
+
+    const dadosEnviar = {
+        id_produto: Number(idProduto),
+        id_cliente: usuario ? (usuario.id_cliente || usuario.id || null) : null,
+        nome_cliente: usuario ? (usuario.nome || usuario.email || "Cliente Anônimo") : "Cliente Anônimo",
+        estrelas: notaSelecionada,
+        comentario: comentario
+    };
+
+    try {
+        const resposta = await fetch("/salvar_avaliacao.php", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify(dadosEnviar)
+        });
+
+        const resultado = await resposta.json();
+
+        if (resposta.ok && resultado.sucesso) {
+            alert("Sua avaliação foi enviada com sucesso!");
+            
+            // Reseta os campos
+            notaSelecionada = 0;
+            atualizarEstrelasVisual();
+            if (document.getElementById("textoComentario")) {
+                document.getElementById("textoComentario").value = "";
+            }
+        } else {
+            alert(resultado.mensagem || "Erro ao salvar avaliação.");
+        }
+    } catch (erro) {
+        console.error("Erro ao enviar avaliação:", erro);
+        alert("Ocorreu um erro ao conectar com o servidor.");
+    }
+}
