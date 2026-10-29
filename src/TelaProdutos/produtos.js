@@ -149,7 +149,7 @@ const detalhesProdutos = {
     8: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Jeans e malha", composicao: "Composição conforme material da peça", marca: "ZORA", colecao: "Coleção ZORA" },
     9: { tamanhos: ["PP", "P", "M", "G", "GG"], tecido: "Malha", composicao: "Poliéster e Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
     10: { tamanhos: ["P", "M", "G", "GG"], tecido: "Fleece", composicao: "Poliéster", marca: "ZORA", colecao: "Coleção ZORA" },
-    
+
     // Produtos Cadastrados (11 ao 20 do Supabase)
     11: { tamanhos: ["P", "M", "G", "GG"], tecido: "Alfaiataria Premium", composicao: "95% Poliéster 5% Elastano", marca: "ZORA", colecao: "Coleção ZORA" },
     12: { tamanhos: ["P", "M", "G", "GG"], tecido: "Linho Misto", composicao: "70% Viscose 30% Linho", marca: "ZORA", colecao: "Coleção ZORA" },
@@ -177,6 +177,16 @@ let detalhes = detalhesProdutos[idProduto] || {
 };
 
 let tamanhoSelecionado = null;
+
+// Escapa texto vindo do banco antes de colocar em innerHTML
+function escaparHTML(texto) {
+    return String(texto ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
 
 // Trata os caminhos de imagem aceitando /img/roupazora/, /img/ e URLs do proxy
 function tratarCaminhoImagem(imgSrc, id) {
@@ -243,6 +253,87 @@ window.gerenciarFalhaImagem = function(imgElement, productId) {
 
 
 // =====================================================
+// 2.1 GALERIA DE FOTOS (grade no desktop / carrossel no mobile)
+// =====================================================
+
+// Aceita um array, ou um texto separado por vírgula / ponto e vírgula / barra vertical.
+// Se o banco só tiver uma foto, a galeria mostra apenas ela.
+function obterListaImagens(prodBD) {
+    let lista = [];
+
+    const extras = prodBD.imagens || prodBD.galeria || prodBD.imagens_extras;
+
+    if (Array.isArray(extras)) {
+        lista = extras.slice();
+    } else if (typeof extras === "string" && extras.trim() !== "") {
+        lista = extras.split(/[;,|]/);
+    }
+
+    lista = lista.map(s => String(s).trim()).filter(Boolean);
+
+    // A imagem principal sempre vem primeiro
+    if (prodBD.imagem) {
+        lista = [String(prodBD.imagem).trim()].concat(
+            lista.filter(s => s !== String(prodBD.imagem).trim())
+        );
+    }
+
+    if (lista.length === 0) {
+        lista = [""];
+    }
+
+    return lista.map(src => tratarCaminhoImagem(src, prodBD.id_produto));
+}
+
+function montarGaleria(imagens, nome, idProd) {
+    const galeria = document.getElementById("galeria");
+    const pontos = document.getElementById("galeriaPontos");
+    if (!galeria) return;
+
+    galeria.innerHTML = "";
+    if (pontos) pontos.innerHTML = "";
+
+    galeria.classList.toggle("unica", imagens.length === 1);
+    galeria.classList.toggle("primeira-larga", imagens.length > 1 && imagens.length % 2 === 1);
+
+    imagens.forEach((src, indice) => {
+        const item = document.createElement("div");
+        item.className = "galeria-item";
+
+        const img = document.createElement("img");
+        // A primeira foto mantém o id original para não quebrar nada que dependa dele
+        if (indice === 0) img.id = "imagemProduto";
+        img.src = src;
+        img.alt = imagens.length > 1 ? `${nome} - foto ${indice + 1}` : nome;
+        img.loading = indice === 0 ? "eager" : "lazy";
+        img.onerror = function () {
+            window.gerenciarFalhaImagem(this, idProd);
+        };
+
+        item.appendChild(img);
+        galeria.appendChild(item);
+
+        if (pontos && imagens.length > 1) {
+            const ponto = document.createElement("span");
+            if (indice === 0) ponto.classList.add("ativo");
+            pontos.appendChild(ponto);
+        }
+    });
+
+    // Atualiza os pontinhos conforme o carrossel desliza (mobile)
+    if (pontos && imagens.length > 1) {
+        galeria.onscroll = function () {
+            const largura = galeria.clientWidth || 1;
+            const atual = Math.round(galeria.scrollLeft / largura);
+            pontos.querySelectorAll("span").forEach((p, i) => {
+                p.classList.toggle("ativo", i === atual);
+            });
+        };
+    }
+}
+
+
+// =====================================================
 // 3. CARREGAR DETALHES DO PRODUTO (BD POSTGRESQL / SUPABASE)
 // =====================================================
 
@@ -275,13 +366,17 @@ async function carregarProduto() {
             throw new Error("Produto não encontrado.");
         }
 
+        const listaImagens = obterListaImagens(prodEncontrado);
+
         produto = {
             id_produto: Number(prodEncontrado.id_produto),
             nome: prodEncontrado.nm_produto || prodEncontrado.nome || "Produto ZORA",
             preco: Number(prodEncontrado.preco) || 0,
             estoque: prodEncontrado.qtd_item !== undefined ? Number(prodEncontrado.qtd_item) : Number(prodEncontrado.estoque || 0),
             categoria: prodEncontrado.categoria || "Geral",
-            imagem: tratarCaminhoImagem(prodEncontrado.imagem, prodEncontrado.id_produto),
+            imagem: listaImagens[0],
+            imagens: listaImagens,
+            cor: prodEncontrado.cor || "",
             descricao: prodEncontrado.descricao || "Peça exclusiva ZORA com modelagem e caimento impecáveis."
         };
 
@@ -300,17 +395,11 @@ async function carregarProduto() {
             elPreco.textContent = `R$ ${produto.preco.toFixed(2).replace(".", ",")}`;
         }
 
-        const imagem = document.getElementById("imagemProduto");
-        if (imagem) {
-            imagem.src = produto.imagem;
-            imagem.alt = produto.nome;
-            imagem.onerror = function () {
-                window.gerenciarFalhaImagem(this, produto.id_produto);
-            };
-        }
+        montarGaleria(produto.imagens, produto.nome, produto.id_produto);
 
         const elDescricao = document.getElementById("descricaoProduto");
         if (elDescricao) elDescricao.textContent = produto.descricao;
+        configurarVerMais();
 
         const elTecido = document.getElementById("tecidoProduto");
         if (elTecido) elTecido.textContent = detalhes.tecido;
@@ -324,10 +413,13 @@ async function carregarProduto() {
         const elColecao = document.getElementById("colecaoProduto");
         if (elColecao) elColecao.textContent = detalhes.colecao;
 
+        mostrarCor(produto.cor);
+
         document.title = `ZORA - ${produto.nome}`;
 
         carregarTamanhos();
         atualizarBotaoEstoque();
+        atualizarFavoritoVisual();
         carregarAvaliacoes();
 
     } catch (erro) {
@@ -343,28 +435,77 @@ function mostrarProdutoNaoEncontrado() {
     const preco = document.getElementById("precoProduto");
     const descricao = document.getElementById("descricaoProduto");
     const botao = document.getElementById("botaoComprar");
+    const textoBotao = document.getElementById("textoBotaoComprar");
 
     if (nome) nome.textContent = "Produto não encontrado";
     if (preco) preco.textContent = "";
     if (descricao) descricao.textContent = "Não foi possível carregar este produto.";
-    if (botao) {
-        botao.disabled = true;
-        botao.textContent = "Produto indisponível";
-    }
+    if (botao) botao.disabled = true;
+    if (textoBotao) textoBotao.textContent = "Produto indisponível";
 }
 
 function atualizarBotaoEstoque() {
     const botao = document.getElementById("botaoComprar");
+    const textoBotao = document.getElementById("textoBotaoComprar");
     if (!botao || !produto) return;
 
     if (produto.estoque <= 0) {
         botao.disabled = true;
-        botao.textContent = "Produto esgotado";
+        if (textoBotao) textoBotao.textContent = "Produto esgotado";
         return;
     }
 
     botao.disabled = false;
-    botao.textContent = "Adicionar ao carrinho";
+    if (textoBotao) textoBotao.textContent = "Adicionar à sacola";
+}
+
+// Mostra o bloco "Cor" somente se o produto tiver uma cor cadastrada
+function mostrarCor(cor) {
+    const bloco = document.getElementById("blocoCor");
+    const nomeCor = document.getElementById("corProduto");
+    const bolinha = document.getElementById("corBolinha");
+    if (!bloco) return;
+
+    if (!cor || String(cor).trim() === "") {
+        bloco.hidden = true;
+        return;
+    }
+
+    const mapa = {
+        preto: "#1a1a1a", branco: "#ffffff", off: "#f4efe6", bege: "#d8c3a5",
+        marrom: "#6b4226", rosa: "#e8a0b4", vermelho: "#b3261e", azul: "#2f5d9e",
+        verde: "#3b6b4f", amarelo: "#e5c04b", cinza: "#9a9a9a", laranja: "#e07a2f"
+    };
+
+    const nome = String(cor).trim();
+    const chave = nome.toLowerCase();
+    const achada = Object.keys(mapa).find(k => chave.includes(k));
+
+    if (nomeCor) nomeCor.textContent = nome;
+    if (bolinha) bolinha.style.background = achada ? mapa[achada] : "#e3e3e3";
+    bloco.hidden = false;
+}
+
+// "Ver mais" só aparece se a descrição passar de 3 linhas
+function configurarVerMais() {
+    const desc = document.getElementById("descricaoProduto");
+    const btn = document.getElementById("btnVerMais");
+    if (!desc || !btn) return;
+
+    desc.classList.add("recolhida");
+    btn.hidden = true;
+    btn.textContent = "Ver mais";
+
+    requestAnimationFrame(() => {
+        if (desc.scrollHeight > desc.clientHeight + 2) {
+            btn.hidden = false;
+        }
+    });
+
+    btn.onclick = function () {
+        const recolhida = desc.classList.toggle("recolhida");
+        btn.textContent = recolhida ? "Ver mais" : "Ver menos";
+    };
 }
 
 function carregarTamanhos() {
@@ -389,10 +530,165 @@ function carregarTamanhos() {
             });
             botao.classList.add("selecionado");
             tamanhoSelecionado = tamanho;
+            esconderErroTamanho();
         });
 
         container.appendChild(botao);
     });
+}
+
+function mostrarErroTamanho() {
+    const erro = document.getElementById("erroTamanho");
+    const container = document.getElementById("tamanhosProduto");
+
+    if (erro) erro.hidden = false;
+
+    if (container) {
+        container.classList.remove("tremer");
+        // força o navegador a reiniciar a animação
+        void container.offsetWidth;
+        container.classList.add("tremer");
+        container.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+}
+
+function esconderErroTamanho() {
+    const erro = document.getElementById("erroTamanho");
+    if (erro) erro.hidden = true;
+}
+
+
+// =====================================================
+// 3.1 TABELA DE MEDIDAS
+// =====================================================
+
+// Valores de exemplo (cm). Ajuste conforme a modelagem real das peças da ZORA.
+const medidasLetras = {
+    colunas: ["Tamanho", "Busto", "Cintura", "Quadril"],
+    linhas: {
+        "PP": ["PP", "80 – 84", "60 – 64", "86 – 90"],
+        "P":  ["P",  "84 – 88", "64 – 68", "90 – 94"],
+        "M":  ["M",  "88 – 92", "68 – 72", "94 – 98"],
+        "G":  ["G",  "92 – 98", "72 – 78", "98 – 104"],
+        "GG": ["GG", "98 – 104", "78 – 84", "104 – 110"]
+    }
+};
+
+const medidasNumeros = {
+    colunas: ["Tamanho", "Busto", "Cintura", "Quadril"],
+    linhas: {
+        "34": ["34", "80 – 82", "60 – 62", "86 – 88"],
+        "36": ["36", "82 – 85", "62 – 65", "88 – 91"],
+        "38": ["38", "85 – 88", "65 – 68", "91 – 94"],
+        "40": ["40", "88 – 92", "68 – 72", "94 – 98"],
+        "42": ["42", "92 – 96", "72 – 76", "98 – 102"],
+        "44": ["44", "96 – 100", "76 – 80", "102 – 106"],
+        "46": ["46", "100 – 104", "80 – 84", "106 – 110"]
+    }
+};
+
+function montarTabelaMedidas() {
+    const tabela = document.getElementById("tabelaMedidas");
+    if (!tabela) return;
+
+    const usaNumeros = (detalhes.tamanhos || []).some(t => /^\d+$/.test(t));
+    const base = usaNumeros ? medidasNumeros : medidasLetras;
+
+    const tamanhos = (detalhes.tamanhos && detalhes.tamanhos.length)
+        ? detalhes.tamanhos
+        : Object.keys(base.linhas);
+
+    let html = "<thead><tr>" +
+        base.colunas.map(c => `<th>${c}</th>`).join("") +
+        "</tr></thead><tbody>";
+
+    tamanhos.forEach(t => {
+        const linha = base.linhas[t];
+        if (!linha) return;
+        const destaque = t === tamanhoSelecionado ? ' class="destaque"' : "";
+        html += `<tr${destaque}>` + linha.map(v => `<td>${v}</td>`).join("") + "</tr>";
+    });
+
+    html += "</tbody>";
+    tabela.innerHTML = html;
+}
+
+function abrirMedidas() {
+    const modal = document.getElementById("modalMedidas");
+    if (!modal) return;
+
+    montarTabelaMedidas();
+    modal.classList.add("ativo");
+    modal.setAttribute("aria-hidden", "false");
+}
+
+function fecharMedidas() {
+    const modal = document.getElementById("modalMedidas");
+    if (!modal) return;
+
+    modal.classList.remove("ativo");
+    modal.setAttribute("aria-hidden", "true");
+}
+
+
+// =====================================================
+// 3.2 FAVORITAR E COMPARTILHAR
+// =====================================================
+
+function obterFavoritos() {
+    try {
+        const dados = JSON.parse(localStorage.getItem("favoritos") || "[]");
+        return Array.isArray(dados) ? dados : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function atualizarFavoritoVisual() {
+    const btn = document.getElementById("btnFavorito");
+    if (!btn || !idProduto) return;
+
+    const favorito = obterFavoritos().includes(Number(idProduto));
+    btn.setAttribute("aria-pressed", favorito ? "true" : "false");
+    btn.setAttribute("aria-label", favorito ? "Remover dos favoritos" : "Favoritar");
+}
+
+function alternarFavorito() {
+    if (!idProduto) return;
+
+    const id = Number(idProduto);
+    let favoritos = obterFavoritos();
+
+    if (favoritos.includes(id)) {
+        favoritos = favoritos.filter(f => f !== id);
+    } else {
+        favoritos.push(id);
+    }
+
+    localStorage.setItem("favoritos", JSON.stringify(favoritos));
+    atualizarFavoritoVisual();
+}
+
+async function compartilharProduto() {
+    const url = window.location.href;
+    const titulo = produto ? produto.nome : "ZORA";
+
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: titulo, text: `Olha essa peça da ZORA: ${titulo}`, url });
+            return;
+        } catch (e) {
+            // usuário cancelou: não faz nada
+            return;
+        }
+    }
+
+    try {
+        await navigator.clipboard.writeText(url);
+        alert("Link copiado!");
+    } catch (e) {
+        window.prompt("Copie o link do produto:", url);
+    }
 }
 
 
@@ -626,7 +922,7 @@ async function adicionarAoCarrinho() {
     }
 
     if (detalhes.tamanhos && detalhes.tamanhos.length > 0 && !tamanhoSelecionado) {
-        alert("Por favor, selecione um tamanho antes de adicionar ao carrinho.");
+        mostrarErroTamanho();
         return;
     }
 
@@ -837,18 +1133,20 @@ function renderizarAvaliacoes(lista, media) {
         const divItem = document.createElement("div");
         divItem.className = "item-comentario";
 
-        const estrelas = "★".repeat(item.estrelas) + "☆".repeat(5 - item.estrelas);
-        const dataFormatada = item.data_avaliacao 
-            ? new Date(item.data_avaliacao).toLocaleDateString("pt-BR") 
+        const nota = Math.min(5, Math.max(0, Number(item.estrelas) || 0));
+        const estrelas = "★".repeat(nota) + "☆".repeat(5 - nota);
+        const dataFormatada = item.data_avaliacao
+            ? new Date(item.data_avaliacao).toLocaleDateString("pt-BR")
             : "";
 
+        // Texto vindo de clientes passa por escaparHTML para evitar injeção de código
         divItem.innerHTML = `
             <div class="topo-comentario">
-                <strong>${item.nome_cliente || "Anônimo"}</strong>
+                <strong>${escaparHTML(item.nome_cliente || "Anônimo")}</strong>
                 <span class="estrelas-item">${estrelas}</span>
                 <small class="data-item">${dataFormatada}</small>
             </div>
-            <p class="texto-comentario">${item.comentario || "<em>Sem comentário escrito.</em>"}</p>
+            <p class="texto-comentario">${item.comentario ? escaparHTML(item.comentario) : "<em>Sem comentário escrito.</em>"}</p>
         `;
 
         containerComentarios.appendChild(divItem);
@@ -870,4 +1168,34 @@ document.addEventListener("DOMContentLoaded", () => {
     if (botaoComprar) {
         botaoComprar.addEventListener("click", adicionarAoCarrinho);
     }
+
+    // Atalho "Comprar" sobre a foto (mobile): leva até a escolha de tamanho
+    const atalhoComprar = document.getElementById("atalhoComprar");
+    if (atalhoComprar) {
+        atalhoComprar.addEventListener("click", () => {
+            const area = document.querySelector(".area-tamanho");
+            if (area) area.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+    }
+
+    const btnFavorito = document.getElementById("btnFavorito");
+    if (btnFavorito) btnFavorito.addEventListener("click", alternarFavorito);
+
+    const btnCompartilhar = document.getElementById("btnCompartilhar");
+    if (btnCompartilhar) btnCompartilhar.addEventListener("click", compartilharProduto);
+
+    // Fecha a tabela de medidas clicando fora da caixa ou apertando Esc
+    const modalMedidas = document.getElementById("modalMedidas");
+    if (modalMedidas) {
+        modalMedidas.addEventListener("click", (e) => {
+            if (e.target === modalMedidas) fecharMedidas();
+        });
+    }
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            fecharMedidas();
+            fecharTudo();
+        }
+    });
 });
