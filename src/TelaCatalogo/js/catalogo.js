@@ -445,7 +445,7 @@ async function checarLoginFinalizacao() {
   } catch (erro) {
       console.error("Erro ao verificar sessão no servidor:", erro);
       // Fallback: se houver falha de rede mas o localStorage existir, avança.
-      window.location.href = "/TelaEntrega/telaentrega.html";
+      window.location.href = "/TelaEntrega/entrega.html";
   }
 }
 
