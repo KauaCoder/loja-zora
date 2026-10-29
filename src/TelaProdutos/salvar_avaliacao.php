@@ -8,8 +8,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Inclui o arquivo conexao.php que está na raiz do projeto
+// Inclui o conexao.php da raiz
 require_once __DIR__ . '/../conexao.php';
+
+// Mapeia qual variável de conexão foi criada dentro do conexao.php
+if (!isset($pdo)) {
+    if (isset($conn) && $conn instanceof PDO) {
+        $pdo = $conn;
+    } elseif (isset($conexao) && $conexao instanceof PDO) {
+        $pdo = $conexao;
+    } elseif (isset($db) && $db instanceof PDO) {
+        $pdo = $db;
+    }
+}
+
+if (!isset($pdo) || !($pdo instanceof PDO)) {
+    http_response_code(500);
+    echo json_encode(["sucesso" => false, "mensagem" => "A variável de conexão \$pdo não foi inicializada corretamente pelo conexao.php."]);
+    exit;
+}
 
 $dados = json_decode(file_get_contents("php://input"), true);
 
@@ -30,7 +47,6 @@ if ($estrelas < 1 || $estrelas > 5) {
 }
 
 try {
-    // Utiliza a variável $pdo criada dentro do conexao.php da raiz
     $sql = "INSERT INTO avalia (id_produto, id_cliente, nome_cliente, estrelas, comentario, data_avaliacao) 
             VALUES (:id_produto, :id_cliente, :nome_cliente, :estrelas, :comentario, NOW())";
     
