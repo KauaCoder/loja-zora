@@ -1,0 +1,22 @@
+* { box-sizing: border-box; }
+:root { --blue: #0878df; --ink: #10233e; --muted: #63748b; --line: #dce5ef; }
+body { margin: 0; min-height: 100vh; font-family: Arial, sans-serif; color: var(--ink); background: #edf2f8; }
+.doc-topbar { min-height: 82px; padding: 15px clamp(16px, 4vw, 54px); display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: #fff; border-bottom: 1px solid var(--line); }
+.back-link { color: var(--blue); font-size: .9rem; font-weight: 700; }
+.doc-title { display: flex; align-items: center; gap: 12px; margin-right: auto; margin-left: 20px; }
+.pdf-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px; background: #ffeded; color: #c53b3b; font-size: .75rem; font-weight: 800; }
+.doc-title strong, .doc-title small { display: block; }
+.doc-title small { margin-top: 5px; color: var(--muted); }
+.doc-actions { display: flex; gap: 10px; align-items: center; }
+.doc-actions a { padding: 10px 13px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: .86rem; }
+.doc-actions .download { color: white; border-color: var(--blue); background: var(--blue); }
+.viewer-shell { width: min(1400px, 100%); margin: 0 auto; padding: 18px clamp(10px, 2vw, 24px) 30px; }
+.viewer-note { padding: 11px 14px; margin-bottom: 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: .86rem; }
+.pdf-viewer { display: block; width: 100%; height: calc(100vh - 155px); min-height: 540px; border: 1px solid #d1dbe7; border-radius: 8px; background: #dce3ec; }
+@media (max-width: 700px) {
+  .doc-topbar { align-items: flex-start; }
+  .doc-title { order: 3; width: 100%; margin: 0; }
+  .doc-actions { order: 4; width: 100%; }
+  .doc-actions a { flex: 1; text-align: center; }
+  .pdf-viewer { height: 75vh; min-height: 420px; }
+}

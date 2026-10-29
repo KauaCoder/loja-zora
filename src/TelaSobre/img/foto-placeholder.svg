@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+<rect width="300" height="300" fill="#e4edf7"/>
+<circle cx="150" cy="112" r="54" fill="#b5c7dc"/>
+<path d="M45 300c8-70 48-106 105-106s97 36 105 106" fill="#b5c7dc"/>
+<text x="150" y="282" font-family="Arial,sans-serif" font-size="12" text-anchor="middle" fill="#506783">INSIRA A FOTO</text>
+</svg>
