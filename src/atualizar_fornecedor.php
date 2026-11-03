@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 /**
  * ZORA — Atualização de Fornecedor (Admin)
+ * Localização: src/atualizar_fornecedor.php
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -10,7 +11,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Vary: Origin');
 
-// Lista de origens permitidas
+// Lista de origens permitidas (CORS)
 $origensPermitidas = [
     'https://loja-zora.onrender.com',
     'http://localhost:3000',
@@ -62,8 +63,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
     session_set_cookie_params([
         'lifetime' => 86400,
-        'path' => '/',
-        'secure' => $isHttps,
+        'path'     => '/',
+        'secure'   => $isHttps,
         'httponly' => true,
         'samesite' => $isHttps ? 'None' : 'Lax',
     ]);
@@ -71,10 +72,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// =============================================
 // VERIFICAR PERMISSÃO DE ADMINISTRAÇÃO
-// =============================================
-
 $isAdmin = filter_var($_SESSION['is_admin'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
 if (!isset($_SESSION['id_cliente']) || !$isAdmin) {
@@ -84,7 +82,7 @@ if (!isset($_SESSION['id_cliente']) || !$isAdmin) {
 
     http_response_code(403);
     echo json_encode([
-        'sucesso' => false,
+        'sucesso'  => false,
         'mensagem' => 'Acesso negado. Apenas administradores podem atualizar fornecedores.'
     ], JSON_UNESCAPED_UNICODE);
     exit;
@@ -92,15 +90,13 @@ if (!isset($_SESSION['id_cliente']) || !$isAdmin) {
 
 session_write_close();
 
-// Tenta localizar conexao.php no diretório atual ou em /src
-$caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
-    ? __DIR__ . '/src/conexao.php'
-    : (file_exists(__DIR__ . '/conexao.php') ? __DIR__ . '/conexao.php' : __DIR__ . '/../conexao.php');
+// Resolução de caminho para conexao.php
+$caminhoConexao = __DIR__ . '/conexao.php';
 
 if (!is_file($caminhoConexao)) {
     http_response_code(500);
     echo json_encode([
-        'sucesso' => false,
+        'sucesso'  => false,
         'mensagem' => 'Erro interno de configuração do banco de dados.'
     ], JSON_UNESCAPED_UNICODE);
     exit;
@@ -113,24 +109,18 @@ try {
         throw new RuntimeException('A conexão PDO não foi inicializada corretamente.');
     }
 
-    // =============================================
     // VERIFICAR MÉTODO HTTP
-    // =============================================
-
     if (!in_array($_SERVER['REQUEST_METHOD'] ?? '', ['POST', 'PUT'], true)) {
         header('Allow: POST, PUT, OPTIONS');
         http_response_code(405);
         echo json_encode([
-            'sucesso' => false,
+            'sucesso'  => false,
             'mensagem' => 'Método não permitido. Utilize POST ou PUT.'
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    // =============================================
     // RECEBER JSON
-    // =============================================
-
     $dados = json_decode((string) file_get_contents('php://input'), true);
 
     if (!is_array($dados)) {
@@ -143,10 +133,7 @@ try {
     $nome          = trim((string) ($dados['nome'] ?? ''));
     $contato       = trim((string) ($dados['contato'] ?? ''));
 
-    // =============================================
     // VALIDAÇÕES
-    // =============================================
-
     if ($idFornecedor <= 0) {
         http_response_code(400);
         throw new Exception('Fornecedor inválido.');
@@ -177,13 +164,10 @@ try {
         throw new Exception('O contato pode ter no máximo 30 caracteres.');
     }
 
-    // =============================================
     // TRANSAÇÃO
-    // =============================================
-
     $conexao->beginTransaction();
 
-    // Localizar fornecedor com lock de linha
+    // Localizar fornecedor com lock de linha (PostgreSQL FOR UPDATE)
     $sqlFornecedor = '
         SELECT
             id_fornecedor,
@@ -210,10 +194,7 @@ try {
         throw new Exception('O fornecedor não pertence ao estoque informado.');
     }
 
-    // =============================================
-    // ATUALIZAR FORNECEDOR
-    // =============================================
-
+    // ATUALIZAR FORNECEDOR (Cláusula RETURNING nativa do Postgres)
     $sqlUpdate = '
         UPDATE fornecedor
         SET
