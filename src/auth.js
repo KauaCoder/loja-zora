@@ -6,15 +6,28 @@
  */
 
 // =============================================
+// HELPER PARA RESOLUÇÃO DE CAMINHO RELATIVO
+// =============================================
+function obterCaminhoBackend(arquivo) {
+    const pathname = window.location.pathname;
+    // Se a página já estiver em uma subpasta (ex: /TelaInicial/, /TelaCliente/, /TelaAdmin/)
+    if (pathname.includes('/Tela') || pathname.split('/').length > 2) {
+        return `../${arquivo}`;
+    }
+    return `./${arquivo}`;
+}
+
+// =============================================
 // VERIFICAÇÃO DE SESSÃO COM BACKEND PHP
 // =============================================
 
 /**
- * Consulta o backend (/usuario_logado.php) para verificar o estado da sessão.
+ * Consulta o backend (usuario_logado.php) para verificar o estado da sessão.
  */
 async function obterStatusSessao() {
     try {
-        const resposta = await fetch('../usuario_logado.php', {
+        const url = obterCaminhoBackend('usuario_logado.php');
+        const resposta = await fetch(url, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json'
@@ -29,13 +42,13 @@ async function obterStatusSessao() {
         return await resposta.json();
     } catch (erro) {
         console.warn('Servidor inacessível. Verificando estado local:', erro);
-        // Fallback local se a API estiver indisponível
         const usuarioLocal = localStorage.getItem('usuarioLogado');
+        const dadosLocal = usuarioLocal ? JSON.parse(usuarioLocal) : null;
         return { 
             sucesso: !!usuarioLocal, 
             logado: !!usuarioLocal, 
-            is_admin: usuarioLocal ? JSON.parse(usuarioLocal).is_admin : false,
-            cliente: usuarioLocal ? JSON.parse(usuarioLocal) : null 
+            is_admin: dadosLocal ? !!dadosLocal.is_admin : false,
+            cliente: dadosLocal 
         };
     }
 }
@@ -70,7 +83,8 @@ async function verificarAdmin() {
  */
 async function logout(redirecionar = true) {
     try {
-        await fetch('../logout.php', {
+        const url = obterCaminhoBackend('logout.php');
+        await fetch(url, {
             method: 'POST',
             credentials: 'include'
         });
@@ -180,32 +194,51 @@ async function consultarCEP(input, tipo) {
 // =============================================
 
 async function atualizarMenuUsuario() {
-    const sessao = await obterStatusSessao();
-    ['menuUsuario', 'menuUsuarioMobile'].forEach(id => {
-        const elemento = document.getElementById(id);
-        if (elemento) {
-            elemento.textContent = sessao.logado ? 'Perfil' : 'Login';
-        }
-    });
+    try {
+        const sessao = await obterStatusSessao();
+        ['menuUsuario', 'menuUsuarioMobile'].forEach(id => {
+            const elemento = document.getElementById(id);
+            if (!elemento) return;
+
+            if (!sessao.logado) {
+                elemento.textContent = 'Login';
+                elemento.href = '../TelaLogin/login.html';
+            } else if (sessao.is_admin) {
+                elemento.textContent = 'Painel Adm';
+                elemento.href = '../TelaAdmin/admin.html';
+            } else {
+                elemento.textContent = 'Perfil';
+                elemento.href = '../TelaCliente/cliente.html';
+            }
+        });
+    } catch (erro) {
+        console.error('Erro ao atualizar menu:', erro);
+    }
 }
 
 async function abrirPerfil() {
-    const sessao = await obterStatusSessao();
-    if (sessao.logado) {
-        window.location.href = '../TelaCliente/cliente.html';
-    } else {
+    try {
+        const sessao = await obterStatusSessao();
+        if (!sessao.logado) {
+            window.location.href = '../TelaLogin/login.html';
+        } else if (sessao.is_admin) {
+            window.location.href = '../TelaAdmin/admin.html';
+        } else {
+            window.location.href = '../TelaCliente/cliente.html';
+        }
+    } catch (erro) {
         window.location.href = '../TelaLogin/login.html';
     }
 }
 
-// Inicialização automática dos escutadores de eventos de formulário
+// Inicialização automática
 document.addEventListener('DOMContentLoaded', () => {
     configurarMascaras();
     configurarCEP();
     atualizarMenuUsuario();
 });
 
-// Exposição global das funções necessárias para botões (onclick)
+// Exposição global das funções para botões (onclick)
 window.obterStatusSessao = obterStatusSessao;
 window.protegerPagina = protegerPagina;
 window.verificarAdmin = verificarAdmin;
