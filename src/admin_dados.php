@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 /**
  * ZORA — Painel Admin (Inventário + Estatísticas + Todos os Pedidos Unificados)
+ * Localização: src/dashboard_admin.php
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -10,7 +11,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Vary: Origin');
 
-// Lista de origens permitidas
+// Lista de origens permitidas (CORS)
 $origensPermitidas = [
     'https://loja-zora.onrender.com',
     'http://localhost:3000',
@@ -71,10 +72,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Localização segura do conexao.php
-$caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
-    ? __DIR__ . '/src/conexao.php'
-    : (file_exists(__DIR__ . '/conexao.php') ? __DIR__ . '/conexao.php' : __DIR__ . '/../conexao.php');
+// Resolução de caminho para conexao.php
+$caminhoConexao = __DIR__ . '/conexao.php';
 
 if (!is_file($caminhoConexao)) {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -95,7 +94,7 @@ try {
         throw new RuntimeException('A conexão PDO não foi inicializada corretamente.');
     }
 
-    // VERIFICAÇÃO DE AUTENTICAÇÃO
+    // VERIFICAÇÃO DE AUTENTICAÇÃO E PERMISSÃO
     $idSessao = $_SESSION['id_cliente'] ?? null;
 
     if (!is_scalar($idSessao) || (int) $idSessao <= 0) {
@@ -118,7 +117,7 @@ try {
 
     $idCliente = (int) $idSessao;
 
-    // Checa permissão de administrador
+    // Checa permissão de administrador no PostgreSQL
     $stmtAdmin = $conexao->prepare('SELECT COALESCE(is_admin, FALSE) AS is_admin FROM cliente WHERE id_cliente = :id LIMIT 1');
     $stmtAdmin->execute([':id' => $idCliente]);
     $rowAdmin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
@@ -195,27 +194,21 @@ try {
         ];
     }
 
-    // 2. ESTATÍSTICAS E RESUMO DE VENDAS (Corrigido para ler da tabela PEDIDO)
-    // Soma o valor total de todos os pedidos aprovados ou finalizados
+    // 2. ESTATÍSTICAS E RESUMO DE VENDAS
     $sqlFaturamento = "SELECT COALESCE(SUM(valor_total), 0) AS faturamento FROM pedido";
     $stmtFaturamento = $conexao->query($sqlFaturamento);
     $faturamento = (float) $stmtFaturamento->fetchColumn();
 
-    // Conta todos os produtos vendidos através da tabela item_pedido
     $sqlProdutosVendidos = "SELECT COALESCE(SUM(quantidade), 0) AS produtos_vendidos FROM item_pedido";
     $stmtProdutosVendidos = $conexao->query($sqlProdutosVendidos);
     $produtosVendidos = (int) $stmtProdutosVendidos->fetchColumn();
 
-    // Conta total de pedidos para o ticket médio
     $stmtTotalPedidos = $conexao->query("SELECT COUNT(*) AS total_pedidos FROM pedido");
     $totalPedidos = (int) $stmtTotalPedidos->fetchColumn();
 
     $ticketMedio = $totalPedidos > 0 ? ($faturamento / $totalPedidos) : 0;
-    
-    // Lucro no momento é igual ao faturamento (caso adicione custo, subtraia aqui)
     $lucro = $faturamento;
 
-    // Busca o produto mais vendido através dos itens dos pedidos
     $sqlMaisVendido = "
         SELECT 
             p.nm_produto, 
@@ -229,7 +222,7 @@ try {
     $stmtMaisVendido = $conexao->query($sqlMaisVendido);
     $maisVendido = $stmtMaisVendido->fetch(PDO::FETCH_ASSOC);
 
-    // 3. TODOS OS PEDIDOS (HISTÓRICO DA TABELA PEDIDO E CLIENTE)
+    // 3. HISTÓRICO DE PEDIDOS
     $sqlPedidos = "
         SELECT
             pe.id_pedido,
@@ -281,17 +274,17 @@ try {
         'logado'    => true,
         'is_admin'  => true,
         'dashboard' => [
-            'total_produtos' => count($produtos),
-            'total_estoque'  => $totalEstoque,
-            'esgotados'      => $esgotadosCount,
-            'faturamento'    => round($faturamento, 2),
-            'total_pedidos'  => $totalPedidos,
+            'total_produtos'    => count($produtos),
+            'total_estoque'     => $totalEstoque,
+            'esgotados'         => $esgotadosCount,
+            'faturamento'       => round($faturamento, 2),
+            'total_pedidos'     => $totalPedidos,
             'produtos_vendidos' => $produtosVendidos,
-            'ticket_medio'   => round($ticketMedio, 2),
-            'lucro'          => round($lucro, 2)
+            'ticket_medio'      => round($ticketMedio, 2),
+            'lucro'             => round($lucro, 2)
         ],
         'mais_vendido' => $maisVendido ? [
-            "nome" => $maisVendido["nm_produto"],
+            "nome"       => $maisVendido["nm_produto"],
             "quantidade" => (int) $maisVendido["quantidade_vendida"]
         ] : null,
         'pedidos'  => $pedidos,
