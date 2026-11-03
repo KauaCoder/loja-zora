@@ -27,19 +27,21 @@ try {
         exit;
     }
 
-    // Consulta no Supabase / PostgreSQL o estoque e nome do produto
-    $sql = "SELECT id_produto, nome, estoque FROM produtos WHERE id_produto = :id";
+    // Consulta o produto. Usa SELECT * porque o catálogo do site trabalha com
+    // nm_produto / qtd_item, enquanto este arquivo usava nome / estoque.
+    // Assim funciona com qualquer um dos dois nomes de coluna.
+    $sql = "SELECT * FROM produtos WHERE id_produto = :id";
     $stmt = $conexao->prepare($sql);
     $stmt->execute([':id' => $id_produto]);
     
-    $produto = $stmt->fetch();
+    $produto = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($produto) {
         echo json_encode([
             'sucesso' => true,
             'id_produto' => intval($produto['id_produto']),
-            'nome' => $produto['nome'],
-            'estoque' => intval($produto['estoque'])
+            'nome' => $produto['nm_produto'] ?? $produto['nome'] ?? 'Produto ZORA',
+            'estoque' => intval($produto['qtd_item'] ?? $produto['estoque'] ?? 0)
         ]);
     } else {
         echo json_encode([
