@@ -1,9 +1,10 @@
 <?php
-/* =========================================================
-   loja-zora-main/src/conexao.php
-   ========================================================= */
+declare(strict_types=1);
 
-header("Content-Type: application/json; charset=UTF-8");
+/* =========================================================
+   ZORA - CONEXÃO COM BANCO DE DADOS (SUPABASE + RENDER)
+   Localização: src/conexao.php
+   ========================================================= */
 
 $db_url = getenv('DATABASE_URL');
 
@@ -56,4 +57,3 @@ try {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
-?>
