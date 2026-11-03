@@ -210,13 +210,38 @@
 
     let passoAtual = 0;
     let respostas = [];
-    let tentativasCatalogo = 0;
+    let avancando = false;        // evita pular perguntas com cliques rápidos
+    let produtosReserva = [];     // usado só se o catálogo do script.js não carregar
 
     function pegarProdutos() {
         // produtosGlobais é preenchido pelo script.js quando o catálogo carrega
-        return (typeof produtosGlobais !== "undefined" && Array.isArray(produtosGlobais))
-            ? produtosGlobais
-            : [];
+        if (typeof produtosGlobais !== "undefined" && Array.isArray(produtosGlobais) && produtosGlobais.length > 0) {
+            return produtosGlobais;
+        }
+        return produtosReserva;
+    }
+
+    function esperar(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Garante que existe lista de produtos antes de calcular as sugestões
+    async function garantirProdutos() {
+        for (let i = 0; i < 6 && pegarProdutos().length === 0; i++) {
+            await esperar(400);
+        }
+
+        if (pegarProdutos().length > 0) return;
+
+        try {
+            const resposta = await fetch("/produtos_catalogo.php", { headers: { "Accept": "application/json" } });
+            const dados = await resposta.json();
+            if (dados && dados.sucesso && Array.isArray(dados.produtos)) {
+                produtosReserva = dados.produtos;
+            }
+        } catch (erro) {
+            console.error("ZORA: não foi possível carregar os produtos para o provador.", erro);
+        }
     }
 
     function estoqueDe(produto) {
@@ -290,6 +315,7 @@
     }
 
     function reiniciarQuiz() {
+        avancando = false;
         passoAtual = 0;
         respostas = [];
         esconderResultado();
@@ -323,12 +349,17 @@
             if (respostas[passoAtual] === opcao) btn.classList.add("escolhido");
 
             btn.addEventListener("click", function () {
+                if (avancando) return;
+                avancando = true;
+
                 respostas[passoAtual] = opcao;
                 opcoes.querySelectorAll("button").forEach(b => b.classList.remove("escolhido"));
                 btn.classList.add("escolhido");
 
                 // pequena pausa para a pessoa ver a escolha antes de avançar
                 setTimeout(function () {
+                    avancando = false;
+
                     if (passoAtual < PERGUNTAS.length - 1) {
                         passoAtual += 1;
                         desenharPergunta();
@@ -356,26 +387,21 @@
         }
     }
 
-    function mostrarResultado() {
+    async function mostrarResultado() {
         const quiz = document.getElementById("estiloQuiz");
         const resultado = document.getElementById("estiloResultado");
         if (!quiz || !resultado) return;
 
-        // Se o catálogo ainda não chegou, espera um pouco em vez de mostrar tela vazia
-        if (pegarProdutos().length === 0 && tentativasCatalogo < 12) {
-            tentativasCatalogo += 1;
-
+        // Se o catálogo ainda não chegou, espera (ou busca direto) em vez de mostrar tela vazia
+        if (pegarProdutos().length === 0) {
             quiz.replaceChildren();
             const aguarde = document.createElement("p");
             aguarde.className = "estilo-pergunta";
             aguarde.textContent = "Separando as peças para você...";
             quiz.appendChild(aguarde);
 
-            setTimeout(mostrarResultado, 500);
-            return;
+            await garantirProdutos();
         }
-
-        tentativasCatalogo = 0;
 
         const { itens, semFaixa } = calcularSugestoes();
 
