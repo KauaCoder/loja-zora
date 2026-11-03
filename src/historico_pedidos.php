@@ -2,66 +2,80 @@
 declare(strict_types=1);
 
 /**
- * =========================================================
- * ZORA - HISTÓRICO DE PEDIDOS DO CLIENTE (Supabase / PostgreSQL)
- * =========================================================
+ * ZORA — Histórico de Pedidos do Cliente (Supabase / PostgreSQL)
+ * Localização: src/historico_pedidos.php
  */
 
-// ATIVAR EXIBIÇÃO DE ERROS PARA DEBUG (Remova se preferir em produção)
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+header('Content-Type: application/json; charset=UTF-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Vary: Origin');
 
-$origem = $_SERVER['HTTP_ORIGIN'] ?? '*';
-if ($origem !== '*') {
-    header("Access-Control-Allow-Origin: $origem");
-    header("Access-Control-Allow-Credentials: true");
-} else {
-    header("Access-Control-Allow-Origin: *");
-}
+// Lista de origens permitidas (CORS)
+$origensPermitidas = [
+    'https://loja-zora.onrender.com',
+    'http://localhost:3000',
+    'http://localhost:8080'
+];
 
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+$origem = $_SERVER['HTTP_ORIGIN'] ?? null;
+$origemPermitida = ($origem !== null && in_array($origem, $origensPermitidas, true)) || $origem === null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
+if ($origem !== null && !$origemPermitida) {
+    http_response_code(403);
+    echo json_encode([
+        'sucesso' => false,
+        'mensagem' => 'Origem não autorizada.'
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-$isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
-           (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+if ($origem !== null && $origemPermitida) {
+    header('Access-Control-Allow-Origin: ' . $origem);
+} else {
+    header('Access-Control-Allow-Origin: https://loja-zora.onrender.com');
+}
 
-if (session_status() === PHP_SESSION_NONE) {
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
+// Tratamento de Preflight CORS (OPTIONS)
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Suporte a HTTPS no Proxy Reverso do Render
+$httpsDireto = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' &&
+    strtolower((string) $_SERVER['HTTPS']) !== 'off';
+$protoEncaminhado = strtolower(trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0]));
+$isHttps = $httpsDireto || $protoEncaminhado === 'https';
+
+if ($isHttps) {
+    $_SERVER['HTTPS'] = 'on';
+}
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_trans_sid', '0');
+
     session_set_cookie_params([
         'lifetime' => 86400,
         'path'     => '/',
         'secure'   => $isHttps,
         'httponly' => true,
-        'samesite' => $isHttps ? 'None' : 'Lax'
+        'samesite' => $isHttps ? 'None' : 'Lax',
     ]);
+
     session_start();
 }
 
-header("Content-Type: application/json; charset=UTF-8");
-header("Cache-Control: no-cache, no-store, must-revalidate");
+// Localiza o conexao.php no mesmo diretório ou parentes próximos
+$caminhoConexao = __DIR__ . '/conexao.php';
 
-// Localiza o conexao.php dinamicamente em subpastas ou na raiz
-$caminhos_conexao = [
-    __DIR__ . '/conexao.php',
-    __DIR__ . '/src/conexao.php',
-    __DIR__ . '/../conexao.php',
-    __DIR__ . '/../../conexao.php'
-];
-
-$caminho_conexao = null;
-foreach ($caminhos_conexao as $caminho) {
-    if (file_exists($caminho)) {
-        $caminho_conexao = $caminho;
-        break;
-    }
-}
-
-if (!$caminho_conexao) {
+if (!file_exists($caminhoConexao)) {
     http_response_code(500);
     echo json_encode([
         "sucesso"  => false,
@@ -70,11 +84,15 @@ if (!$caminho_conexao) {
     exit;
 }
 
-require_once $caminho_conexao;
+require_once $caminhoConexao;
 
 try {
+    if (!isset($conexao) || !($conexao instanceof PDO)) {
+        throw new RuntimeException('A conexão PDO não foi inicializada corretamente.');
+    }
 
-    if ($_SERVER["REQUEST_METHOD"] !== "GET") {
+    if (($_SERVER["REQUEST_METHOD"] ?? 'GET') !== "GET") {
+        header('Allow: GET, OPTIONS');
         http_response_code(405);
         echo json_encode([
             "sucesso"  => false,
@@ -83,9 +101,7 @@ try {
         exit;
     }
 
-    // =========================================================
     // VERIFICAR LOGIN (Sessão PHP ou Parâmetro GET de Fallback)
-    // =========================================================
     $idCliente = $_SESSION["id_cliente"] ?? $_SESSION["cliente_id"] ?? $_SESSION["usuario_id"] ?? null;
 
     if (!$idCliente && isset($_GET['id_cliente'])) {
@@ -93,6 +109,9 @@ try {
     }
 
     if (!$idCliente || !is_scalar($idCliente) || (int) $idCliente <= 0) {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         http_response_code(401);
         echo json_encode([
             "sucesso"  => false,
@@ -103,9 +122,7 @@ try {
 
     $idClienteInt = (int) $idCliente;
 
-    // =========================================================
-    // BUSCAR PEDIDOS DO CLIENTE (Incluindo forma_pagamento)
-    // =========================================================
+    // BUSCAR PEDIDOS DO CLIENTE
     $sqlPedidos = "
         SELECT
             id_pedido,
@@ -125,9 +142,7 @@ try {
 
     $pedidos = $stmtPedidos->fetchAll(PDO::FETCH_ASSOC);
 
-    // =========================================================
     // PREPARAR BUSCA DOS ITENS VINCULADOS AOS PRODUTOS
-    // =========================================================
     $sqlItens = "
         SELECT
             ip.id_item_pedido,
@@ -147,11 +162,8 @@ try {
     $stmtItens = $conexao->prepare($sqlItens);
     $historico = [];
 
-    // =========================================================
     // MONTAR ESTRUTURA DO HISTÓRICO
-    // =========================================================
     foreach ($pedidos as $pedido) {
-
         $stmtItens->execute([
             ":id_pedido" => $pedido["id_pedido"]
         ]);
@@ -173,7 +185,7 @@ try {
         // Formatação da data do pedido
         $dataFormatada = "-";
         if (!empty($pedido["data_pedido"])) {
-            $timestamp = strtotime($pedido["data_pedido"]);
+            $timestamp = strtotime((string) $pedido["data_pedido"]);
             if ($timestamp !== false) {
                 $dataFormatada = date("d/m/Y H:i", $timestamp);
             }
@@ -190,24 +202,22 @@ try {
         ];
     }
 
-    // =========================================================
-    // RESPOSTA EM JSON
-    // =========================================================
+    session_write_close();
+
+    http_response_code(200);
     echo json_encode([
         "sucesso" => true,
         "pedidos" => $historico
-    ], JSON_UNESCAPED_UNICODE);
+    ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
 
 } catch (Throwable $erro) {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
 
     http_response_code(500);
     echo json_encode([
         "sucesso"  => false,
-        "mensagem" => "Erro ao carregar histórico: " . $erro->getMessage(),
-        "detalhes" => [
-            "arquivo" => $erro->getFile(),
-            "linha"   => $erro->getLine()
-        ]
+        "mensagem" => "Erro ao carregar histórico: " . $erro->getMessage()
     ], JSON_UNESCAPED_UNICODE);
-
 }
