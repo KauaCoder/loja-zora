@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 /**
  * ZORA — Atualização / Criação de Endereço do Cliente
+ * Localização: src/atualizar_endereco.php
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -10,7 +11,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Vary: Origin');
 
-// Lista de origens permitidas
+// Lista de origens permitidas (CORS)
 $origensPermitidas = [
     'https://loja-zora.onrender.com',
     'http://localhost:3000',
@@ -62,8 +63,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
     session_set_cookie_params([
         'lifetime' => 86400,
-        'path' => '/',
-        'secure' => $isHttps,
+        'path'     => '/',
+        'secure'   => $isHttps,
         'httponly' => true,
         'samesite' => $isHttps ? 'None' : 'Lax',
     ]);
@@ -71,10 +72,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Tenta localizar conexao.php no diretório atual, em /src ou na pasta pai
-$caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
-    ? __DIR__ . '/src/conexao.php'
-    : (file_exists(__DIR__ . '/conexao.php') ? __DIR__ . '/conexao.php' : __DIR__ . '/../conexao.php');
+// Resolução de caminho para conexao.php
+$caminhoConexao = __DIR__ . '/conexao.php';
 
 if (!is_file($caminhoConexao)) {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -95,10 +94,7 @@ try {
         throw new RuntimeException('A conexão PDO não foi inicializada corretamente.');
     }
 
-    // =========================
     // VERIFICAR MÉTODO HTTP
-    // =========================
-
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
         header('Allow: POST, OPTIONS');
         http_response_code(405);
@@ -109,10 +105,7 @@ try {
         exit;
     }
 
-    // =========================
     // VERIFICAR LOGIN
-    // =========================
-
     $idSessao = $_SESSION['id_cliente'] ?? null;
 
     if (!is_scalar($idSessao) || (int) $idSessao <= 0) {
@@ -131,10 +124,7 @@ try {
     $idCliente = (int) $idSessao;
     session_write_close();
 
-    // =========================
     // RECEBER DADOS
-    // =========================
-
     $dados = json_decode((string) file_get_contents('php://input'), true);
 
     if (!is_array($dados)) {
@@ -142,10 +132,7 @@ try {
         throw new Exception('Dados de requisição inválidos.');
     }
 
-    // =========================
     // DADOS DO ENDEREÇO
-    // =========================
-
     $cep         = trim((string) ($dados['cep'] ?? ''));
     $rua         = trim((string) ($dados['rua'] ?? $dados['endereco'] ?? ''));
     $numero      = trim((string) ($dados['numero'] ?? ''));
@@ -154,19 +141,13 @@ try {
     $cidade      = trim((string) ($dados['cidade'] ?? ''));
     $estado      = strtoupper(trim((string) ($dados['estado'] ?? '')));
 
-    // =========================
     // VALIDAÇÃO
-    // =========================
-
     if (!$cep || !$rua || !$numero || !$bairro || !$cidade || !$estado) {
         http_response_code(400);
         throw new Exception('Preencha todos os campos obrigatórios do endereço.');
     }
 
-    // =========================
     // VERIFICAR ENDEREÇO EXISTENTE
-    // =========================
-
     $sqlCheck = '
         SELECT id_endereco
         FROM endereco
@@ -178,12 +159,8 @@ try {
     $stmtCheck->execute([':id_cliente' => $idCliente]);
     $enderecoExistente = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
-    // =========================
     // ATUALIZAR OU CRIAR
-    // =========================
-
     if ($enderecoExistente) {
-        // UPDATE
         $sql = '
             UPDATE endereco
             SET
@@ -197,7 +174,6 @@ try {
             WHERE id_cliente = :id_cliente
         ';
     } else {
-        // INSERT
         $sql = '
             INSERT INTO endereco
             (
