@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 /**
  * ZORA — Login do Cliente / Admin
+ * Localização: src/login.php
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -71,10 +72,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Localiza conexao.php na pasta atual, em /src ou na pasta pai
-$caminhoConexao = file_exists(__DIR__ . '/conexao.php')
-    ? __DIR__ . '/conexao.php'
-    : (file_exists(__DIR__ . '/src/conexao.php') ? __DIR__ . '/src/conexao.php' : __DIR__ . '/../conexao.php');
+// Resolução de caminho para a conexão PDO
+$caminhoConexao = __DIR__ . '/conexao.php';
 
 if (!is_file($caminhoConexao)) {
     http_response_code(500);
@@ -125,7 +124,7 @@ try {
         exit;
     }
 
-    // Busca cliente no PostgreSQL
+    // Busca cliente no PostgreSQL (Supabase)
     $sql = '
         SELECT 
             id_cliente, 
@@ -135,7 +134,7 @@ try {
             telefone, 
             COALESCE(is_admin, FALSE) AS is_admin 
         FROM cliente 
-        WHERE e_mail = :email 
+        WHERE LOWER(e_mail) = :email 
         LIMIT 1
     ';
 
@@ -154,7 +153,7 @@ try {
 
     $isAdmin = filter_var($cliente['is_admin'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-    // Grava dados na sessão PHP
+    // Grava dados na sessão PHP com cookie seguro
     session_regenerate_id(true);
     $_SESSION['id_cliente'] = (int) $cliente['id_cliente'];
     $_SESSION['nome']       = $cliente['nome'];
@@ -164,8 +163,8 @@ try {
 
     session_write_close();
 
-    // Redireciona cliente comum para /TelaCliente/cliente.html e admin para /TelaAdmin/admin.html
-    $redirecionar = $isAdmin ? '/TelaAdmin/admin.html' : '/TelaCliente/cliente.html';
+    // Redirecionamentos para a estrutura de rotas do projeto
+    $redirecionar = $isAdmin ? '../TelaAdmin/admin.html' : '../TelaCatalogo/catalogo.html';
 
     http_response_code(200);
     echo json_encode([
@@ -189,9 +188,9 @@ try {
 
     error_log('ZORA: erro no processo de login: ' . $e->getMessage());
 
-    http_response_code(400);
+    http_response_code(500);
     echo json_encode([
         'sucesso' => false,
-        'mensagem' => $e->getMessage()
+        'mensagem' => 'Erro interno ao processar o login.'
     ], JSON_UNESCAPED_UNICODE);
 }
