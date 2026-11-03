@@ -3,15 +3,63 @@ declare(strict_types=1);
 
 /* =========================================================
    ZORA - CADASTRO DE CLIENTE E ENDEREÇO (POSTGRESQL + SUPABASE)
+   Localização: src/cadastrar_cliente.php
    ========================================================= */
 
 header("Content-Type: application/json; charset=UTF-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
+header('Pragma: no-cache');
+header('Vary: Origin');
+
+// Lista de origens permitidas (CORS)
+$origensPermitidas = [
+    'https://loja-zora.onrender.com',
+    'http://localhost:3000',
+    'http://localhost:8080'
+];
+
+$origem = $_SERVER['HTTP_ORIGIN'] ?? null;
+$origemPermitida = ($origem !== null && in_array($origem, $origensPermitidas, true)) || $origem === null;
+
+if ($origem !== null && !$origemPermitida) {
+    http_response_code(403);
+    echo json_encode([
+        'sucesso' => false,
+        'mensagem' => 'Origem não autorizada.'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($origem !== null && $origemPermitida) {
+    header('Access-Control-Allow-Origin: ' . $origem);
+} else {
+    header('Access-Control-Allow-Origin: https://loja-zora.onrender.com');
+}
+
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
+// Tratamento de Preflight CORS (OPTIONS)
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Suporte a HTTPS no Proxy Reverso do Render
+$httpsDireto = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' &&
+    strtolower((string) $_SERVER['HTTPS']) !== 'off';
+$protoEncaminhado = strtolower(trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0]));
+$isHttps = $httpsDireto || $protoEncaminhado === 'https';
+
+if ($isHttps) {
+    $_SERVER['HTTPS'] = 'on';
+}
 
 // =============================================
 // VERIFICAR MÉTODO HTTP
 // =============================================
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     http_response_code(405);
     echo json_encode([
         "sucesso" => false,
@@ -23,21 +71,9 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 // =============================================
 // LOCALIZAR E CARREGAR CONEXÃO
 // =============================================
-$caminhos_conexao = [
-    __DIR__ . '/conexao.php',
-    __DIR__ . '/src/conexao.php',
-    __DIR__ . '/../conexao.php'
-];
+$caminho_conexao = __DIR__ . '/conexao.php';
 
-$caminho_conexao = null;
-foreach ($caminhos_conexao as $caminho) {
-    if (file_exists($caminho)) {
-        $caminho_conexao = $caminho;
-        break;
-    }
-}
-
-if (!$caminho_conexao) {
+if (!file_exists($caminho_conexao)) {
     http_response_code(500);
     echo json_encode([
         "sucesso" => false,
@@ -54,24 +90,24 @@ require_once $caminho_conexao;
 $input = json_decode(file_get_contents("php://input"), true) ?? $_POST;
 
 // Dados do Cliente
-$nome     = trim($input["nome"] ?? "");
-$email    = strtolower(trim($input["email"] ?? ""));
-$senha    = $input["senha"] ?? "";
+$nome     = trim((string) ($input["nome"] ?? ""));
+$email    = strtolower(trim((string) ($input["email"] ?? "")));
+$senha    = (string) ($input["senha"] ?? "");
 
 // Limpeza e tratamento do CPF para aceitar vazio como NULL
-$cpf_limpo = preg_replace('/[^0-9]/', '', $input["cpf"] ?? "");
-$cpf      = !empty($cpf_limpo) ? $cpf_limpo : null;
+$cpf_limpo = preg_replace('/[^0-9]/', '', (string) ($input["cpf"] ?? ""));
+$cpf       = !empty($cpf_limpo) ? $cpf_limpo : null;
 
-$telefone = preg_replace('/[^0-9]/', '', $input["telefone"] ?? "");
+$telefone = preg_replace('/[^0-9]/', '', (string) ($input["telefone"] ?? ""));
 
-// Dados do Endereço (com suporte a variações de chaves vindas do front-end)
-$cep         = preg_replace('/[^0-9]/', '', $input["cep"] ?? "");
-$rua         = trim($input["rua"] ?? $input["logradouro"] ?? $input["endereco"] ?? "");
-$numero      = trim($input["numero"] ?? "");
-$complemento = trim($input["complemento"] ?? "");
-$bairro      = trim($input["bairro"] ?? "");
-$cidade      = trim($input["cidade"] ?? "");
-$uf          = strtoupper(trim($input["estado"] ?? $input["uf"] ?? "RJ"));
+// Dados do Endereço
+$cep         = preg_replace('/[^0-9]/', '', (string) ($input["cep"] ?? ""));
+$rua         = trim((string) ($input["rua"] ?? $input["logradouro"] ?? $input["endereco"] ?? ""));
+$numero      = trim((string) ($input["numero"] ?? ""));
+$complemento = trim((string) ($input["complemento"] ?? ""));
+$bairro      = trim((string) ($input["bairro"] ?? ""));
+$cidade      = trim((string) ($input["cidade"] ?? ""));
+$uf          = strtoupper(trim((string) ($input["estado"] ?? $input["uf"] ?? "RJ")));
 
 if (empty($nome) || empty($email) || empty($senha)) {
     http_response_code(400);
@@ -88,7 +124,7 @@ try {
     }
 
     // Verificar se o e-mail já existe na tabela cliente
-    $sql_check = "SELECT id_cliente FROM public.cliente WHERE e_mail = :email LIMIT 1";
+    $sql_check = "SELECT id_cliente FROM public.cliente WHERE LOWER(e_mail) = :email LIMIT 1";
     $stmt_check = $conexao->prepare($sql_check);
     $stmt_check->bindValue(":email", $email);
     $stmt_check->execute();
@@ -105,9 +141,7 @@ try {
     // Hash seguro da senha
     $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
 
-    // ========================================================
-    // INÍCIO DA TRANSAÇÃO (Garante que cliente e endereço são salvos juntos)
-    // ========================================================
+    // INÍCIO DA TRANSAÇÃO
     $conexao->beginTransaction();
 
     // 1. Inserir Cliente
@@ -121,7 +155,6 @@ try {
     $stmt_cliente->bindValue(":nome", $nome);
     $stmt_cliente->bindValue(":email", $email);
     $stmt_cliente->bindValue(":senha", $senha_hash);
-    // Vincula o CPF garantindo o tratamento correto para nulo se estiver vazio
     $stmt_cliente->bindValue(":cpf", $cpf, $cpf === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
     $stmt_cliente->bindValue(":telefone", $telefone);
     $stmt_cliente->execute();
@@ -149,15 +182,27 @@ try {
     $stmt_endereco->bindValue(":estado", $uf); 
     $stmt_endereco->execute();
 
-    // Confirma a transação (salva tudo na base de dados)
+    // Confirma a transação
     $conexao->commit();
 
-    // ========================================================
-    // INICIAR A SESSÃO NO SERVIDOR PARA O NOVO UTILIZADOR
-    // ========================================================
+    // INICIAR A SESSÃO SEGURA PARA O NOVO USUÁRIO
     if (session_status() !== PHP_SESSION_ACTIVE) {
+        ini_set('session.use_only_cookies', '1');
+        ini_set('session.use_strict_mode', '1');
+        ini_set('session.use_trans_sid', '0');
+
+        session_set_cookie_params([
+            'lifetime' => 86400,
+            'path'     => '/',
+            'secure'   => $isHttps,
+            'httponly' => true,
+            'samesite' => $isHttps ? 'None' : 'Lax',
+        ]);
+
         session_start();
     }
+
+    session_regenerate_id(true);
     $_SESSION['id_cliente'] = $id_cliente;
     $_SESSION['nome']       = $nome;
     $_SESSION['email']      = $email;
@@ -165,28 +210,28 @@ try {
     $_SESSION['is_admin']   = false;
     session_write_close();
 
+    http_response_code(201);
     echo json_encode([
-        "sucesso" => true,
-        "mensagem" => "Registo efetuado com sucesso!",
+        "sucesso"    => true,
+        "mensagem"   => "Registo efetuado com sucesso!",
         "id_cliente" => $id_cliente,
-        "cliente" => [
+        "cliente"    => [
             "id_cliente" => $id_cliente,
-            "nome" => $nome,
-            "email" => $email,
-            "telefone" => $telefone,
-            "is_admin" => false
+            "nome"       => $nome,
+            "email"      => $email,
+            "telefone"   => $telefone,
+            "is_admin"   => false
         ]
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $erro) {
-    // Se der erro em qualquer parte, desfaz a transação para não salvar dados pela metade
     if (isset($conexao) && $conexao->inTransaction()) {
         $conexao->rollBack();
     }
 
     http_response_code(500);
     echo json_encode([
-        "sucesso" => false,
+        "sucesso"  => false,
         "mensagem" => "Erro ao realizar registo: " . $erro->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
