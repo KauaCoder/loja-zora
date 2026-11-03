@@ -1,6 +1,6 @@
 <?php
 /* =========================================================
-   ZORA - CONEXÃO COM BANCO DE DADOS (SUPABASE + RENDER)
+   loja-zora-main/src/conexao.php
    ========================================================= */
 
 header("Content-Type: application/json; charset=UTF-8");
@@ -22,11 +22,11 @@ if ($dbopts === false || !isset($dbopts["host"])) {
     preg_match('/postgres:\/\/(.*?):(.*?)@(.*?):(\d+)\/(.*)/', $db_url, $matches);
     $user     = $matches[1] ?? '';
     $password = urldecode($matches[2] ?? '');
-    $host     = $matches[3] ?? 'aws-0-us-east-1.pooler.supabase.com';
+    $host     = $matches[3] ?? 'aws-0-sa-east-1.pooler.supabase.com';
     $port     = $matches[4] ?? 6543;
     $dbname   = $matches[5] ?? 'postgres';
 } else {
-    $host     = $dbopts["host"] ?? 'aws-0-us-east-1.pooler.supabase.com';
+    $host     = $dbopts["host"] ?? 'aws-0-sa-east-1.pooler.supabase.com';
     $port     = $dbopts["port"] ?? 6543;
     $user     = $dbopts["user"] ?? '';
     $password = isset($dbopts["pass"]) ? urldecode($dbopts["pass"]) : '';
@@ -34,7 +34,7 @@ if ($dbopts === false || !isset($dbopts["host"])) {
 }
 
 if (empty($host) || str_contains($host, 'port=')) {
-    $host = 'aws-0-us-east-1.pooler.supabase.com';
+    $host = 'aws-0-sa-east-1.pooler.supabase.com';
 }
 
 try {
@@ -56,3 +56,4 @@ try {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+?>
