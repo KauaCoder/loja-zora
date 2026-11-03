@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 /**
  * ZORA — Verificação de Usuário Logado e Sessão
+ * Localização: src/usuario_logado.php
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -10,7 +11,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Vary: Origin');
 
-// Lista de origens permitidas
+// Lista de origens permitidas para CORS
 $origensPermitidas = [
     'https://loja-zora.onrender.com',
     'http://localhost:3000',
@@ -107,20 +108,18 @@ function encerrarSessaoAtual(bool $isHttps): void
     }
 }
 
-// Carrega a conexão com o banco de dados
-$caminhoConexao = file_exists(__DIR__ . '/src/conexao.php')
-    ? __DIR__ . '/src/conexao.php'
-    : __DIR__ . '/conexao.php';
+// Resolução de caminho para a conexão PDO
+$caminhoConexao = __DIR__ . '/conexao.php';
 
 if (!is_file($caminhoConexao)) {
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
     }
-    error_log('ZORA: arquivo conexao.php não encontrado.');
+    error_log('ZORA: arquivo conexao.php não encontrado em ' . $caminhoConexao);
     responderJson([
         'sucesso' => false,
         'logado' => false,
-        'mensagem' => 'Erro interno de configuração.'
+        'mensagem' => 'Erro interno de configuração de conexão.'
     ], 500);
     exit;
 }
@@ -129,7 +128,7 @@ try {
     require_once $caminhoConexao;
 
     if (!isset($conexao) || !($conexao instanceof PDO)) {
-        throw new RuntimeException('A conexão PDO não foi inicializada.');
+        throw new RuntimeException('A conexão PDO não foi inicializada corretamente em conexao.php.');
     }
 
     $idSessao = $_SESSION['id_cliente'] ?? null;
