@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 /**
  * ZORA — Verificação de sessão ativa
+ *
+ * O login é confirmado SOMENTE pela sessão do servidor.
+ * Nenhum id vindo da URL, do corpo da requisição ou do front-end é aceito.
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -135,6 +138,7 @@ if (!$caminhoConexao) {
     responderJson([
         'sucesso'  => false,
         'logado'   => false,
+        'is_admin' => false,
         'mensagem' => 'Erro interno de configuração.'
     ], 500);
     exit;
@@ -147,12 +151,8 @@ try {
         throw new RuntimeException('A conexão PDO não foi inicializada.');
     }
 
-    // Busca o ID da sessão em todas as chaves possíveis ou no parâmetro GET
+    // O ID vem SOMENTE da sessão do servidor (nunca de $_GET/$_POST).
     $idSessao = $_SESSION['id_cliente'] ?? $_SESSION['cliente_id'] ?? $_SESSION['usuario_id'] ?? null;
-
-    if (!is_scalar($idSessao) || (int) $idSessao <= 0) {
-        $idSessao = $_GET['id_cliente'] ?? null;
-    }
 
     if (!is_scalar($idSessao) || (int) $idSessao <= 0) {
         if (session_status() === PHP_SESSION_ACTIVE) {
