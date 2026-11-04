@@ -8,12 +8,15 @@ document.addEventListener("DOMContentLoaded", function () {
     checarEAtualizarMenu();
 
     const cepEdicao = document.getElementById("cepEdicao");
+
     if (cepEdicao) {
         cepEdicao.addEventListener("input", () => {
             let valor = cepEdicao.value.replace(/\D/g, "").substring(0, 8);
+
             if (valor.length > 5) {
                 valor = valor.replace(/^(\d{5})(\d)/, "$1-$2");
             }
+
             cepEdicao.value = valor;
         });
 
@@ -21,74 +24,122 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const formDevolucao = document.getElementById("formDevolucao");
+
     if (formDevolucao) {
         formDevolucao.addEventListener("submit", confirmarDevolucao);
     }
 
-    // Fechar menu ao clicar no overlay escuro (Padrão da Tela Inicial)
     const overlay = obterOverlay();
+
     if (overlay) {
         overlay.addEventListener("click", fecharTudo);
     }
 });
 
-// Helper para obter o ID do cliente armazenado no navegador
+// =====================================================
+// IDENTIFICAÇÃO DO CLIENTE
+// =====================================================
+
 function obterIdClienteLocal() {
     try {
         const dadosLocais = localStorage.getItem("usuarioLogado");
+
         if (dadosLocais) {
             const usuario = JSON.parse(dadosLocais);
+
             if (usuario && usuario.id_cliente) {
                 return usuario.id_cliente;
             }
         }
-    } catch (e) {
-        console.error("Erro ao ler id_cliente do localStorage:", e);
+    } catch (erro) {
+        console.error("Erro ao ler id_cliente:", erro);
     }
+
     return null;
 }
 
-// Requisitor universal inteligente que direciona cada arquivo para a sua pasta correta
+// =====================================================
+// REQUISIÇÃO UNIVERSAL
+// =====================================================
+
 async function fazerFetchComID(endpoint, opcoes = {}) {
     const idCliente = obterIdClienteLocal();
     const nomeArquivo = endpoint.replace(/^\//, "");
 
-    // Direciona para a pasta correta com base no arquivo solicitado
-    let urlFinal = "";
-    if (nomeArquivo === "cliente.php" || nomeArquivo === "atualizar_perfil.php" || nomeArquivo === "atualizar_endereco.php" || nomeArquivo === "solicitar_devolucao.php") {
-        urlFinal = `/TelaCliente/${nomeArquivo}`;
-    } else {
-        // historico_pedidos.php, logout.php, etc., estão na raiz
-        urlFinal = `/${nomeArquivo}`;
-    }
-    
+    // Arquivos localizados dentro de TelaCliente
+    const arquivosTelaCliente = [
+        "cliente.php",
+        "atualizar_perfil.php",
+        "solicitar_devolucao.php"
+    ];
+
+    // atualizar_endereco.php está na RAIZ do projeto
+    let urlFinal = arquivosTelaCliente.includes(nomeArquivo)
+        ? `/TelaCliente/${nomeArquivo}`
+        : `/${nomeArquivo}`;
+
+    // Adiciona ID do cliente na URL
     if (idCliente) {
-        urlFinal += `?id_cliente=${encodeURIComponent(idCliente)}`;
+        const separador = urlFinal.includes("?") ? "&" : "?";
+
+        urlFinal += `${separador}id_cliente=${encodeURIComponent(idCliente)}`;
     }
 
-    let opcoesAjustadas = { ...opcoes };
-    if (opcoesAjustadas.body && typeof opcoesAjustadas.body === "string" && idCliente) {
+    const opcoesAjustadas = { ...opcoes };
+
+    // Adiciona ID do cliente no JSON
+    if (
+        typeof opcoesAjustadas.body === "string" &&
+        idCliente
+    ) {
         try {
             const bodyObj = JSON.parse(opcoesAjustadas.body);
+
             if (!bodyObj.id_cliente) {
                 bodyObj.id_cliente = Number(idCliente);
-                opcoesAjustadas.body = JSON.stringify(bodyObj);
             }
-        } catch (e) {
-            // Mantém como está se não for JSON
+
+            opcoesAjustadas.body = JSON.stringify(bodyObj);
+
+        } catch (erro) {
+            console.warn("Não foi possível ajustar o JSON:", erro);
         }
     }
 
     try {
+        console.log("ZORA - Requisição:", urlFinal);
+
         const resposta = await fetch(urlFinal, {
             credentials: "include",
             ...opcoesAjustadas
         });
 
+        console.log("ZORA - Status HTTP:", resposta.status);
+
         return resposta;
+
     } catch (erro) {
         console.error(`Erro ao conectar com ${urlFinal}:`, erro);
         throw erro;
+    }
+}
+
+// =====================================================
+// PROCESSAMENTO SEGURO DE RESPOSTAS JSON
+// =====================================================
+
+async function processarRespostaJSON(resposta) {
+    const texto = await resposta.text();
+
+    try {
+        return JSON.parse(texto);
+
+    } catch (erro) {
+        console.error("Resposta inválida do servidor:", texto);
+
+        throw new Error(
+            `O servidor retornou uma resposta inválida. HTTP ${resposta.status}`
+        );
     }
 }
 
@@ -98,16 +149,11 @@ async function fazerFetchComID(endpoint, opcoes = {}) {
 
 async function carregarDadosPerfil() {
     try {
-        const resposta = await fazerFetchComID("cliente.php", { method: "GET" });
-        const texto = await resposta.text();
+        const resposta = await fazerFetchComID("cliente.php", {
+            method: "GET"
+        });
 
-        let resultado;
-        try {
-            resultado = JSON.parse(texto);
-        } catch (e) {
-            console.error("Erro no JSON de cliente.php:", texto);
-            return;
-        }
+        const resultado = await processarRespostaJSON(resposta);
 
         if (!resposta.ok || !resultado.sucesso) {
             console.error("Erro ao carregar cliente:", resultado.mensagem);
@@ -117,25 +163,37 @@ async function carregarDadosPerfil() {
         const cliente = resultado.cliente || {};
         const endereco = resultado.endereco || {};
 
-        if (document.getElementById("nomeUsuario")) document.getElementById("nomeUsuario").textContent = cliente.nome || "Usuário";
-        if (document.getElementById("emailUsuario")) document.getElementById("emailUsuario").textContent = cliente.email || "-";
-        if (document.getElementById("nomePerfil")) document.getElementById("nomePerfil").textContent = cliente.nome || "-";
-        if (document.getElementById("emailPerfil")) document.getElementById("emailPerfil").textContent = cliente.email || "-";
-        if (document.getElementById("telefonePerfil")) document.getElementById("telefonePerfil").textContent = cliente.telefone || "-";
+        const atualizarTexto = (id, valor, padrao = "-") => {
+            const elemento = document.getElementById(id);
+
+            if (elemento) {
+                elemento.textContent = valor || padrao;
+            }
+        };
+
+        atualizarTexto("nomeUsuario", cliente.nome, "Usuário");
+        atualizarTexto("emailUsuario", cliente.email);
+        atualizarTexto("nomePerfil", cliente.nome);
+        atualizarTexto("emailPerfil", cliente.email);
+        atualizarTexto("telefonePerfil", cliente.telefone);
 
         preencherEnderecoTela(endereco);
 
     } catch (erro) {
-        console.error("Erro no fetch de perfil:", erro);
+        console.error("Erro ao carregar perfil:", erro);
     }
 }
 
 function preencherEnderecoTela(endereco) {
     if (!endereco) return;
 
-    const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = (val && val !== "-" && val !== "") ? val : "-";
+    const setVal = (id, valor) => {
+        const elemento = document.getElementById(id);
+
+        if (elemento) {
+            elemento.textContent =
+                valor && valor !== "-" ? valor : "-";
+        }
     };
 
     setVal("cepPerfil", endereco.cep);
@@ -158,8 +216,11 @@ async function carregarCompras() {
     if (!comprasVazio || !comprasLista) return;
 
     try {
-        const resposta = await fazerFetchComID("historico_pedidos.php", { method: "GET" });
-        const resultado = await resposta.json();
+        const resposta = await fazerFetchComID("historico_pedidos.php", {
+            method: "GET"
+        });
+
+        const resultado = await processarRespostaJSON(resposta);
 
         if (!resposta.ok || !resultado.sucesso) {
             comprasVazio.style.display = "block";
@@ -181,49 +242,90 @@ async function carregarCompras() {
 
         compras.forEach(compra => {
             const compraCard = document.createElement("div");
+
             compraCard.className = "compra-card";
-            compraCard.style.cssText = "background:#fff; border:1px solid #e2e2e2; border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04);";
+
+            compraCard.style.cssText =
+                "background:#fff;border:1px solid #e2e2e2;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);";
 
             const dataFormatada = compra.data || "-";
 
             const produtosHTML = (compra.produtos || []).map(produto => {
                 const qtd = Number(produto.quantidade) || 1;
                 const precoNum = Number(produto.preco) || 0;
+
                 const preco = precoNum.toFixed(2).replace(".", ",");
                 const subtotal = (precoNum * qtd).toFixed(2).replace(".", ",");
 
                 const statusGlobal = (compra.status || "").toLowerCase();
-                const podeDevolver = !["devolvido", "cancelado", "solicitação de devolução"].includes(statusGlobal);
+
+                const podeDevolver = ![
+                    "devolvido",
+                    "cancelado",
+                    "solicitação de devolução"
+                ].includes(statusGlobal);
+
+                const nomeProduto = produto.nome || "Produto";
+
+                const nomeSeguro = nomeProduto.replace(/'/g, "\\'");
 
                 return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
                         <div>
-                            <p style="margin:0; font-size:14px; color:#222;"><strong>${qtd}x ${produto.nome || 'Produto ZORA'}</strong></p>
-                            <small style="color:#777;">R$ ${preco} unit. | Subtotal: R$ ${subtotal}</small>
+                            <p style="margin:0;font-size:14px;color:#222;">
+                                <strong>${qtd}x ${nomeProduto}</strong>
+                            </p>
+
+                            <small style="color:#777;">
+                                R$ ${preco} unit. | Subtotal: R$ ${subtotal}
+                            </small>
                         </div>
+
                         <div>
-                            ${podeDevolver ? 
-                                `<button type="button" onclick="abrirModalDevolucao(${compra.id_pedido}, ${produto.id_produto}, '${(produto.nome || 'Produto').replace(/'/g, "\\'")}')" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">
-                                    Solicitar Devolução
-                               </button>` : 
-                                `<span style="color:#888; font-size:12px; font-weight:bold;">Devolução Solicitada</span>`
+                            ${podeDevolver
+                                ? `
+                                    <button
+                                        type="button"
+                                        onclick="abrirModalDevolucao(${compra.id_pedido}, ${produto.id_produto}, '${nomeSeguro}')"
+                                        style="background:#dc3545;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;">
+                                        Solicitar Devolução
+                                    </button>
+                                `
+                                : `
+                                    <span style="color:#888;font-size:12px;font-weight:bold;">
+                                        Devolução Solicitada
+                                    </span>
+                                `
                             }
                         </div>
                     </div>
                 `;
             }).join("");
 
-            const total = Number(compra.total || 0).toFixed(2).replace(".", ",");
+            const total = Number(compra.total || 0)
+                .toFixed(2)
+                .replace(".", ",");
 
             compraCard.innerHTML = `
-                <div class="compra-header" style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px;">
+                <div class="compra-header" style="display:flex;justify-content:space-between;border-bottom:1px solid #f0f0f0;padding-bottom:10px;">
                     <div>
-                        <h4 style="margin:0; font-size:15px; color:#111;">Pedido #${String(compra.id_pedido).padStart(4, "0")}</h4>
-                        <p class="data" style="margin:4px 0 0; color:#888; font-size:12px;">Data: ${dataFormatada}</p>
+                        <h4 style="margin:0;font-size:15px;color:#111;">
+                            Pedido #${String(compra.id_pedido).padStart(4, "0")}
+                        </h4>
+
+                        <p class="data" style="margin:4px 0 0;color:#888;font-size:12px;">
+                            Data: ${dataFormatada}
+                        </p>
                     </div>
+
                     <div style="text-align:right;">
-                        <p style="margin:0; color:#888; font-size:11px;">Total do Pedido</p>
-                        <p style="margin:0; font-weight:bold; color:#a94460; font-size:16px;">R$ ${total}</p>
+                        <p style="margin:0;color:#888;font-size:11px;">
+                            Total do Pedido
+                        </p>
+
+                        <p style="margin:0;font-weight:bold;color:#a94460;font-size:16px;">
+                            R$ ${total}
+                        </p>
                     </div>
                 </div>
 
@@ -231,8 +333,13 @@ async function carregarCompras() {
                     ${produtosHTML}
                 </div>
 
-                <div class="compra-footer" style="margin-top:12px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
-                    <p style="margin:0;"><strong>Status:</strong> <span style="color:#28a745; font-weight:bold;">${compra.status || 'Aprovado'}</span></p>
+                <div class="compra-footer" style="margin-top:12px;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
+                    <p style="margin:0;">
+                        <strong>Status:</strong>
+                        <span style="color:#28a745;font-weight:bold;">
+                            ${compra.status || "Aprovado"}
+                        </span>
+                    </p>
                 </div>
             `;
 
@@ -241,13 +348,14 @@ async function carregarCompras() {
 
     } catch (erro) {
         console.error("Erro ao carregar compras:", erro);
+
         comprasVazio.style.display = "block";
         comprasLista.style.display = "none";
     }
 }
 
 // =====================================================
-// EDIÇÃO E BOTÕES DE AÇÃO
+// EDIÇÃO DO NOME
 // =====================================================
 
 function mostrarEdicaoNome() {
@@ -257,9 +365,15 @@ function mostrarEdicaoNome() {
     if (displayGroup && edicaoGroup) {
         displayGroup.style.display = "none";
         edicaoGroup.style.display = "block";
+
         const nomePerfil = document.getElementById("nomePerfil");
-        if (nomePerfil) {
-            document.getElementById("novoNomeInput").value = nomePerfil.textContent !== "-" ? nomePerfil.textContent : "";
+        const novoNomeInput = document.getElementById("novoNomeInput");
+
+        if (nomePerfil && novoNomeInput) {
+            novoNomeInput.value =
+                nomePerfil.textContent !== "-"
+                    ? nomePerfil.textContent
+                    : "";
         }
     }
 }
@@ -275,7 +389,11 @@ function cancelarEdicaoNome() {
 }
 
 async function salvarNovoNome() {
-    const novoNome = document.getElementById("novoNomeInput").value.trim();
+    const campoNome = document.getElementById("novoNomeInput");
+
+    if (!campoNome) return;
+
+    const novoNome = campoNome.value.trim();
     const idCliente = obterIdClienteLocal();
 
     if (!novoNome) {
@@ -286,14 +404,16 @@ async function salvarNovoNome() {
     try {
         const resposta = await fazerFetchComID("atualizar_perfil.php", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
                 id_cliente: idCliente ? Number(idCliente) : null,
-                nome: novoNome 
+                nome: novoNome
             })
         });
 
-        const resultado = await resposta.json();
+        const resultado = await processarRespostaJSON(resposta);
 
         if (!resposta.ok || !resultado.sucesso) {
             alert(resultado.mensagem || "Não foi possível atualizar o nome.");
@@ -301,23 +421,33 @@ async function salvarNovoNome() {
         }
 
         alert("Nome atualizado com sucesso!");
-        
+
         const dadosLocais = localStorage.getItem("usuarioLogado");
+
         if (dadosLocais) {
-            const usr = JSON.parse(dadosLocais);
-            usr.nome = novoNome;
-            localStorage.setItem("usuarioLogado", JSON.stringify(usr));
+            const usuario = JSON.parse(dadosLocais);
+            usuario.nome = novoNome;
+
+            localStorage.setItem(
+                "usuarioLogado",
+                JSON.stringify(usuario)
+            );
         }
 
         cancelarEdicaoNome();
+
         await carregarDadosPerfil();
         checarEAtualizarMenu();
 
     } catch (erro) {
         console.error("Erro ao atualizar nome:", erro);
-        alert("Erro ao conectar ao servidor.");
+        alert(erro.message || "Erro ao conectar ao servidor.");
     }
 }
+
+// =====================================================
+// EDIÇÃO DO ENDEREÇO
+// =====================================================
 
 function mostrarEdicaoEndereco() {
     const existente = document.getElementById("endereco-existente");
@@ -327,17 +457,30 @@ function mostrarEdicaoEndereco() {
     if (edicao) edicao.style.display = "block";
 
     const getVal = (id) => {
-        const el = document.getElementById(id);
-        return (el && el.textContent !== "-") ? el.textContent : "";
+        const elemento = document.getElementById(id);
+
+        return elemento && elemento.textContent !== "-"
+            ? elemento.textContent
+            : "";
     };
 
-    if (document.getElementById("cepEdicao")) document.getElementById("cepEdicao").value = getVal("cepPerfil");
-    if (document.getElementById("ruaEdicao")) document.getElementById("ruaEdicao").value = getVal("ruaPerfil");
-    if (document.getElementById("numeroEdicao")) document.getElementById("numeroEdicao").value = getVal("numeroPerfil");
-    if (document.getElementById("complementoEdicao")) document.getElementById("complementoEdicao").value = getVal("complementoPerfil");
-    if (document.getElementById("bairroEdicao")) document.getElementById("bairroEdicao").value = getVal("bairroPerfil");
-    if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = getVal("cidadePerfil");
-    if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = getVal("estadoPerfil");
+    const campos = {
+        cepEdicao: "cepPerfil",
+        ruaEdicao: "ruaPerfil",
+        numeroEdicao: "numeroPerfil",
+        complementoEdicao: "complementoPerfil",
+        bairroEdicao: "bairroPerfil",
+        cidadeEdicao: "cidadePerfil",
+        estadoEdicao: "estadoPerfil"
+    };
+
+    Object.entries(campos).forEach(([campo, origem]) => {
+        const elemento = document.getElementById(campo);
+
+        if (elemento) {
+            elemento.value = getVal(origem);
+        }
+    });
 }
 
 function cancelarEdicao() {
@@ -348,15 +491,28 @@ function cancelarEdicao() {
     if (existente) existente.style.display = "block";
 }
 
+// =====================================================
+// BUSCAR CEP
+// =====================================================
+
 async function buscarCEPEdicao() {
     const cepInput = document.getElementById("cepEdicao");
+
     if (!cepInput) return;
 
     const valor = cepInput.value.replace(/\D/g, "");
+
     if (valor.length !== 8) return;
 
     try {
-        const resposta = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
+        const resposta = await fetch(
+            `https://viacep.com.br/ws/${valor}/json/`
+        );
+
+        if (!resposta.ok) {
+            throw new Error(`Erro HTTP ${resposta.status}`);
+        }
+
         const dados = await resposta.json();
 
         if (dados.erro) {
@@ -364,59 +520,128 @@ async function buscarCEPEdicao() {
             return;
         }
 
-        if (document.getElementById("ruaEdicao")) document.getElementById("ruaEdicao").value = dados.logradouro || "";
-        if (document.getElementById("bairroEdicao")) document.getElementById("bairroEdicao").value = dados.bairro || "";
-        if (document.getElementById("cidadeEdicao")) document.getElementById("cidadeEdicao").value = dados.localidade || "";
-        if (document.getElementById("estadoEdicao")) document.getElementById("estadoEdicao").value = dados.uf || "";
+        const campos = {
+            ruaEdicao: dados.logradouro,
+            bairroEdicao: dados.bairro,
+            cidadeEdicao: dados.localidade,
+            estadoEdicao: dados.uf
+        };
+
+        Object.entries(campos).forEach(([id, valorCampo]) => {
+            const elemento = document.getElementById(id);
+
+            if (elemento) {
+                elemento.value = valorCampo || "";
+            }
+        });
 
         const numInput = document.getElementById("numeroEdicao");
-        if (numInput) numInput.focus();
+
+        if (numInput) {
+            numInput.focus();
+        }
 
     } catch (erro) {
         console.error("Erro ao consultar CEP:", erro);
+        alert("Não foi possível consultar o CEP.");
     }
 }
 
-async function salvarEndereco() {
-    const cep = document.getElementById("cepEdicao").value.trim();
-    const rua = document.getElementById("ruaEdicao").value.trim();
-    const numero = document.getElementById("numeroEdicao").value.trim();
-    const complemento = document.getElementById("complementoEdicao").value.trim();
-    const bairro = document.getElementById("bairroEdicao").value.trim();
-    const cidade = document.getElementById("cidadeEdicao").value.trim();
-    const estado = document.getElementById("estadoEdicao").value.trim();
+// =====================================================
+// SALVAR ENDEREÇO
+// =====================================================
 
-    if (!cep || !rua || !numero || !bairro || !cidade || !estado) {
-        alert("Preencha todos os campos obrigatórios.");
+async function salvarEndereco() {
+    const campos = {
+        cep: "cepEdicao",
+        rua: "ruaEdicao",
+        numero: "numeroEdicao",
+        complemento: "complementoEdicao",
+        bairro: "bairroEdicao",
+        cidade: "cidadeEdicao",
+        estado: "estadoEdicao"
+    };
+
+    const endereco = {};
+
+    for (const [chave, id] of Object.entries(campos)) {
+        const elemento = document.getElementById(id);
+
+        if (!elemento) {
+            console.error(`Campo não encontrado: ${id}`);
+            alert("Erro na estrutura do formulário de endereço.");
+            return;
+        }
+
+        endereco[chave] = elemento.value.trim();
+    }
+
+    const cepNumerico = endereco.cep.replace(/\D/g, "");
+
+    if (
+        cepNumerico.length !== 8 ||
+        !endereco.rua ||
+        !endereco.numero ||
+        !endereco.bairro ||
+        !endereco.cidade ||
+        !endereco.estado
+    ) {
+        alert("Verifique o CEP e preencha todos os campos obrigatórios.");
+        return;
+    }
+
+    endereco.cep = cepNumerico;
+
+    const idCliente = obterIdClienteLocal();
+
+    if (!idCliente) {
+        alert("Não foi possível identificar o cliente. Faça login novamente.");
         return;
     }
 
     try {
         const resposta = await fazerFetchComID("atualizar_endereco.php", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ cep, rua, numero, complemento, bairro, cidade, estado })
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                ...endereco,
+                id_cliente: Number(idCliente)
+            })
         });
 
-        const resultado = await resposta.json();
+        const resultado = await processarRespostaJSON(resposta);
 
         if (!resposta.ok || !resultado.sucesso) {
-            alert(resultado.mensagem || "Não foi possível atualizar o endereço.");
+            console.error("Erro retornado pelo PHP:", resultado);
+
+            alert(
+                resultado.mensagem ||
+                `Não foi possível atualizar o endereço. HTTP ${resposta.status}`
+            );
+
             return;
         }
 
         alert("Endereço atualizado com sucesso!");
+
         cancelarEdicao();
+
         await carregarDadosPerfil();
 
     } catch (erro) {
         console.error("Erro ao atualizar endereço:", erro);
-        alert("Não foi possível conectar ao servidor.");
+
+        alert(
+            erro.message ||
+            "Não foi possível conectar ao servidor."
+        );
     }
 }
 
 // =====================================================
-// MODAL DE DEVOLUÇÃO E LOGOUT
+// MODAL DE DEVOLUÇÃO
 // =====================================================
 
 function abrirModalDevolucao(idPedido, idProduto, nomeProduto) {
@@ -429,13 +654,17 @@ function abrirModalDevolucao(idPedido, idProduto, nomeProduto) {
         elPedido.value = idPedido;
         elProduto.value = idProduto;
         elNome.textContent = nomeProduto;
+
         modal.style.display = "flex";
     }
 }
 
 function fecharModalDevolucao() {
     const modal = document.getElementById("modalDevolucao");
-    if (modal) modal.style.display = "none";
+
+    if (modal) {
+        modal.style.display = "none";
+    }
 }
 
 async function confirmarDevolucao(evento) {
@@ -453,70 +682,101 @@ async function confirmarDevolucao(evento) {
     try {
         const resposta = await fazerFetchComID("solicitar_devolucao.php", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id_pedido: Number(idPedido), id_produto: Number(idProduto), motivo: motivo })
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                id_pedido: Number(idPedido),
+                id_produto: Number(idProduto),
+                motivo: motivo
+            })
         });
 
-        const resultado = await resposta.json();
+        const resultado = await processarRespostaJSON(resposta);
 
         if (!resposta.ok || !resultado.sucesso) {
-            alert(resultado.mensagem || "Não foi possível solicitar a devolução.");
+            alert(
+                resultado.mensagem ||
+                "Não foi possível solicitar a devolução."
+            );
+
             return;
         }
 
         alert("Solicitação de devolução registrada com sucesso!");
+
         fecharModalDevolucao();
+
         await carregarCompras();
 
     } catch (erro) {
         console.error("Erro na devolução:", erro);
+
         alert("Erro ao conectar ao servidor.");
     }
 }
+
+// =====================================================
+// LOGOUT
+// =====================================================
 
 async function logout() {
     if (!confirm("Você tem certeza que deseja sair?")) return;
 
     try {
-        await fazerFetchComID("logout.php", { method: "POST" });
-    } catch (e) {
+        await fazerFetchComID("logout.php", {
+            method: "POST"
+        });
+
+    } catch (erro) {
+        console.error("Erro no logout:", erro);
+
     } finally {
         localStorage.removeItem("usuarioLogado");
+
         window.location.replace("/TelaLogin/login.html");
     }
 }
 
 // =====================================================
-// MENU LATERAL, OVERLAY E PERFIL (PADRÃO TELA INICIAL)
+// MENU LATERAL E OVERLAY
 // =====================================================
 
 function obterSidebar() {
-    return document.getElementById("sidebar") || document.querySelector(".sidebar");
+    return document.getElementById("sidebar") ||
+        document.querySelector(".sidebar");
 }
 
 function obterOverlay() {
-    return document.getElementById("overlay") || document.querySelector(".overlay");
+    return document.getElementById("overlay") ||
+        document.querySelector(".overlay");
 }
 
 function sincronizarOverlay() {
     const sidebar = obterSidebar();
     const overlay = obterOverlay();
-    const pedidos = document.getElementById("Pedidos"); // Para o caso de existir o carrinho nesta tela
+    const pedidos = document.getElementById("Pedidos");
 
     const menuAberto = sidebar && (
-        sidebar.classList.contains("ativo") || sidebar.classList.contains("active")
+        sidebar.classList.contains("ativo") ||
+        sidebar.classList.contains("active")
     );
 
-    const pedidosAberto = pedidos && pedidos.classList.contains("ativo");
+    const pedidosAberto = pedidos &&
+        pedidos.classList.contains("ativo");
 
-    const algumPainelAberto = Boolean(menuAberto || pedidosAberto);
+    const algumPainelAberto = Boolean(
+        menuAberto || pedidosAberto
+    );
 
     if (overlay) {
         overlay.classList.toggle("ativo", algumPainelAberto);
     }
 
-    // Impede a rolagem da página quando um painel está aberto.
-    document.body.classList.toggle("painel-aberto", algumPainelAberto);
+    document.body.classList.toggle(
+        "painel-aberto",
+        algumPainelAberto
+    );
 }
 
 function showSidebar() {
@@ -528,6 +788,7 @@ function showSidebar() {
     }
 
     sidebar.classList.add("ativo", "active");
+
     sincronizarOverlay();
 }
 
@@ -556,36 +817,64 @@ function fecharTudo() {
     sincronizarOverlay();
 }
 
+// =====================================================
+// ABRIR PERFIL
+// =====================================================
+
 async function abrirPerfil() {
     let usuario = null;
 
     if (typeof obterUsuarioLogado === "function") {
         try {
             usuario = await obterUsuarioLogado();
+
         } catch (erro) {
             console.error("Erro ao obter usuário:", erro);
         }
+
     } else {
         try {
-            usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
+            usuario = JSON.parse(
+                localStorage.getItem("usuarioLogado") || "null"
+            );
+
         } catch (erro) {
             usuario = null;
         }
     }
 
-    if (usuario && (usuario.nome || usuario.email || usuario.id_cliente)) {
-        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
-        window.location.href = ehAdmin ? "/TelaAdmin/admin.html" : "/TelaCliente/cliente.html";
+    if (usuario && (
+        usuario.nome ||
+        usuario.email ||
+        usuario.id_cliente
+    )) {
+        const ehAdmin =
+            usuario.is_admin === true ||
+            usuario.is_admin === 1 ||
+            usuario.is_admin === "1" ||
+            usuario.nivel === "admin";
+
+        window.location.href = ehAdmin
+            ? "/TelaAdmin/admin.html"
+            : "/TelaCliente/cliente.html";
+
     } else {
         window.location.href = "/TelaLogin/login.html";
     }
 }
 
+// =====================================================
+// ATUALIZAR MENU DO USUÁRIO
+// =====================================================
+
 async function checarEAtualizarMenu() {
     let usuario = null;
 
     try {
-        usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
+        usuario = JSON.parse(
+            localStorage.getItem("usuarioLogado") || "null"
+        );
+
     } catch (erro) {
         usuario = null;
     }
@@ -596,16 +885,29 @@ async function checarEAtualizarMenu() {
     let texto = "Login";
 
     if (usuario && (usuario.nome || usuario.email)) {
-        const ehAdmin = usuario.is_admin === true || usuario.is_admin === 1 || usuario.is_admin === "1" || usuario.nivel === "admin";
+        const ehAdmin =
+            usuario.is_admin === true ||
+            usuario.is_admin === 1 ||
+            usuario.is_admin === "1" ||
+            usuario.nivel === "admin";
 
         if (ehAdmin) {
             texto = "Painel do Adm";
+
         } else {
-            const primeiroNome = usuario.nome ? usuario.nome.split(" ")[0] : "Perfil";
+            const primeiroNome = usuario.nome
+                ? usuario.nome.split(" ")[0]
+                : "Perfil";
+
             texto = `Olá, ${primeiroNome}`;
         }
     }
 
-    if (menuDesktop) menuDesktop.textContent = texto;
-    if (menuMobile) menuMobile.textContent = texto;
+    if (menuDesktop) {
+        menuDesktop.textContent = texto;
+    }
+
+    if (menuMobile) {
+        menuMobile.textContent = texto;
+    }
 }
