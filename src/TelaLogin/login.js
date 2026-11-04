@@ -12,7 +12,7 @@ function alternarVisibilidadeSenha(idCampo, botao) {
     campo.type = senhaVisivel ? "password" : "text";
 
     // Atualiza o ícone do botão
-    botao.innerHTML = senhaVisivel ? "👁" : "🙈";
+    botao.innerHTML = senhaVisivel ? "👀" : "🙈";
 
     // Acessibilidade
     botao.setAttribute(
