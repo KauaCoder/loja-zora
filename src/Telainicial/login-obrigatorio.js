@@ -1,13 +1,18 @@
 // =====================================================
 // ZORA - LOGIN OBRIGATÓRIO PARA COMPRAR
 // Arquivo compartilhado: salve na raiz do site, ao lado do auth.js,
-// e carregue DEPOIS do script da página:
+// e carregue DEPOIS do auth.js e do script da página:
+//     <script src="/auth.js"></script>
+//     <script src="script.js"></script>
 //     <script src="/login-obrigatorio.js"></script>
 //
 // Bloqueia:
 //   - adicionar peça ao carrinho (home: adicionarPedidos / produto: adicionarAoCarrinho)
 //   - finalizar a compra (pagarPedido)
 // Quando a pessoa não está logada, abre um aviso com o botão "Entrar".
+//
+// REGRA: só vale a sessão confirmada pelo servidor (via obterUsuarioLogado
+// do auth.js). O localStorage NUNCA conta como login.
 // =====================================================
 
 (function () {
@@ -17,33 +22,27 @@
 
 
     // -------------------------------------------------
-    // 1. VERIFICAR SE A PESSOA ESTÁ LOGADA
-    // (mesma regra do abrirPerfil das páginas)
+    // 1. VERIFICAR SE A PESSOA ESTÁ LOGADA (SESSÃO DO SERVIDOR)
+    // Falha fechada: qualquer erro ou ausência de auth.js = não logado.
     // -------------------------------------------------
 
     async function obterUsuario() {
-        let usuario = null;
-
-        if (typeof obterUsuarioLogado === "function") {
-            try {
-                usuario = await obterUsuarioLogado();
-            } catch (erro) {
-                console.error("ZORA: erro ao obter o usuário logado.", erro);
-            }
-        } else {
-            try {
-                usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "null");
-            } catch (erro) {
-                usuario = null;
-            }
+        if (typeof window.obterUsuarioLogado !== "function") {
+            console.error("ZORA: auth.js não foi carregado; compra bloqueada.");
+            return null;
         }
 
-        return usuario;
+        try {
+            return await window.obterUsuarioLogado();
+        } catch (erro) {
+            console.error("ZORA: erro ao obter o usuário logado.", erro);
+            return null;
+        }
     }
 
     async function estaLogado() {
         const usuario = await obterUsuario();
-        return Boolean(usuario && (usuario.nome || usuario.email || usuario.id_cliente));
+        return Boolean(usuario && usuario.id_cliente);
     }
 
 
@@ -209,8 +208,8 @@
 
     // -------------------------------------------------
     // 4. PROTEGER AS FUNÇÕES DE COMPRA JÁ EXISTENTES
-    // Funciona sem editar o script da página, porque o botão "Comprar"
-    // e o botão "Finalizar Compra" chamam essas funções pelo nome.
+    // Funciona sem editar o script da página, porque os botões
+    // "Comprar" e "Finalizar Compra" chamam essas funções pelo nome.
     // -------------------------------------------------
 
     function proteger(nome) {
@@ -228,12 +227,14 @@
     }
 
     function protegerCompra() {
-        proteger("adicionarPedidos");   // home (cards)
-        proteger("pagarPedido");        // home e produto (Finalizar Compra / Pagar)
+        proteger("adicionarPedidos");    // home (cards)
+        proteger("adicionarAoCarrinho"); // página de produto
+        proteger("pagarPedido");         // home e produto (Finalizar Compra / Pagar)
     }
 
     // Os scripts das páginas já foram carregados antes deste arquivo
     protegerCompra();
     document.addEventListener("DOMContentLoaded", protegerCompra);
+    window.addEventListener("load", protegerCompra);
 
 })();
