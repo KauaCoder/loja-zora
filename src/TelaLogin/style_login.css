@@ -336,3 +336,36 @@ body.saindo {
         grid-column: span 1;
     }
 }
+
+.campo-senha {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.campo-senha input {
+    width: 100%;
+    padding-right: 45px;
+}
+
+.btn-ver-senha {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    border: none;
+    background: transparent;
+    cursor: pointer;
+
+    font-size: 18px;
+    padding: 5px;
+
+    color: #555;
+    z-index: 2;
+}
+
+.btn-ver-senha:hover {
+    color: #263B29;
+}
