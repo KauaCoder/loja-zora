@@ -8,6 +8,52 @@
 
     <link rel="stylesheet" href="style_login.css">
     <link rel="stylesheet" href="/EstiloBase.css">
+
+    <style>
+        /* CAMPO DE SENHA COM BOTÃO DE VISUALIZAÇÃO */
+        .campo-senha {
+            position: relative;
+            width: 100%;
+        }
+
+        .campo-senha input {
+            width: 100%;
+            padding-right: 48px;
+            box-sizing: border-box;
+        }
+
+        .btn-ver-senha {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            width: 30px;
+            height: 30px;
+
+            border: none;
+            background: transparent;
+            color: #555;
+
+            cursor: pointer;
+            font-size: 19px;
+            padding: 0;
+            z-index: 2;
+        }
+
+        .btn-ver-senha:hover {
+            color: #263B29;
+        }
+
+        .btn-ver-senha:focus-visible {
+            outline: 2px solid #556B3F;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 
 <body>
@@ -24,8 +70,11 @@
 
             <!-- TABS -->
             <div class="tab-buttons">
-                <button type="button" class="tab-button active" onclick="mudarAba('login')">Login</button>
-                <button type="button" class="tab-button" onclick="mudarAba('cadastro')">Cadastro</button>
+                <button type="button" class="tab-button active"
+                    onclick="mudarAba('login')">Login</button>
+
+                <button type="button" class="tab-button"
+                    onclick="mudarAba('cadastro')">Cadastro</button>
             </div>
 
             <!-- ABA LOGIN -->
@@ -33,22 +82,36 @@
 
                 <div class="form-group">
                     <label for="emailLogin">E-mail</label>
-                    <input 
-                        type="email" 
-                        id="emailLogin" 
-                        placeholder="seu@email.com" 
+                    <input
+                        type="email"
+                        id="emailLogin"
+                        placeholder="seu@email.com"
                         required
                     >
                 </div>
 
                 <div class="form-group">
                     <label for="senhaLogin">Senha</label>
-                    <input 
-                        type="password" 
-                        id="senhaLogin" 
-                        placeholder="Sua senha" 
-                        required
-                    >
+
+                    <div class="campo-senha">
+                        <input
+                            type="password"
+                            id="senhaLogin"
+                            placeholder="Sua senha"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="btn-ver-senha"
+                            onclick="alternarVisibilidadeSenha('senhaLogin', this)"
+                            aria-label="Mostrar senha"
+                            aria-pressed="false"
+                        >
+                            <span aria-hidden="true">👁</span>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-submit">Entrar</button>
@@ -59,71 +122,104 @@
 
             </form>
 
-            <!-- ABA CADASTRO (LAYOUT COMPACTO EM GRID) -->
+            <!-- ABA CADASTRO -->
             <form id="formCadastro" class="form-section">
 
-                <!-- GRUPO: DADOS PESSOAIS -->
+                <!-- DADOS PESSOAIS -->
                 <div class="form-grid">
+
                     <div class="form-group span-2">
                         <label for="nomeCadastro">Nome Completo</label>
-                        <input 
-                            type="text" 
-                            id="nomeCadastro" 
-                            placeholder="Seu nome como aparecerá no perfil" 
+                        <input
+                            type="text"
+                            id="nomeCadastro"
+                            placeholder="Seu nome como aparecerá no perfil"
                             required
                         >
                     </div>
 
                     <div class="form-group">
                         <label for="emailCadastro">E-mail</label>
-                        <input 
-                            type="email" 
-                            id="emailCadastro" 
-                            placeholder="seu@email.com" 
+                        <input
+                            type="email"
+                            id="emailCadastro"
+                            placeholder="seu@email.com"
                             required
                         >
                     </div>
 
                     <div class="form-group">
                         <label for="telefoneCadastro">Telefone (opcional)</label>
-                        <input 
-                            type="tel" 
-                            id="telefoneCadastro" 
+                        <input
+                            type="tel"
+                            id="telefoneCadastro"
                             placeholder="(21) 99999-9999"
                         >
                     </div>
 
+                    <!-- SENHA DO CADASTRO -->
                     <div class="form-group">
                         <label for="senhaCadastro">Senha</label>
-                        <input 
-                            type="password" 
-                            id="senhaCadastro" 
-                            placeholder="Mínimo 6 caracteres" 
-                            required
-                        >
+
+                        <div class="campo-senha">
+                            <input
+                                type="password"
+                                id="senhaCadastro"
+                                placeholder="Mínimo 6 caracteres"
+                                autocomplete="new-password"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="btn-ver-senha"
+                                onclick="alternarVisibilidadeSenha('senhaCadastro', this)"
+                                aria-label="Mostrar senha"
+                                aria-pressed="false"
+                            >
+                                <span aria-hidden="true">👁</span>
+                            </button>
+                        </div>
                     </div>
 
+                    <!-- CONFIRMAR SENHA -->
                     <div class="form-group">
                         <label for="confirmarSenhaCadastro">Confirmar Senha</label>
-                        <input 
-                            type="password" 
-                            id="confirmarSenhaCadastro" 
-                            placeholder="Confirme a senha" 
-                            required
-                        >
+
+                        <div class="campo-senha">
+                            <input
+                                type="password"
+                                id="confirmarSenhaCadastro"
+                                placeholder="Confirme a senha"
+                                autocomplete="new-password"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="btn-ver-senha"
+                                onclick="alternarVisibilidadeSenha('confirmarSenhaCadastro', this)"
+                                aria-label="Mostrar senha"
+                                aria-pressed="false"
+                            >
+                                <span aria-hidden="true">👁</span>
+                            </button>
+                        </div>
                     </div>
+
                 </div>
 
                 <hr class="divisor-form">
 
-                <!-- GRUPO: ENDEREÇO -->
+                <!-- ENDEREÇO -->
                 <div class="form-grid">
+
                     <div class="form-group">
                         <label for="cepCadastro">CEP</label>
-                        <input 
-                            type="text" 
-                            id="cepCadastro" 
-                            placeholder="00000-000" 
+                        <input
+                            type="text"
+                            id="cepCadastro"
+                            placeholder="00000-000"
                             maxlength="9"
                             required
                         >
@@ -131,9 +227,9 @@
 
                     <div class="form-group">
                         <label for="ruaCadastro">Rua</label>
-                        <input 
-                            type="text" 
-                            id="ruaCadastro" 
+                        <input
+                            type="text"
+                            id="ruaCadastro"
                             placeholder="Rua / Avenida"
                             readonly
                             required
@@ -142,28 +238,28 @@
 
                     <div class="form-group">
                         <label for="numeroCadastro">Número</label>
-                        <input 
-                            type="text" 
-                            id="numeroCadastro" 
-                            placeholder="Ex: 123" 
+                        <input
+                            type="text"
+                            id="numeroCadastro"
+                            placeholder="Ex: 123"
                             required
                         >
                     </div>
 
                     <div class="form-group">
                         <label for="complementoCadastro">Complemento</label>
-                        <input 
-                            type="text" 
-                            id="complementoCadastro" 
+                        <input
+                            type="text"
+                            id="complementoCadastro"
                             placeholder="Apto, Bloco, etc."
                         >
                     </div>
 
                     <div class="form-group">
                         <label for="bairroCadastro">Bairro</label>
-                        <input 
-                            type="text" 
-                            id="bairroCadastro" 
+                        <input
+                            type="text"
+                            id="bairroCadastro"
                             readonly
                             required
                         >
@@ -171,18 +267,37 @@
 
                     <div class="form-group">
                         <label for="cidadeCadastro">Cidade / UF</label>
+
                         <div class="cidade-uf-group">
-                            <input type="text" id="cidadeCadastro" placeholder="Cidade" readonly required>
-                            <input type="text" id="estadoCadastro" placeholder="UF" maxlength="2" readonly required>
+                            <input
+                                type="text"
+                                id="cidadeCadastro"
+                                placeholder="Cidade"
+                                readonly
+                                required
+                            >
+
+                            <input
+                                type="text"
+                                id="estadoCadastro"
+                                placeholder="UF"
+                                maxlength="2"
+                                readonly
+                                required
+                            >
                         </div>
                     </div>
+
                 </div>
 
-                <div class="endereco-info" id="enderecoInfo" style="display: none;">
+                <div class="endereco-info" id="enderecoInfo"
+                    style="display: none;">
                     <p id="enderecoTexto"></p>
                 </div>
 
-                <button type="submit" class="btn-submit">Finalizar Cadastro</button>
+                <button type="submit" class="btn-submit">
+                    Finalizar Cadastro
+                </button>
 
                 <a href="/Telainicial/index.html" class="voltar">
                     ← Voltar para a loja
@@ -192,25 +307,42 @@
 
         </div>
 
-        <!-- LADO DIREITO: PRÉVIA DO PERFIL EM TEMPO REAL -->
+        <!-- LADO DIREITO: PRÉVIA DO PERFIL -->
         <div class="preview-box" id="previewPerfilBox">
+
             <div class="preview-card">
+
                 <span class="preview-badge">Prévia do Seu Perfil</span>
-                
+
                 <div class="preview-avatar">👤</div>
-                
+
                 <h3 id="previewNome">Seu Nome Aqui</h3>
-                <p id="previewEmail" class="preview-email">seu.email@exemplo.com</p>
+
+                <p id="previewEmail" class="preview-email">
+                    seu.email@exemplo.com
+                </p>
 
                 <div class="preview-dados">
-                    <p><strong>Telefone:</strong> <span id="previewTelefone">(21) 99999-9999</span></p>
-                    <p><strong>Endereço:</strong> <span id="previewEndereco">Seu endereço aparecerá aqui após o CEP</span></p>
+                    <p>
+                        <strong>Telefone:</strong>
+                        <span id="previewTelefone">(21) 99999-9999</span>
+                    </p>
+
+                    <p>
+                        <strong>Endereço:</strong>
+                        <span id="previewEndereco">
+                            Seu endereço aparecerá aqui após o CEP
+                        </span>
+                    </p>
                 </div>
 
                 <div class="preview-dica">
-                    💡 À medida que você preenche o formulário, é assim que o seu perfil será visto no sistema.
+                    💡 À medida que você preenche o formulário,
+                    é assim que o seu perfil será visto no sistema.
                 </div>
+
             </div>
+
         </div>
 
     </div>
@@ -219,9 +351,40 @@
     <script src="/auth.js"></script>
     <script src="login.js"></script>
 
-    <!-- SCRIPT DA PRÉVIA EM TEMPO REAL -->
+    <!-- VISUALIZAR / OCULTAR SENHA -->
+    <script>
+        function alternarVisibilidadeSenha(idCampo, botao) {
+
+            const campo = document.getElementById(idCampo);
+
+            if (!campo) return;
+
+            const senhaVisivel = campo.type === "text";
+
+            campo.type = senhaVisivel ? "password" : "text";
+
+            const icone = botao.querySelector("span");
+
+            if (icone) {
+                icone.textContent = senhaVisivel ? "👁" : "🙈";
+            }
+
+            botao.setAttribute(
+                "aria-label",
+                senhaVisivel ? "Mostrar senha" : "Ocultar senha"
+            );
+
+            botao.setAttribute(
+                "aria-pressed",
+                String(!senhaVisivel)
+            );
+        }
+    </script>
+
+    <!-- PRÉVIA EM TEMPO REAL -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+
             const inputNome = document.getElementById("nomeCadastro");
             const inputEmail = document.getElementById("emailCadastro");
             const inputTelefone = document.getElementById("telefoneCadastro");
@@ -234,22 +397,44 @@
             const previewEndereco = document.getElementById("previewEndereco");
 
             function atualizarPrevia() {
-                if (previewNome) previewNome.textContent = inputNome.value.trim() || "Seu Nome Aqui";
-                if (previewEmail) previewEmail.textContent = inputEmail.value.trim() || "seu.email@exemplo.com";
-                if (previewTelefone) previewTelefone.textContent = inputTelefone.value.trim() || "(21) 99999-9999";
 
-                const rua = inputRua.value.trim();
-                const num = inputNumero.value.trim();
+                if (previewNome) {
+                    previewNome.textContent =
+                        inputNome?.value.trim() || "Seu Nome Aqui";
+                }
+
+                if (previewEmail) {
+                    previewEmail.textContent =
+                        inputEmail?.value.trim() || "seu.email@exemplo.com";
+                }
+
+                if (previewTelefone) {
+                    previewTelefone.textContent =
+                        inputTelefone?.value.trim() || "(21) 99999-9999";
+                }
+
+                const rua = inputRua?.value.trim() || "";
+                const numero = inputNumero?.value.trim() || "";
+
                 if (previewEndereco) {
-                    previewEndereco.textContent = (rua ? `${rua}${num ? ', ' + num : ''}` : "Seu endereço aparecerá aqui após o CEP");
+                    previewEndereco.textContent = rua
+                        ? `${rua}${numero ? ", " + numero : ""}`
+                        : "Seu endereço aparecerá aqui após o CEP";
                 }
             }
 
-            if (inputNome) inputNome.addEventListener("input", atualizarPrevia);
-            if (inputEmail) inputEmail.addEventListener("input", atualizarPrevia);
-            if (inputTelefone) inputTelefone.addEventListener("input", atualizarPrevia);
-            if (inputRua) inputRua.addEventListener("input", atualizarPrevia);
-            if (inputNumero) inputNumero.addEventListener("input", atualizarPrevia);
+            [
+                inputNome,
+                inputEmail,
+                inputTelefone,
+                inputRua,
+                inputNumero
+            ].forEach(input => {
+                if (input) {
+                    input.addEventListener("input", atualizarPrevia);
+                }
+            });
+
         });
     </script>
 
