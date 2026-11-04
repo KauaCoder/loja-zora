@@ -1,56 +1,62 @@
-// loja-zora-main/src/auth.js
+// loja-zora-main/auth.js
 
 /**
  * ZORA — Autenticação Central & Utilitários de Interface
  * Integrado com backend PHP (Supabase / Render)
+ *
+ * REGRA ÚNICA: a sessão do servidor (usuario_logado.php) é a única
+ * fonte de verdade. O localStorage é só um espelho e NUNCA prova login.
  */
-
-// =============================================
-// HELPER PARA RESOLUÇÃO DE CAMINHO RELATIVO
-// =============================================
-function obterCaminhoBackend(arquivo) {
-    const pathname = window.location.pathname;
-    // Se a página já estiver em uma subpasta (ex: /TelaInicial/, /TelaCliente/, /TelaAdmin/)
-    if (pathname.includes('/Tela') || pathname.split('/').length > 2) {
-        return `../${arquivo}`;
-    }
-    return `./${arquivo}`;
-}
 
 // =============================================
 // VERIFICAÇÃO DE SESSÃO COM BACKEND PHP
 // =============================================
 
 /**
- * Consulta o backend (usuario_logado.php) para verificar o estado da sessão.
+ * Consulta o backend para verificar o estado da sessão.
+ * Falha fechada: se não for possível confirmar, NÃO está logado.
  */
 async function obterStatusSessao() {
     try {
-        const url = obterCaminhoBackend('usuario_logado.php');
-        const resposta = await fetch(url, {
+        const resposta = await fetch('/usuario_logado.php?_=' + Date.now(), {
             method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            },
-            credentials: 'include' // Envia os cookies de sessão HTTP-only
+            headers: { 'Accept': 'application/json' },
+            credentials: 'include', // Envia os cookies de sessão HTTP-only
+            cache: 'no-store'
         });
 
         if (!resposta.ok) {
             throw new Error('Erro ao verificar sessão no servidor.');
         }
 
-        return await resposta.json();
+        const dados = await resposta.json();
+
+        // Mantém o localStorage apenas como espelho da sessão do servidor
+        try {
+            if (dados && dados.logado && dados.cliente) {
+                localStorage.setItem('usuarioLogado', JSON.stringify(dados.cliente));
+            } else {
+                localStorage.removeItem('usuarioLogado');
+            }
+        } catch (e) {
+            // localStorage indisponível: ignora
+        }
+
+        return dados;
     } catch (erro) {
-        console.warn('Servidor inacessível. Verificando estado local:', erro);
-        const usuarioLocal = localStorage.getItem('usuarioLogado');
-        const dadosLocal = usuarioLocal ? JSON.parse(usuarioLocal) : null;
-        return { 
-            sucesso: !!usuarioLocal, 
-            logado: !!usuarioLocal, 
-            is_admin: dadosLocal ? !!dadosLocal.is_admin : false,
-            cliente: dadosLocal 
-        };
+        console.warn('ZORA: não foi possível verificar a sessão.', erro);
+        return { sucesso: false, logado: false, is_admin: false, cliente: null };
     }
+}
+
+/**
+ * Devolve o usuário logado (dados do servidor) ou null.
+ * Usada por script.js e login-obrigatorio.js.
+ */
+async function obterUsuarioLogado() {
+    const sessao = await obterStatusSessao();
+    if (!sessao.logado || !sessao.cliente) return null;
+    return { ...sessao.cliente, is_admin: !!sessao.is_admin };
 }
 
 /**
@@ -59,7 +65,7 @@ async function obterStatusSessao() {
 async function protegerPagina() {
     const sessao = await obterStatusSessao();
     if (!sessao.logado) {
-        window.location.replace('../TelaLogin/login.html');
+        window.location.replace('/TelaLogin/login.html');
         return false;
     }
     return true;
@@ -72,7 +78,7 @@ async function verificarAdmin() {
     const sessao = await obterStatusSessao();
     if (!sessao.logado || !sessao.is_admin) {
         alert('Acesso restrito a administradores.');
-        window.location.replace('../Telainicial/index.html');
+        window.location.replace('/Telainicial/index.html');
         return false;
     }
     return true;
@@ -83,21 +89,24 @@ async function verificarAdmin() {
  */
 async function logout(redirecionar = true) {
     try {
-        const url = obterCaminhoBackend('logout.php');
-        await fetch(url, {
+        await fetch('/logout.php', {
             method: 'POST',
             credentials: 'include'
         });
     } catch (erro) {
         console.error('Erro ao encerrar sessão no servidor:', erro);
     } finally {
-        localStorage.removeItem('usuarioLogado');
-        localStorage.removeItem('sessaoZora');
-        localStorage.removeItem('emailUsuario');
-        localStorage.removeItem('nomeUsuario');
+        try {
+            localStorage.removeItem('usuarioLogado');
+            localStorage.removeItem('sessaoZora');
+            localStorage.removeItem('emailUsuario');
+            localStorage.removeItem('nomeUsuario');
+        } catch (e) {
+            // ignora
+        }
 
         if (redirecionar) {
-            window.location.replace('../TelaLogin/login.html');
+            window.location.replace('/TelaLogin/login.html');
         }
     }
 }
@@ -159,7 +168,7 @@ async function consultarCEP(input, tipo) {
         }
 
         const prefixo = tipo === 'cadastro' ? 'Cadastro' : 'Edicao';
-        
+
         const elRua = document.getElementById(`rua${prefixo}`);
         const elBairro = document.getElementById(`bairro${prefixo}`);
         const elCidade = document.getElementById(`cidade${prefixo}`);
@@ -202,13 +211,13 @@ async function atualizarMenuUsuario() {
 
             if (!sessao.logado) {
                 elemento.textContent = 'Login';
-                elemento.href = '../TelaLogin/login.html';
+                elemento.setAttribute('href', '/TelaLogin/login.html');
             } else if (sessao.is_admin) {
                 elemento.textContent = 'Painel Adm';
-                elemento.href = '../TelaAdmin/admin.html';
+                elemento.setAttribute('href', '/TelaAdmin/admin.html');
             } else {
                 elemento.textContent = 'Perfil';
-                elemento.href = '../TelaCliente/cliente.html';
+                elemento.setAttribute('href', '/TelaCliente/cliente.html');
             }
         });
     } catch (erro) {
@@ -220,14 +229,14 @@ async function abrirPerfil() {
     try {
         const sessao = await obterStatusSessao();
         if (!sessao.logado) {
-            window.location.href = '../TelaLogin/login.html';
+            window.location.href = '/TelaLogin/login.html';
         } else if (sessao.is_admin) {
-            window.location.href = '../TelaAdmin/admin.html';
+            window.location.href = '/TelaAdmin/admin.html';
         } else {
-            window.location.href = '../TelaCliente/cliente.html';
+            window.location.href = '/TelaCliente/cliente.html';
         }
     } catch (erro) {
-        window.location.href = '../TelaLogin/login.html';
+        window.location.href = '/TelaLogin/login.html';
     }
 }
 
@@ -238,8 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
     atualizarMenuUsuario();
 });
 
-// Exposição global das funções para botões (onclick)
+// Exposição global das funções para botões (onclick) e outros scripts
 window.obterStatusSessao = obterStatusSessao;
+window.obterUsuarioLogado = obterUsuarioLogado;
 window.protegerPagina = protegerPagina;
 window.verificarAdmin = verificarAdmin;
 window.logout = logout;
